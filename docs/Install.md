@@ -59,11 +59,11 @@ This guide helps you build and install openNetVM.
     echo export RTE_TARGET=x86_64-native-linuxapp-gcc  >> ~/.bashrc
     ```
 
-4. Set environment variable ONVM_NUM_HUEGPAGES and ONVM_NIC_PCI.
+4. Set environment variable ONVM_NUM_HUGEPAGES and ONVM_NIC_PCI.
 
-    ONVM_NUM_HUEGPAGES is a variable specifies how many hugepages are reserved by the user, default value of this is 1024, which could be set using: 
+    ONVM_NUM_HUGEPAGES is a variable specifies how many hugepages are reserved by the user, default value of this is 1024, which could be set using: 
     ```sh
-    echo export ONVM_NUM_HUEGPAGES=1024 >> ~/.bashrc
+    echo export ONVM_NUM_HUGEPAGES=1024 >> ~/.bashrc
     ```
 
     ONVM_NIC_PCI is a variable that specifies NIC ports to be bound to DPDK.  If ONVM_NIC_PCI is not specified, the default action is to bind all non-active 10G NIC ports to DPDK.
@@ -131,7 +131,10 @@ This guide helps you build and install openNetVM.
 
     Run openNetVM manager to use 4 cores (1 for displaying statistics, 1 for NIC RX, 1 for NIC TX, and 1 for NF TX) and to use 1 NIC port:
 
-    `./onvm/go.sh 0,1,2,3,4 1`
+    ```sh
+    cd ../onvm
+    ./go.sh 0,1,2,3,4 1
+    ```
 
     You should see information regarding the port that openNetVM is using, and some initial statistics will be displayed.
 
@@ -141,7 +144,9 @@ This guide helps you build and install openNetVM.
 
     In a new shell, run this command to start the speed_tester and giving it one core, and assigning it a Service ID of 1:
 
-    `./examples/speed_tester/go.sh 5 1`
+    ```sh
+    cd ../examples/speed_tester
+    ./go.sh 5 1 1'
 
     Once the NF's initialization is completed, you should see the NF display how many packets it is sending to itself.  Go back to the manager to verify that `client 0` is receiving data.  If this is the case, the openNetVM is working correctly.
 

@@ -53,9 +53,9 @@ endif
 APP = onvm_mgr
 
 # all source are stored in SRCS-y
-SRCS-y := main.c init.c args.c
+SRCS-y := main.c init.c args.c onvm_stats.c onvm_rx_tx.c onvm_mgr_nf.c
 
-INC := $(wildcard *.h)
+INC := onvm_includes.h init.h args.h onvm_stats.h onvm_mgr_nf.h onvm_rx_tx.h
 
 CFLAGS += $(WERROR_FLAGS) -O3 $(USER_FLAGS)
 CFLAGS += -I$(SRCDIR)/../
