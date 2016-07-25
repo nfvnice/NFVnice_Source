@@ -131,10 +131,7 @@ This guide helps you build and install openNetVM.
 
     Run openNetVM manager to use 4 cores (1 for displaying statistics, 1 for NIC RX, 1 for NIC TX, and 1 for NF TX) and to use 1 NIC port:
 
-    ```sh
-    cd ../onvm
-    ./go.sh 0,1,2,3,4 1
-    ```
+    `./onvm/go.sh 0,1,2,3,4 1`
 
     You should see information regarding the port that openNetVM is using, and some initial statistics will be displayed.
 
@@ -144,9 +141,7 @@ This guide helps you build and install openNetVM.
 
     In a new shell, run this command to start the speed_tester and giving it one core, and assigning it a Service ID of 1:
 
-    ```sh
-    cd ../examples/speed_tester
-    ./go.sh 5 1 1'
+    `./examples/speed_tester/go.sh 5 1 1`
 
     Once the NF's initialization is completed, you should see the NF display how many packets it is sending to itself.  Go back to the manager to verify that `client 0` is receiving data.  If this is the case, the openNetVM is working correctly.
 
