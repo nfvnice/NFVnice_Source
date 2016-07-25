@@ -55,14 +55,14 @@
  *   On success, a pointer to the created info struct. Will exit on error
  */
 struct onvm_nf_info *
-onvm_nf_info_init(const char *tag);
+onvm_nflib_info_init(const char *tag);
 
 /**
  * Stop this NF
  * Sets the info to be not running and exits this process gracefully
  */
 void
-onvm_nf_stop(void);
+onvm_nflib_stop(void);
 
 /**
  * Initialize the OpenNetVM container Library.
@@ -83,7 +83,7 @@ onvm_nf_stop(void);
  *   On error, a negative value .
  */
 int
-onvm_nf_init(int argc, char *argv[], const char *nf_tag);
+onvm_nflib_init(int argc, char *argv[], const char *nf_tag);
 
 
 /**
@@ -99,7 +99,7 @@ onvm_nf_init(int argc, char *argv[], const char *nf_tag);
  *   0 on success, or a negative value on error.
  */
 int
-onvm_nf_run(struct onvm_nf_info* info, int(*handler)(struct rte_mbuf* pkt, struct onvm_pkt_meta* action));
+onvm_nflib_run(struct onvm_nf_info* info, int(*handler)(struct rte_mbuf* pkt, struct onvm_pkt_meta* action));
 
 /**
  * Return a packet that has previously had the ONVM_NF_ACTION_BUFFER action
@@ -111,6 +111,6 @@ onvm_nf_run(struct onvm_nf_info* info, int(*handler)(struct rte_mbuf* pkt, struc
  *    0 on success, or a negative value on error.
  */
 int
-onvm_nf_return_pkt(struct rte_mbuf* pkt);
+onvm_nflib_return_pkt(struct rte_mbuf* pkt);
 
 #endif

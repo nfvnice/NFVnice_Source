@@ -109,7 +109,7 @@ static struct onvm_service_chain *default_chain;
  * Print a usage message
  */
 static void
-usage(const char *progname) {
+onvm_nflib_usage(const char *progname) {
         printf("Usage: %s [EAL args] -- "
 #ifdef USE_STATIC_IDS
                "[-n <instance_id>]"
@@ -121,7 +121,7 @@ usage(const char *progname) {
  * Parse the library arguments.
  */
 static int
-parse_nflib_args(int argc, char *argv[]) {
+onvm_nflib_parse_nflib_args(int argc, char *argv[]) {
         const char *progname = argv[0];
         int c;
 
@@ -143,7 +143,7 @@ parse_nflib_args(int argc, char *argv[]) {
                         if (service_id == 0) service_id = -1;
                         break;
                 case '?':
-                        usage(progname);
+                        onvm_nflib_usage(progname);
                         if (optopt == 'n')
                                 fprintf(stderr, "Option -%c requires an argument.\n", optopt);
                         else if (isprint(optopt))
@@ -169,7 +169,7 @@ parse_nflib_args(int argc, char *argv[]) {
  * Pass a unique tag for this NF
  */
 static struct onvm_nf_info *
-ovnm_nf_info_init(const char *tag)
+ovnm_nflib_info_init(const char *tag)
 {
         void *mempool_data;
         struct onvm_nf_info *info;
@@ -196,7 +196,7 @@ ovnm_nf_info_init(const char *tag)
  * Sets this NF to not runnings and exits with EXIT_SUCCESS
  */
 void
-onvm_nf_stop(void) {
+onvm_nflib_stop(void) {
         rte_exit(EXIT_SUCCESS, "Done.");
 }
 
@@ -210,7 +210,7 @@ onvm_nf_stop(void) {
  * increments optind by 1 each time.
  */
 int
-onvm_nf_init(int argc, char *argv[], const char *nf_tag) {
+onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
         const struct rte_memzone *mz;
 	const struct rte_memzone *mz_scp;
         struct rte_mempool *mp;
@@ -226,7 +226,7 @@ onvm_nf_init(int argc, char *argv[], const char *nf_tag) {
         /* Reset getopt global variables opterr and optind to their default values */
         opterr = 0; optind = 1;
 
-        if ((retval_parse = parse_nflib_args(argc, argv)) < 0)
+        if ((retval_parse = onvm_nflib_parse_nflib_args(argc, argv)) < 0)
                 rte_exit(EXIT_FAILURE, "Invalid command-line arguments\n");
 
         /*
@@ -248,7 +248,7 @@ onvm_nf_init(int argc, char *argv[], const char *nf_tag) {
                 rte_exit(EXIT_FAILURE, "No Client Info mempool - bye\n");
 
         /* Initialize the info struct */
-        nf_info = ovnm_nf_info_init(nf_tag);
+        nf_info = ovnm_nflib_info_init(nf_tag);
 
         mp = rte_mempool_lookup(PKTMBUF_POOL_NAME);
         if (mp == NULL)
@@ -318,7 +318,7 @@ onvm_nf_init(int argc, char *argv[], const char *nf_tag) {
  * Tells the main loop it's time to exit and clean up
  */
 static void
-handle_signal(int sig)
+onvm_nflib_handle_signal(int sig)
 {
         if (sig == SIGINT)
                 keep_running = 0;
@@ -330,7 +330,7 @@ handle_signal(int sig)
  * receiving and processing packets. Never returns
  */
 int
-onvm_nf_run(struct onvm_nf_info* info, int(*handler)(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta)) {
+onvm_nflib_run(struct onvm_nf_info* info, int(*handler)(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta)) {
         void *pkts[PKT_READ_SIZE];
         struct onvm_pkt_meta* meta;
 
@@ -338,7 +338,7 @@ onvm_nf_run(struct onvm_nf_info* info, int(*handler)(struct rte_mbuf* pkt, struc
         printf("[Press Ctrl-C to quit ...]\n");
 
         /* Listen for ^C so we can exit gracefully */
-        signal(SIGINT, handle_signal);
+        signal(SIGINT, onvm_nflib_handle_signal);
 
         for (; keep_running;) {
                 uint16_t i, j, nb_pkts = PKT_READ_SIZE;
@@ -398,7 +398,7 @@ onvm_nf_run(struct onvm_nf_info* info, int(*handler)(struct rte_mbuf* pkt, struc
  * Return a buffered packet.
  */
 int
-onvm_nf_return_pkt(struct rte_mbuf* pkt) {
+onvm_nflib_return_pkt(struct rte_mbuf* pkt) {
         /* FIXME: should we get a batch of buffered packets and then enqueue? Can we keep stats? */
         if(unlikely(rte_ring_enqueue(tx_ring, pkt) == -ENOBUFS)) {
                 rte_pktmbuf_free(pkt);

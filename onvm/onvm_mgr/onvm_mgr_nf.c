@@ -170,8 +170,7 @@ inline void onvm_mgr_nf_stop_running_nf(struct onvm_nf_info *nf_info)
 
 void onvm_mgr_nf_do_check_new_nf_status(void) {
         int i;
-        int added_clients;
-        int removed_clients;
+	int num_clients;
         void *new_nfs[MAX_CLIENTS];
         struct onvm_nf_info *nf;
         int num_new_nfs = rte_ring_count(nf_info_queue);
@@ -180,8 +179,7 @@ void onvm_mgr_nf_do_check_new_nf_status(void) {
         if (dequeue_val != 0)
                 return;
 
-        added_clients = 0;
-        removed_clients = 0;
+	num_clients=0;
         for (i = 0; i < num_new_nfs; i++) {
                 nf = (struct onvm_nf_info *)new_nfs[i];
 
@@ -192,16 +190,13 @@ void onvm_mgr_nf_do_check_new_nf_status(void) {
                         /* We're starting up a new NF.
                          * Function returns TRUE on successful start */
                         if (onvm_mgr_nf_start_new_nf(nf))
-                                added_clients++;
+                                num_clients++;
                 } else if (nf->status == NF_STOPPED) {
                         /* An existing NF is stopping */
                         onvm_mgr_nf_stop_running_nf(nf);
-                        removed_clients++;
+                        num_clients--;
                 }
         }
-
-        num_clients += added_clients;
-        num_clients -= removed_clients;
 }
 
 /**
