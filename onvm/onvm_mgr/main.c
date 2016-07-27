@@ -59,7 +59,8 @@ master_thread_main(void) {
         /* Loop forever: sleep always returns 0 or <= param */
         while (sleep(sleeptime) <= sleeptime) {
                 onvm_mgr_nf_do_check_new_nf_status();
-                onvm_stats_do_stats_display(sleeptime);
+                onvm_stats_ports_display(sleeptime);
+		onvm_stats_clients_display();
         }
 }
 

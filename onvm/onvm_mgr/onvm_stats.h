@@ -39,12 +39,14 @@
  * onvm_stats.h - header for onvm_stats.c
  ********************************************************************/
 
-#ifndef _ONVM_STATS_H__
+#ifndef _ONVM_STATS_H_
 #define _ONVM_STATS_H_
 
 const char * onvm_stats_get_printable_mac_addr(uint8_t port);
 
-void onvm_stats_do_stats_display(unsigned sleeptime);
+void onvm_stats_ports_display(unsigned sleeptime);
+
+void onvm_stats_clients_display(void);
 
 void onvm_stats_clear_stats(void);
 

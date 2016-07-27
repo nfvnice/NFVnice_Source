@@ -170,7 +170,6 @@ inline void onvm_mgr_nf_stop_running_nf(struct onvm_nf_info *nf_info)
 
 void onvm_mgr_nf_do_check_new_nf_status(void) {
         int i;
-	int num_clients;
         void *new_nfs[MAX_CLIENTS];
         struct onvm_nf_info *nf;
         int num_new_nfs = rte_ring_count(nf_info_queue);

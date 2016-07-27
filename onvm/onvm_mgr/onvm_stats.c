@@ -68,7 +68,7 @@ onvm_stats_get_printable_mac_addr(uint8_t port) {
  * thread in the server process, when the process is run with more
  * than one lcore enabled.
  */
-void onvm_stats_do_stats_display(unsigned sleeptime) {
+void onvm_stats_ports_display(unsigned sleeptime) {
         unsigned i;
         /* Arrays to store last TX/RX count to calculate rate */
         static uint64_t tx_last[RTE_MAX_ETHPORTS];
@@ -96,8 +96,12 @@ void onvm_stats_do_stats_display(unsigned sleeptime) {
                 rx_last[i] = ports->rx_stats.rx[ports->id[i]];
                 tx_last[i] = ports->tx_stats.tx[ports->id[i]];
         }
+}
 
-        printf("\nCLIENTS\n");
+void onvm_stats_clients_display(void) {
+        unsigned i;
+
+	printf("\nCLIENTS\n");
         printf("-------\n");
         for (i = 0; i < MAX_CLIENTS; i++) {
                 if (!onvm_mgr_nf_is_valid_nf(&clients[i]))
