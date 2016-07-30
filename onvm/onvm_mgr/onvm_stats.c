@@ -36,69 +36,81 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * onvm_stats.c - for all stat functions
  ********************************************************************/
+
+
+/******************************************************************************
+                          onvm_stats.c
+
+   This file contain the implementation of all functions related to
+   statistics display in the manager.
+
+******************************************************************************/
+
 
 #include "onvm_includes.h"
 #include "onvm_stats.h"
 #include "onvm_mgr_nf.h"
 
-const char *
-onvm_stats_get_printable_mac_addr(uint8_t port) {
-        static const char err_address[] = "00:00:00:00:00:00";
-        static char addresses[RTE_MAX_ETHPORTS][sizeof(err_address)];
 
-        if (unlikely(port >= RTE_MAX_ETHPORTS))
-                return err_address;
-        if (unlikely(addresses[port][0] == '\0')) {
-                struct ether_addr mac;
-                rte_eth_macaddr_get(port, &mac);
-                snprintf(addresses[port], sizeof(addresses[port]),
-                                "%02x:%02x:%02x:%02x:%02x:%02x\n",
-                                mac.addr_bytes[0], mac.addr_bytes[1], mac.addr_bytes[2],
-                                mac.addr_bytes[3], mac.addr_bytes[4], mac.addr_bytes[5]);
-        }
-        return addresses[port];
+/****************************Interfaces***************************************/
+
+
+void
+onvm_stats_display_all(unsigned difftime) {
+        onvm_stats_clear_terminal();
+	onvm_stats_display_ports(difftime);
+	onvm_stats_display_clients();
 }
 
-/*
- * This function displays the recorded statistics for each port
- * and for each client. It uses ANSI terminal codes to clear
- * screen when called. It is called from a single non-master
- * thread in the server process, when the process is run with more
- * than one lcore enabled.
- */
-void onvm_stats_ports_display(unsigned sleeptime) {
+
+void
+onvm_stats_clear_all(void) {
+        unsigned i;
+
+        for (i = 0; i < MAX_CLIENTS; i++) {
+                clients[i].stats.rx = clients[i].stats.rx_drop = 0;
+                clients[i].stats.act_drop = clients[i].stats.act_tonf = 0;
+                clients[i].stats.act_next = clients[i].stats.act_out = 0;
+        }
+}
+
+
+/****************************Main functions************************************/
+
+
+void
+onvm_stats_display_ports(unsigned difftime) {
         unsigned i;
         /* Arrays to store last TX/RX count to calculate rate */
         static uint64_t tx_last[RTE_MAX_ETHPORTS];
         static uint64_t rx_last[RTE_MAX_ETHPORTS];
-        const char clr[] = { 27, '[', '2', 'J', '\0' };
-        const char topLeft[] = { 27, '[', '1', ';', '1', 'H', '\0' };
-
-        /* Clear screen and move to top left */
-        printf("%s%s", clr, topLeft);
 
         printf("PORTS\n");
         printf("-----\n");
         for (i = 0; i < ports->num_ports; i++)
                 printf("Port %u: '%s'\t", (unsigned)ports->id[i],
-                                onvm_stats_get_printable_mac_addr(ports->id[i]));
+                                onvm_stats_print_MAC(ports->id[i]));
         printf("\n\n");
         for (i = 0; i < ports->num_ports; i++) {
                 printf("Port %u - rx: %9"PRIu64"  (%9"PRIu64" pps)\t"
                                  "tx: %9"PRIu64"  (%9"PRIu64" pps)\n",
                                 (unsigned)ports->id[i],
                                 ports->rx_stats.rx[ports->id[i]],
-                                (ports->rx_stats.rx[ports->id[i]] - rx_last[i])/sleeptime,
+                                (ports->rx_stats.rx[ports->id[i]] - rx_last[i])
+                                        /difftime,
                                 ports->tx_stats.tx[ports->id[i]],
-                                (ports->tx_stats.tx[ports->id[i]] - tx_last[i])/sleeptime);
+                                (ports->tx_stats.tx[ports->id[i]] - tx_last[i])
+                                        /difftime);
+
                 rx_last[i] = ports->rx_stats.rx[ports->id[i]];
                 tx_last[i] = ports->tx_stats.tx[ports->id[i]];
         }
 }
 
-void onvm_stats_clients_display(void) {
+
+void
+onvm_stats_display_clients(void) {
         unsigned i;
 
 	printf("\nCLIENTS\n");
@@ -118,22 +130,43 @@ void onvm_stats_clients_display(void) {
                 const uint64_t act_returned = clients_stats->tx_returned[i];
 
                 printf("Client %2u - rx: %9"PRIu64" rx_drop: %9"PRIu64" next: %9"PRIu64" drop: %9"PRIu64" ret: %9"PRIu64"\n"
-                                "            tx: %9"PRIu64" tx_drop: %9"PRIu64" out:  %9"PRIu64" tonf: %9"PRIu64" buf: %9"PRIu64" \n",
-                                clients[i].info->instance_id, rx, rx_drop, act_next, act_drop, act_returned, tx, tx_drop, act_out, act_tonf, act_buffer);
+                       "            tx: %9"PRIu64" tx_drop: %9"PRIu64" out:  %9"PRIu64" tonf: %9"PRIu64" buf: %9"PRIu64"\n",
+                                clients[i].info->instance_id,
+                                rx, rx_drop, act_next, act_drop, act_returned,
+                                tx, tx_drop, act_out, act_tonf, act_buffer);
         }
 
         printf("\n");
 }
 
-/*
- * Function to set all the client statistic values to zero.
- */
-void onvm_stats_clear_stats(void) {
-        unsigned i;
 
-        for (i = 0; i < MAX_CLIENTS; i++) {
-                clients[i].stats.rx = clients[i].stats.rx_drop = 0;
-                clients[i].stats.act_drop = clients[i].stats.act_tonf = 0;
-                clients[i].stats.act_next = clients[i].stats.act_out = 0;
+/***************************Helper functions**********************************/
+
+
+void
+onvm_stats_clear_terminal(void) {
+        const char clr[] = { 27, '[', '2', 'J', '\0' };
+        const char topLeft[] = { 27, '[', '1', ';', '1', 'H', '\0' };
+
+        printf("%s%s", clr, topLeft);
+}
+
+
+const char *
+onvm_stats_print_MAC(uint8_t port) {
+        static const char err_address[] = "00:00:00:00:00:00";
+        static char addresses[RTE_MAX_ETHPORTS][sizeof(err_address)];
+
+        if (unlikely(port >= RTE_MAX_ETHPORTS))
+                return err_address;
+        if (unlikely(addresses[port][0] == '\0')) {
+                struct ether_addr mac;
+                rte_eth_macaddr_get(port, &mac);
+                snprintf(addresses[port], sizeof(addresses[port]),
+                                "%02x:%02x:%02x:%02x:%02x:%02x\n",
+                                mac.addr_bytes[0], mac.addr_bytes[1],
+                                mac.addr_bytes[2], mac.addr_bytes[3],
+                                mac.addr_bytes[4], mac.addr_bytes[5]);
         }
+        return addresses[port];
 }
