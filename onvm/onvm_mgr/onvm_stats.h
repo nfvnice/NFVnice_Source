@@ -66,11 +66,24 @@ void onvm_stats_display_all(unsigned difftime);
 
 
 /*
- * Interface called by the ONVM Manager to clear all statistics
+ * Interface called by the ONVM Manager to clear all clients statistics
  * available.
  *
+ * Note : this function doesn't use onvm_stats_clear_client for each client,
+ * since with a huge number of clients, the additional functions calls would
+ * incur a visible slowdown.
+ *
  */
-void onvm_stats_clear_all(void);
+void onvm_stats_clear_all_clients(void);
+
+
+/*
+ * Interface called by the ONVM Manager to clear one client's statistics.
+ *
+ * Input : the client id
+ *
+ */
+void onvm_stats_clear_client(unsigned id);
 
 
 /******************************Main functions*********************************/

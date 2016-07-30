@@ -65,7 +65,7 @@ onvm_stats_display_all(unsigned difftime) {
 
 
 void
-onvm_stats_clear_all(void) {
+onvm_stats_clear_all_clients(void) {
         unsigned i;
 
         for (i = 0; i < MAX_CLIENTS; i++) {
@@ -73,6 +73,13 @@ onvm_stats_clear_all(void) {
                 clients[i].stats.act_drop = clients[i].stats.act_tonf = 0;
                 clients[i].stats.act_next = clients[i].stats.act_out = 0;
         }
+}
+
+void
+onvm_stats_clear_client(unsigned id) {
+        clients[id].stats.rx = clients[id].stats.rx_drop = 0;
+        clients[id].stats.act_drop = clients[id].stats.act_tonf = 0;
+        clients[id].stats.act_next = clients[id].stats.act_out = 0;
 }
 
 
