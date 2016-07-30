@@ -110,7 +110,7 @@ sdn_pkt_list_flush(struct sdn_pkt_list* list) {
 		meta = onvm_get_pkt_meta(pkt);
 		meta->action = ONVM_NF_ACTION_NEXT;
 		meta->chain_index = 0;
-		onvm_nf_return_pkt(pkt);
+		onvm_nflib_return_pkt(pkt);
 		free(entry);
 		list->counter--;
 	}
