@@ -36,18 +36,80 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * onvm_stats.h - header for onvm_stats.c
  ********************************************************************/
+
+
+/******************************************************************************
+                                 onvm_stats.h
+
+            This file contains all function prototypes related to
+            statistics display.
+
+******************************************************************************/
+
 
 #ifndef _ONVM_STATS_H_
 #define _ONVM_STATS_H_
 
-const char * onvm_stats_get_printable_mac_addr(uint8_t port);
 
-void onvm_stats_ports_display(unsigned sleeptime);
+/*********************************Interfaces**********************************/
 
-void onvm_stats_clients_display(void);
 
-void onvm_stats_clear_stats(void);
+/*
+ * Interface called by the ONVM Manager to display all statistics
+ * available.
+ *
+ * Input : time passed since last display (to compute packet rate)
+ *
+ */
+void onvm_stats_display_all(unsigned difftime);
+
+
+/*
+ * Interface called by the ONVM Manager to clear all statistics
+ * available.
+ *
+ */
+void onvm_stats_clear_all(void);
+
+
+/******************************Main functions*********************************/
+
+
+/*
+ * Function displaying statistics for all ports
+ *
+ * Input : time passed since last display (to compute packet rate)
+ *
+ */
+void onvm_stats_display_ports(unsigned difftime);
+
+
+/*
+ * Function displaying statistics for all clients
+ *
+ */
+void onvm_stats_display_clients(void);
+
+
+/******************************Helper functions*******************************/
+
+
+/*
+ * Function clearing the terminal and moving back the cursor to the top left.
+ * 
+ */
+void onvm_stats_clear_terminal(void);
+
+
+/*
+ * Function giving the MAC address of a port in string format.
+ *
+ * Input  : port
+ * Output : its MAC address
+ * 
+ */
+const char * onvm_stats_print_MAC(uint8_t port);
+
 
 #endif
