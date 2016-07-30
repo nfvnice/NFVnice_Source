@@ -165,7 +165,7 @@ main(int argc, char *argv[]) {
         RTE_LOG(INFO, APP, "Finished Process Init.\n");
 
         /* clear statistics */
-        onvm_stats_clear_all();
+        onvm_stats_clear_all_clients();
 
         /* Reserve n cores for: 1 Stats, 1 final Tx out, and ONVM_NUM_RX_THREADS for Rx */
         cur_lcore = rte_lcore_id();
