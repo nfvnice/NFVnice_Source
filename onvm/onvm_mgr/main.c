@@ -59,8 +59,7 @@ master_thread_main(void) {
         /* Loop forever: sleep always returns 0 or <= param */
         while (sleep(sleeptime) <= sleeptime) {
                 onvm_mgr_nf_do_check_new_nf_status();
-                onvm_stats_ports_display(sleeptime);
-		onvm_stats_clients_display();
+                onvm_stats_display_all(sleeptime);
         }
 }
 
@@ -166,7 +165,7 @@ main(int argc, char *argv[]) {
         RTE_LOG(INFO, APP, "Finished Process Init.\n");
 
         /* clear statistics */
-        onvm_stats_clear_stats();
+        onvm_stats_clear_all();
 
         /* Reserve n cores for: 1 Stats, 1 final Tx out, and ONVM_NUM_RX_THREADS for Rx */
         cur_lcore = rte_lcore_id();
