@@ -136,6 +136,9 @@ tx_thread_main(void *arg) {
 
                 /* Send a burst to every client */
                 onvm_rx_tx_flush_all_clients(tx);
+
+        }
+
         return 0;
 }
 
