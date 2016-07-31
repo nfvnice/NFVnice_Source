@@ -69,7 +69,7 @@ master_thread_main(void) {
  */
 static int
 rx_thread_main(void *arg) {
-        uint16_t i, j, rx_count;
+        uint16_t i, rx_count;
         struct rte_mbuf *pkts[PACKET_READ_SIZE];
         struct thread_info *rx = (struct thread_info*)arg;
 
@@ -86,9 +86,7 @@ rx_thread_main(void *arg) {
                         if (likely(rx_count > 0)) {
                                 // If there is no running NF, we drop all the packets of the batch.
                                 if(!num_clients) {
-                                        for(j = 0; j < rx_count; j++) {
-                                                onvm_rx_tx_drop_packet(pkts[j]);
-                                        }
+                                        onvm_rx_tx_drop_batch(pkts, rx_count);
                                 } else {
                                         onvm_rx_process_rx_packet_batch(rx, pkts, rx_count);
                                 }
@@ -134,19 +132,10 @@ tx_thread_main(void *arg) {
                 }
 
                 /* Send a burst to every port */
-                for (i = 0; i < ports->num_ports; i++) {
-                       if (tx->port_tx_buf[i].count != 0) {
-                               onvm_rx_tx_flush_port_queue(tx, i);
-                       }
-                }
+                onvm_rx_tx_flush_all_ports(tx);
 
                 /* Send a burst to every client */
-                for (i = 0; i < MAX_CLIENTS; i++) {
-                       if(tx->nf_rx_buf[i].count != 0) {
-                               onvm_rx_tx_flush_nf_queue(tx, i);
-                       }
-                }
-        }
+                onvm_rx_tx_flush_all_clients(tx);
         return 0;
 }
 
