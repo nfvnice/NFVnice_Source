@@ -36,26 +36,64 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * onvm_rx_tx.h - header for onvm_rx_tx.c
  ********************************************************************/
+
+
+/******************************************************************************
+
+                                 onvm_rx_tx.h
+
+
+      Header file containing all prototypes of packet processing functions
+
+
+******************************************************************************/
+
 
 #ifndef _ONVM_RX_TX_H_
 #define _ONVM_RX_TX_H_
 
-int onvm_rx_tx_drop_packet(struct rte_mbuf *pkt);
 
-void onvm_rx_tx_flush_nf_queue(struct thread_info *thread, uint16_t client);
+/*********************************Interfaces**********************************/
 
-void onvm_rx_tx_flush_port_queue(struct thread_info *tx, uint16_t port);
-
-inline void onvm_rx_tx_enqueue_nf_packet(struct thread_info *thread, uint16_t dst_service_id, struct rte_mbuf *pkt);
-
-inline void onvm_rx_tx_enqueue_port_packet(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf);
-
-inline void onvm_rx_tx_process_next_action_packet(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl);
 
 void onvm_rx_process_rx_packet_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count);
 
+
 void onvm_tx_process_tx_packet_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint16_t tx_count, struct client *cl);
+
+
+void onvm_rx_tx_flush_all_ports(struct thread_info *tx);
+
+
+void onvm_rx_tx_flush_all_clients(struct thread_info *tx);
+
+
+void onvm_rx_tx_drop_batch(struct rte_mbuf **pkts, uint16_t size);
+
+
+/*****************************Internal functions******************************/
+
+
+void onvm_rx_tx_flush_nf_queue(struct thread_info *thread, uint16_t client);
+
+
+void onvm_rx_tx_flush_port_queue(struct thread_info *tx, uint16_t port);
+
+
+inline void onvm_rx_tx_enqueue_nf_packet(struct thread_info *thread, uint16_t dst_service_id, struct rte_mbuf *pkt);
+
+
+inline void onvm_rx_tx_enqueue_port_packet(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf);
+
+
+inline void onvm_rx_tx_process_next_action_packet(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl);
+
+
+/******************************Helper functions*******************************/
+
+
+int onvm_rx_tx_drop_packet(struct rte_mbuf *pkt);
+
 
 #endif
