@@ -36,36 +36,33 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * onvm_mgr_nf.c - for all nf manager functions
  ********************************************************************/
 
+
+/******************************************************************************
+
+                              onvm_nf.c
+
+       This file contains all functions related to NF management.
+
+******************************************************************************/
+
+
 #include "onvm_includes.h"
-#include "onvm_mgr_nf.h"
+#include "onvm_nf.h"
 
 uint16_t next_instance_id=0;
 
-/**
- * Helper function to determine if an item in the clients array represents a valid NF
- * A "valid" NF consists of:
- *  - A non-null index that also contains an associated info struct
- *  - A status set to NF_RUNNING
- */
-inline int
-onvm_mgr_nf_is_valid_nf(struct client *cl)
-{
-        return cl && cl->info && cl->info->status == NF_RUNNING;
-}
 
-/**
- * Verifies that the next client id the manager gives out is unused
- * This lets us account for the case where an NF has a manually specified id and we overwrite it
- * This function modifies next_instance_id to be the proper value
- */
-int onvm_mgr_nf_find_next_instance_id(void) {
+/********************************Interfaces***********************************/
+
+
+int
+onvm_nf_next_instance_id(void) {
         struct client *cl;
         while (next_instance_id < MAX_CLIENTS) {
                 cl = &clients[next_instance_id];
-                if (!onvm_mgr_nf_is_valid_nf(cl))
+                if (!onvm_nf_is_valid(cl))
                         break;
                 next_instance_id++;
         }
@@ -73,13 +70,63 @@ int onvm_mgr_nf_find_next_instance_id(void) {
 
 }
 
-/**
- * Set up a newly started NF
- * Assign it an ID (if it hasn't self-declared)
- * Store info struct in our internal list of clients
- * Returns 1 (TRUE) on successful start, 0 if there is an error (ID conflict)
- */
-inline int onvm_mgr_nf_start_new_nf(struct onvm_nf_info *nf_info)
+
+void
+onvm_nf_check_status(void) {
+        int i;
+        void *new_nfs[MAX_CLIENTS];
+        struct onvm_nf_info *nf;
+        int num_new_nfs = rte_ring_count(nf_info_queue);
+        int dequeue_val = rte_ring_dequeue_bulk(nf_info_queue, new_nfs, num_new_nfs);
+
+        if (dequeue_val != 0)
+                return;
+
+        for (i = 0; i < num_new_nfs; i++) {
+                nf = (struct onvm_nf_info *)new_nfs[i];
+
+                // Sets next_instance_id variable to next available
+                onvm_nf_next_instance_id();
+
+                if (nf->status == NF_WAITING_FOR_ID) {
+                        /* We're starting up a new NF.
+                         * Function returns TRUE on successful start */
+                        if (onvm_nf_start(nf))
+                                num_clients++;
+                } else if (nf->status == NF_STOPPED) {
+                        /* An existing NF is stopping */
+                        onvm_nf_stop(nf);
+                        num_clients--;
+                }
+        }
+}
+
+
+inline uint16_t
+onvm_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt) {
+        uint16_t num_nfs_available = nf_per_service_count[service_id];
+
+        if (num_nfs_available == 0)
+                return 0;
+
+        uint16_t instance_index = pkt->hash.rss % num_nfs_available;
+        uint16_t instance_id = service_to_nf[service_id][instance_index];
+        return instance_id;
+}
+
+
+inline int
+onvm_nf_is_valid(struct client *cl)
+{
+        return cl && cl->info && cl->info->status == NF_RUNNING;
+}
+
+
+/******************************Internal functions*****************************/
+
+
+inline int
+onvm_nf_start(struct onvm_nf_info *nf_info)
 {
         //TODO dynamically allocate memory here - make rx/tx ring
         // take code from init_shm_rings in init.c
@@ -97,7 +144,7 @@ inline int onvm_mgr_nf_start_new_nf(struct onvm_nf_info *nf_info)
                 return 0;
         }
 
-        if (onvm_mgr_nf_is_valid_nf(&clients[nf_id])) {
+        if (onvm_nf_is_valid(&clients[nf_id])) {
                 // This NF is trying to declare an ID already in use
                 nf_info->status = NF_ID_CONFLICT;
                 return 0;
@@ -117,12 +164,9 @@ inline int onvm_mgr_nf_start_new_nf(struct onvm_nf_info *nf_info)
         return 1;
 }
 
-/**
- * Clean up after an NF has stopped
- * Remove references to soon-to-be-freed info struct
- * Clean up stats values
- */
-inline void onvm_mgr_nf_stop_running_nf(struct onvm_nf_info *nf_info)
+
+inline void
+onvm_nf_stop(struct onvm_nf_info *nf_info)
 {
         uint16_t nf_id = nf_info->instance_id;
         uint16_t service_id = nf_info->service_id;
@@ -166,50 +210,4 @@ inline void onvm_mgr_nf_stop_running_nf(struct onvm_nf_info *nf_info)
                 return;
 
         rte_mempool_put(nf_info_mp, (void*)nf_info);
-}
-
-void onvm_mgr_nf_do_check_new_nf_status(void) {
-        int i;
-        void *new_nfs[MAX_CLIENTS];
-        struct onvm_nf_info *nf;
-        int num_new_nfs = rte_ring_count(nf_info_queue);
-        int dequeue_val = rte_ring_dequeue_bulk(nf_info_queue, new_nfs, num_new_nfs);
-
-        if (dequeue_val != 0)
-                return;
-
-	num_clients=0;
-        for (i = 0; i < num_new_nfs; i++) {
-                nf = (struct onvm_nf_info *)new_nfs[i];
-
-                // Sets next_instance_id variable to next available
-                onvm_mgr_nf_find_next_instance_id();
-
-                if (nf->status == NF_WAITING_FOR_ID) {
-                        /* We're starting up a new NF.
-                         * Function returns TRUE on successful start */
-                        if (onvm_mgr_nf_start_new_nf(nf))
-                                num_clients++;
-                } else if (nf->status == NF_STOPPED) {
-                        /* An existing NF is stopping */
-                        onvm_mgr_nf_stop_running_nf(nf);
-                        num_clients--;
-                }
-        }
-}
-
-/**
- * This function take a service id input and returns an instance id to route the packet to
- * This uses the packet's RSS Hash mod the number of available services to decide
- * Returns 0 (manager reserved ID) if no NFs are available from the desired service
- */
-inline uint16_t onvm_mgr_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt) {
-        uint16_t num_nfs_available = nf_per_service_count[service_id];
-
-        if (num_nfs_available == 0)
-                return 0;
-
-        uint16_t instance_index = pkt->hash.rss % num_nfs_available;
-        uint16_t instance_id = service_to_nf[service_id][instance_index];
-        return instance_id;
 }

@@ -36,24 +36,53 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * onvm_mgr_nf.h - header for onvm_mgr_nf.c
  ********************************************************************/
 
-#ifndef _ONVM_MGR_NF_H_
-#define _ONVM_MGR_NF_H_
+
+/******************************************************************************
+
+                                 onvm_nf.h
+
+     This file contains the prototypes for all functions related to packet
+     processing.
+
+******************************************************************************/
+
+
+#ifndef _ONVM_NF_H_
+#define _ONVM_NF_H_
 
 extern uint16_t next_instance_id;
 
-inline int onvm_mgr_nf_is_valid_nf(struct client *cl);
 
-int onvm_mgr_nf_find_next_instance_id(void);
+/********************************Interfaces***********************************/
 
-inline int onvm_mgr_nf_start_new_nf(struct onvm_nf_info *nf_info);
 
-inline void onvm_mgr_nf_stop_running_nf(struct onvm_nf_info *nf_info);
+inline int
+onvm_nf_is_valid(struct client *cl);
 
-void onvm_mgr_nf_do_check_new_nf_status(void);
 
-inline uint16_t onvm_mgr_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt);
+int
+onvm_nf_next_instance_id(void);
+
+
+void
+onvm_nf_check_status(void);
+
+
+inline uint16_t
+onvm_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt);
+
+
+/****************************Internal functions*******************************/
+
+
+inline int
+onvm_nf_start(struct onvm_nf_info *nf_info);
+
+
+inline void
+onvm_nf_stop(struct onvm_nf_info *nf_info);
+
 
 #endif
