@@ -41,7 +41,7 @@
 
 #include "onvm_includes.h"
 #include "onvm_stats.h"
-#include "onvm_rx_tx.h"
+#include "onvm_pkt.h"
 #include "onvm_mgr_nf.h"
 
 /*
@@ -86,9 +86,9 @@ rx_thread_main(void *arg) {
                         if (likely(rx_count > 0)) {
                                 // If there is no running NF, we drop all the packets of the batch.
                                 if(!num_clients) {
-                                        onvm_rx_tx_drop_batch(pkts, rx_count);
+                                        onvm_pkt_drop_batch(pkts, rx_count);
                                 } else {
-                                        onvm_rx_process_rx_packet_batch(rx, pkts, rx_count);
+                                        onvm_pkt_process_rx_batch(rx, pkts, rx_count);
                                 }
                         }
                 }
@@ -127,15 +127,15 @@ tx_thread_main(void *arg) {
 
                         /* Now process the Client packets read */
                         if (likely(tx_count > 0)) {
-                                onvm_tx_process_tx_packet_batch(tx, pkts, tx_count, cl);
+                                onvm_pkt_process_tx_batch(tx, pkts, tx_count, cl);
                         }
                 }
 
                 /* Send a burst to every port */
-                onvm_rx_tx_flush_all_ports(tx);
+                onvm_pkt_flush_all_ports(tx);
 
                 /* Send a burst to every client */
-                onvm_rx_tx_flush_all_clients(tx);
+                onvm_pkt_flush_all_clients(tx);
 
         }
 

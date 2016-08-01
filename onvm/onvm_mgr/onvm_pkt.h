@@ -41,7 +41,7 @@
 
 /******************************************************************************
 
-                                 onvm_rx_tx.h
+                                 onvm_pkt.h
 
 
       Header file containing all prototypes of packet processing functions
@@ -50,50 +50,50 @@
 ******************************************************************************/
 
 
-#ifndef _ONVM_RX_TX_H_
-#define _ONVM_RX_TX_H_
+#ifndef _ONVM_PKT_H_
+#define _ONVM_PKT_H_
 
 
 /*********************************Interfaces**********************************/
 
 
-void onvm_rx_process_rx_packet_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count);
+void onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count);
 
 
-void onvm_tx_process_tx_packet_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint16_t tx_count, struct client *cl);
+void onvm_pkt_process_tx_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint16_t tx_count, struct client *cl);
 
 
-void onvm_rx_tx_flush_all_ports(struct thread_info *tx);
+void onvm_pkt_flush_all_ports(struct thread_info *tx);
 
 
-void onvm_rx_tx_flush_all_clients(struct thread_info *tx);
+void onvm_pkt_flush_all_clients(struct thread_info *tx);
 
 
-void onvm_rx_tx_drop_batch(struct rte_mbuf **pkts, uint16_t size);
+void onvm_pkt_drop_batch(struct rte_mbuf **pkts, uint16_t size);
 
 
 /*****************************Internal functions******************************/
 
 
-void onvm_rx_tx_flush_nf_queue(struct thread_info *thread, uint16_t client);
+void onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client);
 
 
-void onvm_rx_tx_flush_port_queue(struct thread_info *tx, uint16_t port);
+void onvm_pkt_flush_port_queue(struct thread_info *tx, uint16_t port);
 
 
-inline void onvm_rx_tx_enqueue_nf_packet(struct thread_info *thread, uint16_t dst_service_id, struct rte_mbuf *pkt);
+inline void onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct rte_mbuf *pkt);
 
 
-inline void onvm_rx_tx_enqueue_port_packet(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf);
+inline void onvm_pkt_enqueue_port(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf);
 
 
-inline void onvm_rx_tx_process_next_action_packet(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl);
+inline void onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl);
 
 
 /******************************Helper functions*******************************/
 
 
-int onvm_rx_tx_drop_packet(struct rte_mbuf *pkt);
+int onvm_pkt_drop(struct rte_mbuf *pkt);
 
 
 #endif

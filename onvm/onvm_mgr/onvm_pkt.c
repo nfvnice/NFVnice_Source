@@ -40,7 +40,7 @@
 
 
 /******************************************************************************
-                                 onvm_rx_tx.c
+                                 onvm_pkt.c
 
             This file contains all functions related to receiving or
             transmitting packets.
@@ -49,7 +49,7 @@
 
 
 #include "onvm_includes.h"
-#include "onvm_rx_tx.h"
+#include "onvm_pkt.h"
 #include "onvm_mgr_nf.h"
 
 
@@ -57,7 +57,7 @@
 
 
 void
-onvm_rx_process_rx_packet_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count) {
+onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count) {
         uint16_t i;
         struct onvm_pkt_meta *meta;
 	struct onvm_flow_entry *flow_entry;
@@ -86,19 +86,15 @@ onvm_rx_process_rx_packet_batch(struct thread_info *rx, struct rte_mbuf *pkts[],
                  */
 
                 (meta->chain_index)++;
-		onvm_rx_tx_enqueue_nf_packet(rx, meta->destination, pkts[i]);
+		onvm_pkt_enqueue_nf(rx, meta->destination, pkts[i]);
         }
 
-	for (i = 0; i < MAX_CLIENTS; i++) {
-		if (rx->nf_rx_buf[i].count != 0) {
-			onvm_rx_tx_flush_nf_queue(rx, i);
-		}
-	}
+        onvm_pkt_flush_all_clients(rx);
 }
 
 
 void
-onvm_tx_process_tx_packet_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint16_t tx_count, struct client *cl) {
+onvm_pkt_process_tx_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint16_t tx_count, struct client *cl) {
         uint16_t i;
         struct onvm_pkt_meta *meta;
 
@@ -108,21 +104,21 @@ onvm_tx_process_tx_packet_batch(struct thread_info *tx, struct rte_mbuf *pkts[],
                 if (meta->action == ONVM_NF_ACTION_DROP) {
                         // if the packet is drop, then <return value> is 0
                         // and !<return value> is 1.
-                        cl->stats.act_drop += !onvm_rx_tx_drop_packet(pkts[i]);
+                        cl->stats.act_drop += !onvm_pkt_drop(pkts[i]);
                 } else if (meta->action == ONVM_NF_ACTION_NEXT) {
                         /* TODO: Here we drop the packet : there will be a flow table
                         in the future to know what to do with the packet next */
                         cl->stats.act_next++;
-			onvm_rx_tx_process_next_action_packet(tx, pkts[i], cl);
+			onvm_pkt_process_next_action(tx, pkts[i], cl);
                 } else if (meta->action == ONVM_NF_ACTION_TONF) {
                         cl->stats.act_tonf++;
-                        onvm_rx_tx_enqueue_nf_packet(tx, meta->destination, pkts[i]);
+                        onvm_pkt_enqueue_nf(tx, meta->destination, pkts[i]);
                 } else if (meta->action == ONVM_NF_ACTION_OUT) {
                         cl->stats.act_out++;
-                        onvm_rx_tx_enqueue_port_packet(tx, meta->destination, pkts[i]);
+                        onvm_pkt_enqueue_port(tx, meta->destination, pkts[i]);
                 } else {
                         printf("ERROR invalid action : this shouldn't happen.\n");
-                        onvm_rx_tx_drop_packet(pkts[i]);
+                        onvm_pkt_drop(pkts[i]);
                         return;
                 }
         }
@@ -130,24 +126,24 @@ onvm_tx_process_tx_packet_batch(struct thread_info *tx, struct rte_mbuf *pkts[],
 
 
 void
-onvm_rx_tx_flush_all_ports(struct thread_info *tx) {
+onvm_pkt_flush_all_ports(struct thread_info *tx) {
         uint16_t i;
 
         for(i = 0; i < ports->num_ports; i++)
-                onvm_rx_tx_flush_port_queue(tx, i); 
+                onvm_pkt_flush_port_queue(tx, i); 
 }
 
 
 void
-onvm_rx_tx_flush_all_clients(struct thread_info *tx) {
+onvm_pkt_flush_all_clients(struct thread_info *tx) {
         uint16_t i;
 
         for(i = 0; i < MAX_CLIENTS; i++)
-                onvm_rx_tx_flush_nf_queue(tx, i); 
+                onvm_pkt_flush_nf_queue(tx, i); 
 }
 
 void
-onvm_rx_tx_drop_batch(struct rte_mbuf **pkts, uint16_t size) {
+onvm_pkt_drop_batch(struct rte_mbuf **pkts, uint16_t size) {
         uint16_t i;
         for(i = 0; i<size; i++)
                 rte_pktmbuf_free(pkts[i]);
@@ -158,7 +154,7 @@ onvm_rx_tx_drop_batch(struct rte_mbuf **pkts, uint16_t size) {
 
 
 void
-onvm_rx_tx_flush_port_queue(struct thread_info *tx, uint16_t port) {
+onvm_pkt_flush_port_queue(struct thread_info *tx, uint16_t port) {
         uint16_t i, sent;
         volatile struct tx_stats *tx_stats;
 
@@ -166,10 +162,13 @@ onvm_rx_tx_flush_port_queue(struct thread_info *tx, uint16_t port) {
                 return;
 
         tx_stats = &(ports->tx_stats);
-        sent = rte_eth_tx_burst(port, tx->queue_id, tx->port_tx_buf[port].buffer, tx->port_tx_buf[port].count);
+        sent = rte_eth_tx_burst(port,
+                                tx->queue_id,
+                                tx->port_tx_buf[port].buffer,
+                                tx->port_tx_buf[port].count);
         if (unlikely(sent < tx->port_tx_buf[port].count)) {
                 for (i = sent; i < tx->port_tx_buf[port].count; i++) {
-                        onvm_rx_tx_drop_packet(tx->port_tx_buf[port].buffer[i]);
+                        onvm_pkt_drop(tx->port_tx_buf[port].buffer[i]);
                 }
                 tx_stats->tx_drop[port] += (tx->port_tx_buf[port].count - sent);
         }
@@ -180,7 +179,7 @@ onvm_rx_tx_flush_port_queue(struct thread_info *tx, uint16_t port) {
 
 
 void
-onvm_rx_tx_flush_nf_queue(struct thread_info *thread, uint16_t client) {
+onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
         uint16_t i;
         struct client *cl;
 
@@ -196,7 +195,7 @@ onvm_rx_tx_flush_nf_queue(struct thread_info *thread, uint16_t client) {
         if (rte_ring_enqueue_bulk(cl->rx_q, (void **)thread->nf_rx_buf[client].buffer,
                         thread->nf_rx_buf[client].count) != 0) {
                 for (i = 0; i < thread->nf_rx_buf[client].count; i++) {
-                        onvm_rx_tx_drop_packet(thread->nf_rx_buf[client].buffer[i]);
+                        onvm_pkt_drop(thread->nf_rx_buf[client].buffer[i]);
                 }
                 cl->stats.rx_drop += thread->nf_rx_buf[client].count;
         } else {
@@ -207,42 +206,42 @@ onvm_rx_tx_flush_nf_queue(struct thread_info *thread, uint16_t client) {
 
 
 inline void
-onvm_rx_tx_enqueue_nf_packet(struct thread_info *thread, uint16_t dst_service_id, struct rte_mbuf *pkt) {
+onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct rte_mbuf *pkt) {
         struct client *cl;
         uint16_t dst_instance_id;
 
         // map service to instance and check one exists
         dst_instance_id = onvm_mgr_nf_service_to_nf_map(dst_service_id, pkt);
         if (dst_instance_id == 0) {
-                onvm_rx_tx_drop_packet(pkt);
+                onvm_pkt_drop(pkt);
                 return;
         }
 
         // Ensure destination NF is running and ready to receive packets
         cl = &clients[dst_instance_id];
         if (!onvm_mgr_nf_is_valid_nf(cl)) {
-                onvm_rx_tx_drop_packet(pkt);
+                onvm_pkt_drop(pkt);
                 return;
         }
 
         thread->nf_rx_buf[dst_instance_id].buffer[thread->nf_rx_buf[dst_instance_id].count++] = pkt;
         if (thread->nf_rx_buf[dst_instance_id].count == PACKET_READ_SIZE) {
-                onvm_rx_tx_flush_nf_queue(thread, dst_instance_id);
+                onvm_pkt_flush_nf_queue(thread, dst_instance_id);
         }
 }
 
 
 inline void
-onvm_rx_tx_enqueue_port_packet(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf) {
+onvm_pkt_enqueue_port(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf) {
         tx->port_tx_buf[port].buffer[tx->port_tx_buf[port].count++] = buf;
         if (tx->port_tx_buf[port].count == PACKET_READ_SIZE) {
-                onvm_rx_tx_flush_port_queue(tx, port);
+                onvm_pkt_flush_port_queue(tx, port);
         }
 }
 
 
 inline void
-onvm_rx_tx_process_next_action_packet(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl) {
+onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl) {
 	struct onvm_flow_entry *flow_entry;
 	struct onvm_service_chain *sc;
 	struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pkt);
@@ -263,15 +262,15 @@ onvm_rx_tx_process_next_action_packet(struct thread_info *tx, struct rte_mbuf *p
 		case ONVM_NF_ACTION_DROP:
                         // if the packet is drop, then <return value> is 0
                         // and !<return value> is 1.
-                        cl->stats.act_drop += !onvm_rx_tx_drop_packet(pkt);
+                        cl->stats.act_drop += !onvm_pkt_drop(pkt);
 			break;
 		case ONVM_NF_ACTION_TONF:
                         cl->stats.act_tonf++;
-			onvm_rx_tx_enqueue_nf_packet(tx, meta->destination, pkt);
+			onvm_pkt_enqueue_nf(tx, meta->destination, pkt);
 			break;
 		case ONVM_NF_ACTION_OUT:
                         cl->stats.act_out++;
-			onvm_rx_tx_enqueue_port_packet(tx, meta->destination, pkt);
+			onvm_pkt_enqueue_port(tx, meta->destination, pkt);
 			break;
 		default:
 			break;
@@ -284,7 +283,7 @@ onvm_rx_tx_process_next_action_packet(struct thread_info *tx, struct rte_mbuf *p
 
 
 int
-onvm_rx_tx_drop_packet(struct rte_mbuf *pkt) {
+onvm_pkt_drop(struct rte_mbuf *pkt) {
         rte_pktmbuf_free(pkt);
         if (pkt != NULL) {
                 return 1;
