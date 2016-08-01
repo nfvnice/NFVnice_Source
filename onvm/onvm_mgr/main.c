@@ -42,7 +42,7 @@
 #include "onvm_includes.h"
 #include "onvm_stats.h"
 #include "onvm_pkt.h"
-#include "onvm_mgr_nf.h"
+#include "onvm_nf.h"
 
 /*
  * Stats thread periodically prints per-port and per-NF stats.
@@ -58,7 +58,7 @@ master_thread_main(void) {
 
         /* Loop forever: sleep always returns 0 or <= param */
         while (sleep(sleeptime) <= sleeptime) {
-                onvm_mgr_nf_do_check_new_nf_status();
+                onvm_nf_check_status();
                 onvm_stats_display_all(sleeptime);
         }
 }
@@ -115,7 +115,7 @@ tx_thread_main(void *arg) {
                 for (i = tx->first_cl; i < tx->last_cl; i++) {
                         tx_count = PACKET_READ_SIZE;
                         cl = &clients[i];
-                        if (!onvm_mgr_nf_is_valid_nf(cl))
+                        if (!onvm_nf_is_valid(cl))
                                 continue;
                         /* try dequeuing max possible packets first, if that fails, get the
                          * most we can. Loop body should only execute once, maximum */

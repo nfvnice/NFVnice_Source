@@ -50,7 +50,7 @@
 
 #include "onvm_includes.h"
 #include "onvm_stats.h"
-#include "onvm_mgr_nf.h"
+#include "onvm_nf.h"
 
 
 /****************************Interfaces***************************************/
@@ -123,7 +123,7 @@ onvm_stats_display_clients(void) {
 	printf("\nCLIENTS\n");
         printf("-------\n");
         for (i = 0; i < MAX_CLIENTS; i++) {
-                if (!onvm_mgr_nf_is_valid_nf(&clients[i]))
+                if (!onvm_nf_is_valid(&clients[i]))
                         continue;
                 const uint64_t rx = clients[i].stats.rx;
                 const uint64_t rx_drop = clients[i].stats.rx_drop;

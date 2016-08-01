@@ -50,7 +50,7 @@
 
 #include "onvm_includes.h"
 #include "onvm_pkt.h"
-#include "onvm_mgr_nf.h"
+#include "onvm_nf.h"
 
 
 /**********************************Interfaces*********************************/
@@ -189,7 +189,7 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
         cl = &clients[client];
 
         // Ensure destination NF is running and ready to receive packets
-        if (!onvm_mgr_nf_is_valid_nf(cl))
+        if (!onvm_nf_is_valid(cl))
                 return;
 
         if (rte_ring_enqueue_bulk(cl->rx_q, (void **)thread->nf_rx_buf[client].buffer,
@@ -211,7 +211,7 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         uint16_t dst_instance_id;
 
         // map service to instance and check one exists
-        dst_instance_id = onvm_mgr_nf_service_to_nf_map(dst_service_id, pkt);
+        dst_instance_id = onvm_nf_service_to_nf_map(dst_service_id, pkt);
         if (dst_instance_id == 0) {
                 onvm_pkt_drop(pkt);
                 return;
@@ -219,7 +219,7 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
 
         // Ensure destination NF is running and ready to receive packets
         cl = &clients[dst_instance_id];
-        if (!onvm_mgr_nf_is_valid_nf(cl)) {
+        if (!onvm_nf_is_valid(cl)) {
                 onvm_pkt_drop(pkt);
                 return;
         }
