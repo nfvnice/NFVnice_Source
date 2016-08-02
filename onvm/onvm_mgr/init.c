@@ -111,7 +111,7 @@ struct rte_ring *nf_info_queue;
 struct client *clients = NULL;
 
 /* 2D array mapping services to NFs, extern in init.h */
-uint16_t **service_to_nf;
+uint16_t **services;
 
 /* Array tracking number of NFs active per service, extern in init.h */
 uint16_t *nf_per_service_count;
@@ -246,15 +246,15 @@ init_shm_rings(void) {
         if (clients == NULL)
                 rte_exit(EXIT_FAILURE, "Cannot allocate memory for client program details\n");
 
-        service_to_nf = rte_calloc("service to nf map",
+        services = rte_calloc("service to nf map",
                 num_services, sizeof(uint16_t*), 0);
         for (i = 0; i < num_services; i++) {
-                service_to_nf[i] = rte_calloc("one service NFs",
+                services[i] = rte_calloc("one service NFs",
                         MAX_CLIENTS_PER_SERVICE, sizeof(uint16_t), 0);
         }
         nf_per_service_count = rte_calloc("count of NFs active per service",
                 num_services, sizeof(uint16_t), 0);
-        if (service_to_nf == NULL || nf_per_service_count == NULL)
+        if (services == NULL || nf_per_service_count == NULL)
                 rte_exit(EXIT_FAILURE, "Cannot allocate memory for service to NF mapping\n");
 
         for (i = 0; i < MAX_CLIENTS; i++) {
