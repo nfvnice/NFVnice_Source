@@ -66,7 +66,6 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
 
         for (i = 0; i < rx_count; i++) {
                 meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)pkts[i])->udata64);
-		(void)meta;
                 meta->src = 0;
                 meta->chain_index = 0;
 		ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
