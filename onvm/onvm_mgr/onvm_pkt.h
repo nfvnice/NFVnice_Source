@@ -57,43 +57,132 @@
 /*********************************Interfaces**********************************/
 
 
-void onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count);
+/*
+ * Interface to process packets in a given RX queue.
+ *
+ * Inputs : a pointer to the rx queue
+ *          an array of packets
+ *          the size of the array
+ *
+ */
+void
+onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count);
 
 
-void onvm_pkt_process_tx_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint16_t tx_count, struct client *cl);
+/*
+ * Interface to process packets in a given TX queue.
+ *
+ * Inputs : a pointer to the tx queue
+ *          an array of packets
+ *          the size of the array
+ *          a pointer to the client possessing the TX queue.
+ *
+ */
+void
+onvm_pkt_process_tx_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint16_t tx_count, struct client *cl);
 
 
-void onvm_pkt_flush_all_ports(struct thread_info *tx);
+/*
+ * Interface to send packets to all ports after processing them.
+ *
+ * Input : a pointer to the tx queue
+ *
+ */
+void
+onvm_pkt_flush_all_ports(struct thread_info *tx);
 
 
-void onvm_pkt_flush_all_clients(struct thread_info *tx);
+/*
+ * Interface to send packets to all NFs after processing them.
+ *
+ * Input : a pointer to the tx queue
+ *
+ */
+void
+onvm_pkt_flush_all_nfs(struct thread_info *tx);
 
 
-void onvm_pkt_drop_batch(struct rte_mbuf **pkts, uint16_t size);
+/*
+ * Interface to drop a batch of packets.
+ *
+ * Inputs : the array of packets
+ *          the size of the array
+ *
+ */
+void
+onvm_pkt_drop_batch(struct rte_mbuf **pkts, uint16_t size);
 
 
 /*****************************Internal functions******************************/
 
 
-void onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client);
+/*
+ * Function to send packets to one port after processing them.
+ *
+ * Input : a pointer to the tx queue
+ *
+ */
+void
+onvm_pkt_flush_port_queue(struct thread_info *tx, uint16_t port);
 
 
-void onvm_pkt_flush_port_queue(struct thread_info *tx, uint16_t port);
+/*
+ * Function to send packets to one NF after processing them.
+ *
+ * Input : a pointer to the tx queue
+ *
+ */
+void
+onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client);
 
 
-inline void onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct rte_mbuf *pkt);
+/*
+ * Function to enqueue a packet on one port's queue.
+ *
+ * Inputs : a pointer to the tx queue responsible
+ *          the number of the port
+ *          a pointer to the packet
+ *
+ */
+inline void
+onvm_pkt_enqueue_port(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf);
 
 
-inline void onvm_pkt_enqueue_port(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf);
+/*
+ * Function to enqueue a packet on one NF's queue.
+ *
+ * Inputs : a pointer to the tx queue responsible
+ *          the number of the port
+ *          a pointer to the packet
+ *
+ */
+inline void
+onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct rte_mbuf *pkt);
 
 
-inline void onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl);
+/*
+ * Function to process a single packet.
+ *
+ * Inputs : a pointer to the tx queue responsible
+ *         a pointer to the packet
+ *         a pointer to the NF involved
+ *
+ */
+inline void
+onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl);
 
 
 /******************************Helper functions*******************************/
 
 
-int onvm_pkt_drop(struct rte_mbuf *pkt);
+/*
+ * Helper function to drop a packet.
+ *
+ * Input : a pointer to the packet
+ *
+ */
+int
+onvm_pkt_drop(struct rte_mbuf *pkt);
 
 
 #endif
