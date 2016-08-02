@@ -180,6 +180,8 @@ onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struc
  *
  * Input : a pointer to the packet
  *
+ * Ouput : an error code
+ *
  */
 int
 onvm_pkt_drop(struct rte_mbuf *pkt);
