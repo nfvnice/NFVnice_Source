@@ -58,18 +58,43 @@ extern uint16_t next_instance_id;
 /********************************Interfaces***********************************/
 
 
+/*
+ * Interface checking if a given pointed nf is "valid", meaning if it's running.
+ *
+ * Input  : a pointer to the nf
+ * Output : a boolean answer 
+ *
+ */
 inline int
 onvm_nf_is_valid(struct client *cl);
 
 
+/*
+ * Interface giving the smallest unsigned integer unused for a NF instance.
+ *
+ * Output : the unsigned integer 
+ *
+ */
 int
 onvm_nf_next_instance_id(void);
 
 
+/*
+ * Interface looking through all registered NFs if one needs to start or stop.
+ *
+ */
 void
 onvm_nf_check_status(void);
 
 
+/*
+ * Interface giving a NF for a specific server id, depending on the flow.
+ *
+ * Inputs  : the service id
+             a pointer to the packet whose flow help steer it. 
+ * Output  : a NF instance id
+ *
+ */
 inline uint16_t
 onvm_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt);
 
@@ -77,10 +102,24 @@ onvm_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt);
 /****************************Internal functions*******************************/
 
 
+/*
+ * Function starting a NF.
+ *
+ * Input  : a pointer to the NF's informations
+ * Output : an error code
+ *
+ */
 inline int
 onvm_nf_start(struct onvm_nf_info *nf_info);
 
 
+/*
+ * Function stopping a NF.
+ *
+ * Input  : a pointer to the NF's informations
+ * Output : an error code
+ *
+ */
 inline void
 onvm_nf_stop(struct onvm_nf_info *nf_info);
 
