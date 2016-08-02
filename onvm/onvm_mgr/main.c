@@ -134,8 +134,8 @@ tx_thread_main(void *arg) {
                 /* Send a burst to every port */
                 onvm_pkt_flush_all_ports(tx);
 
-                /* Send a burst to every client */
-                onvm_pkt_flush_all_clients(tx);
+                /* Send a burst to every NF */
+                onvm_pkt_flush_all_nfs(tx);
 
         }
 

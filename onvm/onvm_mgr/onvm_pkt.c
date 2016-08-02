@@ -89,7 +89,7 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
 		onvm_pkt_enqueue_nf(rx, meta->destination, pkts[i]);
         }
 
-        onvm_pkt_flush_all_clients(rx);
+        onvm_pkt_flush_all_nfs(rx);
 }
 
 
@@ -135,7 +135,7 @@ onvm_pkt_flush_all_ports(struct thread_info *tx) {
 
 
 void
-onvm_pkt_flush_all_clients(struct thread_info *tx) {
+onvm_pkt_flush_all_nfs(struct thread_info *tx) {
         uint16_t i;
 
         for(i = 0; i < MAX_CLIENTS; i++)
@@ -206,6 +206,15 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
 
 
 inline void
+onvm_pkt_enqueue_port(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf) {
+        tx->port_tx_buf[port].buffer[tx->port_tx_buf[port].count++] = buf;
+        if (tx->port_tx_buf[port].count == PACKET_READ_SIZE) {
+                onvm_pkt_flush_port_queue(tx, port);
+        }
+}
+
+
+inline void
 onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct rte_mbuf *pkt) {
         struct client *cl;
         uint16_t dst_instance_id;
@@ -227,15 +236,6 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         thread->nf_rx_buf[dst_instance_id].buffer[thread->nf_rx_buf[dst_instance_id].count++] = pkt;
         if (thread->nf_rx_buf[dst_instance_id].count == PACKET_READ_SIZE) {
                 onvm_pkt_flush_nf_queue(thread, dst_instance_id);
-        }
-}
-
-
-inline void
-onvm_pkt_enqueue_port(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf) {
-        tx->port_tx_buf[port].buffer[tx->port_tx_buf[port].count++] = buf;
-        if (tx->port_tx_buf[port].count == PACKET_READ_SIZE) {
-                onvm_pkt_flush_port_queue(tx, port);
         }
 }
 
