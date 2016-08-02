@@ -110,7 +110,7 @@ onvm_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt) {
                 return 0;
 
         uint16_t instance_index = pkt->hash.rss % num_nfs_available;
-        uint16_t instance_id = service_to_nf[service_id][instance_index];
+        uint16_t instance_id = services[service_id][instance_index];
         return instance_id;
 }
 
@@ -157,7 +157,7 @@ onvm_nf_start(struct onvm_nf_info *nf_info)
 
         // Register this NF running within its service
         uint16_t service_count = nf_per_service_count[nf_info->service_id]++;
-        service_to_nf[nf_info->service_id][service_count] = nf_id;
+        services[nf_info->service_id][service_count] = nf_id;
 
         // Let the NF continue its init process
         nf_info->status = NF_STARTING;
@@ -185,21 +185,21 @@ onvm_nf_stop(struct onvm_nf_info *nf_info)
          * Need to shift all elements past it in the array left to avoid gaps */
         nf_per_service_count[service_id]--;
         for(mapIndex = 0; mapIndex < MAX_CLIENTS_PER_SERVICE; mapIndex++) {
-                if (service_to_nf[service_id][mapIndex] == nf_id) {
+                if (services[service_id][mapIndex] == nf_id) {
                         break;
                 }
         }
 
         if (mapIndex < MAX_CLIENTS_PER_SERVICE) { // sanity error check
-                service_to_nf[service_id][mapIndex] = 0;
+                services[service_id][mapIndex] = 0;
                 for (; mapIndex < MAX_CLIENTS_PER_SERVICE - 1; mapIndex++) {
                         // Shift the NULL to the end of the array
-                        if (service_to_nf[service_id][mapIndex + 1] == 0) {
+                        if (services[service_id][mapIndex + 1] == 0) {
                                 // Short circuit when we reach the end of this service's list
                                 break;
                         }
-                        service_to_nf[service_id][mapIndex] = service_to_nf[service_id][mapIndex + 1];
-                        service_to_nf[service_id][mapIndex + 1] = 0;
+                        services[service_id][mapIndex] = services[service_id][mapIndex + 1];
+                        services[service_id][mapIndex + 1] = 0;
                 }
         }
 
