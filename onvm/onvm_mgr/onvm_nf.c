@@ -50,6 +50,7 @@
 
 #include "onvm_includes.h"
 #include "onvm_nf.h"
+#include "onvm_stats.h"
 
 uint16_t next_instance_id=0;
 
@@ -57,7 +58,14 @@ uint16_t next_instance_id=0;
 /********************************Interfaces***********************************/
 
 
-int
+inline int
+onvm_nf_is_valid(struct client *cl)
+{
+        return cl && cl->info && cl->info->status == NF_RUNNING;
+}
+
+
+uint16_t
 onvm_nf_next_instance_id(void) {
         struct client *cl;
         while (next_instance_id < MAX_CLIENTS) {
@@ -77,24 +85,17 @@ onvm_nf_check_status(void) {
         void *new_nfs[MAX_CLIENTS];
         struct onvm_nf_info *nf;
         int num_new_nfs = rte_ring_count(nf_info_queue);
-        int dequeue_val = rte_ring_dequeue_bulk(nf_info_queue, new_nfs, num_new_nfs);
 
-        if (dequeue_val != 0)
+        if (rte_ring_dequeue_bulk(nf_info_queue, new_nfs, num_new_nfs) != 0)
                 return;
 
         for (i = 0; i < num_new_nfs; i++) {
-                nf = (struct onvm_nf_info *)new_nfs[i];
-
-                // Sets next_instance_id variable to next available
-                onvm_nf_next_instance_id();
+                nf = (struct onvm_nf_info *) new_nfs[i];
 
                 if (nf->status == NF_WAITING_FOR_ID) {
-                        /* We're starting up a new NF.
-                         * Function returns TRUE on successful start */
                         if (onvm_nf_start(nf))
                                 num_clients++;
                 } else if (nf->status == NF_STOPPED) {
-                        /* An existing NF is stopping */
                         onvm_nf_stop(nf);
                         num_clients--;
                 }
@@ -115,13 +116,6 @@ onvm_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt) {
 }
 
 
-inline int
-onvm_nf_is_valid(struct client *cl)
-{
-        return cl && cl->info && cl->info->status == NF_RUNNING;
-}
-
-
 /******************************Internal functions*****************************/
 
 
@@ -135,7 +129,7 @@ onvm_nf_start(struct onvm_nf_info *nf_info)
         // if NF passed its own id on the command line, don't assign here
         // assume user is smart enough to avoid duplicates
         uint16_t nf_id = nf_info->instance_id == (uint16_t)NF_NO_ID
-                ? next_instance_id++
+                ? onvm_nf_next_instance_id()
                 : nf_info->instance_id;
 
         if (nf_id >= MAX_CLIENTS) {
@@ -177,9 +171,7 @@ onvm_nf_stop(struct onvm_nf_info *nf_info)
         clients[nf_id].info = NULL;
 
         /* Reset stats */
-        clients[nf_id].stats.rx = clients[nf_id].stats.rx_drop = 0;
-        clients[nf_id].stats.act_drop = clients[nf_id].stats.act_tonf = 0;
-        clients[nf_id].stats.act_next = clients[nf_id].stats.act_out = 0;
+        onvm_stats_clear_client(nf_id);
 
         /* Remove this NF from the service map.
          * Need to shift all elements past it in the array left to avoid gaps */

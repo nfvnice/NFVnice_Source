@@ -75,7 +75,7 @@ onvm_nf_is_valid(struct client *cl);
  * Output : the unsigned integer 
  *
  */
-int
+uint16_t
 onvm_nf_next_instance_id(void);
 
 
