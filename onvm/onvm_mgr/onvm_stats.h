@@ -83,7 +83,7 @@ void onvm_stats_clear_all_clients(void);
  * Input : the client id
  *
  */
-void onvm_stats_clear_client(unsigned id);
+void onvm_stats_clear_client(uint16_t id);
 
 
 /******************************Main functions*********************************/
