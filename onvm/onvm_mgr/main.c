@@ -36,123 +36,26 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * main.c - simple onvm host code
  ********************************************************************/
+
+
+/******************************************************************************
+                                   main.c
+
+     File containing the main function of the manager and all its worker
+     threads.
+
+******************************************************************************/
+
 
 #include "onvm_includes.h"
 #include "onvm_stats.h"
 #include "onvm_pkt.h"
 #include "onvm_nf.h"
 
-/*
- * Stats thread periodically prints per-port and per-NF stats.
- */
-static void
-master_thread_main(void) {
-        const unsigned sleeptime = 1;
 
-        RTE_LOG(INFO, APP, "Core %d: Running master thread\n", rte_lcore_id());
+/*******************************Main function*********************************/
 
-        /* Longer initial pause so above printf is seen */
-        sleep(sleeptime * 3);
-
-        /* Loop forever: sleep always returns 0 or <= param */
-        while (sleep(sleeptime) <= sleeptime) {
-                onvm_nf_check_status();
-                onvm_stats_display_all(sleeptime);
-        }
-}
-
-/*
- * Function to receive packets from the NIC
- * and distribute them to the default service
- */
-static int
-rx_thread_main(void *arg) {
-        uint16_t i, rx_count;
-        struct rte_mbuf *pkts[PACKET_READ_SIZE];
-        struct thread_info *rx = (struct thread_info*)arg;
-
-        RTE_LOG(INFO,
-                APP,
-                "Core %d: Running RX thread for RX queue %d\n",
-                rte_lcore_id(),
-                rx->queue_id);
-
-        for (;;) {
-                /* Read ports */
-                for (i = 0; i < ports->num_ports; i++) {
-                        rx_count = rte_eth_rx_burst(ports->id[i], rx->queue_id, \
-                                        pkts, PACKET_READ_SIZE);
-                        ports->rx_stats.rx[ports->id[i]] += rx_count;
-
-                        /* Now process the NIC packets read */
-                        if (likely(rx_count > 0)) {
-                                // If there is no running NF, we drop all the packets of the batch.
-                                if (!num_clients) {
-                                        onvm_pkt_drop_batch(pkts, rx_count);
-                                } else {
-                                        onvm_pkt_process_rx_batch(rx, pkts, rx_count);
-                                }
-                        }
-                }
-        }
-
-        return 0;
-}
-
-static int
-tx_thread_main(void *arg) {
-        struct client *cl;
-        unsigned i, tx_count;
-        struct rte_mbuf *pkts[PACKET_READ_SIZE];
-        struct thread_info* tx = (struct thread_info*)arg;
-
-        if (tx->first_cl == tx->last_cl - 1) {
-                RTE_LOG(INFO,
-                        APP,
-                        "Core %d: Running TX thread for NF %d\n",
-                        rte_lcore_id(),
-                        tx->first_cl);
-        } else if (tx->first_cl < tx->last_cl) {
-                RTE_LOG(INFO,
-                        APP,
-                        "Core %d: Running TX thread for NFs %d to %d\n",
-                        rte_lcore_id(),
-                        tx->first_cl,
-                        tx->last_cl-1);
-        }
-
-        for (;;) {
-                /* Read packets from the client's tx queue and process them as needed */
-                for (i = tx->first_cl; i < tx->last_cl; i++) {
-                        tx_count = PACKET_READ_SIZE;
-                        cl = &clients[i];
-                        if (!onvm_nf_is_valid(cl))
-                                continue;
-                        /* try dequeuing max possible packets first, if that fails, get the
-                         * most we can. Loop body should only execute once, maximum */
-                        while (tx_count > 0 &&
-                                unlikely(rte_ring_dequeue_bulk(cl->tx_q, (void **) pkts, tx_count) != 0)) {
-                                tx_count = (uint16_t)RTE_MIN(rte_ring_count(cl->tx_q),
-                                        PACKET_READ_SIZE);
-                        }
-
-                        /* Now process the Client packets read */
-                        if (likely(tx_count > 0)) {
-                                onvm_pkt_process_tx_batch(tx, pkts, tx_count, cl);
-                        }
-                }
-
-                /* Send a burst to every port */
-                onvm_pkt_flush_all_ports(tx);
-
-                /* Send a burst to every NF */
-                onvm_pkt_flush_all_nfs(tx);
-        }
-
-        return 0;
-}
 
 int
 main(int argc, char *argv[]) {
@@ -238,5 +141,121 @@ main(int argc, char *argv[]) {
 
         /* Master thread handles statistics and NF management */
         master_thread_main();
+        return 0;
+}
+
+
+/*******************************Worker threads********************************/
+
+
+/*
+ * Stats thread periodically prints per-port and per-NF stats.
+ */
+static void
+master_thread_main(void) {
+        const unsigned sleeptime = 1;
+
+        RTE_LOG(INFO, APP, "Core %d: Running master thread\n", rte_lcore_id());
+
+        /* Longer initial pause so above printf is seen */
+        sleep(sleeptime * 3);
+
+        /* Loop forever: sleep always returns 0 or <= param */
+        while (sleep(sleeptime) <= sleeptime) {
+                onvm_nf_check_status();
+                onvm_stats_display_all(sleeptime);
+        }
+}
+
+
+/*
+ * Function to receive packets from the NIC
+ * and distribute them to the default service
+ */
+static int
+rx_thread_main(void *arg) {
+        uint16_t i, rx_count;
+        struct rte_mbuf *pkts[PACKET_READ_SIZE];
+        struct thread_info *rx = (struct thread_info*)arg;
+
+        RTE_LOG(INFO,
+                APP,
+                "Core %d: Running RX thread for RX queue %d\n",
+                rte_lcore_id(),
+                rx->queue_id);
+
+        for (;;) {
+                /* Read ports */
+                for (i = 0; i < ports->num_ports; i++) {
+                        rx_count = rte_eth_rx_burst(ports->id[i], rx->queue_id, \
+                                        pkts, PACKET_READ_SIZE);
+                        ports->rx_stats.rx[ports->id[i]] += rx_count;
+
+                        /* Now process the NIC packets read */
+                        if (likely(rx_count > 0)) {
+                                // If there is no running NF, we drop all the packets of the batch.
+                                if (!num_clients) {
+                                        onvm_pkt_drop_batch(pkts, rx_count);
+                                } else {
+                                        onvm_pkt_process_rx_batch(rx, pkts, rx_count);
+                                }
+                        }
+                }
+        }
+
+        return 0;
+}
+
+
+static int
+tx_thread_main(void *arg) {
+        struct client *cl;
+        unsigned i, tx_count;
+        struct rte_mbuf *pkts[PACKET_READ_SIZE];
+        struct thread_info* tx = (struct thread_info*)arg;
+
+        if (tx->first_cl == tx->last_cl - 1) {
+                RTE_LOG(INFO,
+                        APP,
+                        "Core %d: Running TX thread for NF %d\n",
+                        rte_lcore_id(),
+                        tx->first_cl);
+        } else if (tx->first_cl < tx->last_cl) {
+                RTE_LOG(INFO,
+                        APP,
+                        "Core %d: Running TX thread for NFs %d to %d\n",
+                        rte_lcore_id(),
+                        tx->first_cl,
+                        tx->last_cl-1);
+        }
+
+        for (;;) {
+                /* Read packets from the client's tx queue and process them as needed */
+                for (i = tx->first_cl; i < tx->last_cl; i++) {
+                        tx_count = PACKET_READ_SIZE;
+                        cl = &clients[i];
+                        if (!onvm_nf_is_valid(cl))
+                                continue;
+                        /* try dequeuing max possible packets first, if that fails, get the
+                         * most we can. Loop body should only execute once, maximum */
+                        while (tx_count > 0 &&
+                                unlikely(rte_ring_dequeue_bulk(cl->tx_q, (void **) pkts, tx_count) != 0)) {
+                                tx_count = (uint16_t)RTE_MIN(rte_ring_count(cl->tx_q),
+                                        PACKET_READ_SIZE);
+                        }
+
+                        /* Now process the Client packets read */
+                        if (likely(tx_count > 0)) {
+                                onvm_pkt_process_tx_batch(tx, pkts, tx_count, cl);
+                        }
+                }
+
+                /* Send a burst to every port */
+                onvm_pkt_flush_all_ports(tx);
+
+                /* Send a burst to every NF */
+                onvm_pkt_flush_all_nfs(tx);
+        }
+
         return 0;
 }
