@@ -59,7 +59,7 @@ extern uint16_t next_instance_id;
 
 
 /*
- * Interface checking if a given pointed nf is "valid", meaning if it's running.
+ * Interface checking if a given nf is "valid", meaning if it's running.
  *
  * Input  : a pointer to the nf
  * Output : a boolean answer 
