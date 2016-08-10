@@ -123,6 +123,9 @@ onvm_nf_start(struct onvm_nf_info *nf_info) {
         // take code from init_shm_rings in init.c
         // flush rx/tx queue at the this index to start clean?
 
+        if(nf_info == NULL)
+                return 1;
+
         // if NF passed its own id on the command line, don't assign here
         // assume user is smart enough to avoid duplicates
         uint16_t nf_id = nf_info->instance_id == (uint16_t)NF_NO_ID
@@ -158,10 +161,16 @@ onvm_nf_start(struct onvm_nf_info *nf_info) {
 
 inline int
 onvm_nf_stop(struct onvm_nf_info *nf_info) {
-        uint16_t nf_id = nf_info->instance_id;
-        uint16_t service_id = nf_info->service_id;
+        uint16_t nf_id;
+        uint16_t service_id;
         int mapIndex;
         struct rte_mempool *nf_info_mp;
+
+        if(nf_info == NULL)
+                return 1;
+
+        nf_id = nf_info->instance_id;
+        service_id = nf_info->service_id;
 
         /* Clean up dangling pointers to info struct */
         clients[nf_id].info = NULL;
