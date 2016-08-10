@@ -36,11 +36,26 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * onvm_includes.h - all includes for main.c
  ********************************************************************/
+
+
+/******************************************************************************
+
+                               onvm_includes.h
+
+
+         Header file containing all shared headers and data structures
+
+
+******************************************************************************/
+
 
 #ifndef _ONVM_INCLUDES_H_
 #define _ONVM_INCLUDES_H_
+
+
+/******************************Standard C library*****************************/
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,6 +69,10 @@
 #include <netinet/ip.h>
 #include <stdbool.h>
 #include <math.h>
+
+
+/********************************DPDK library*********************************/
+
 
 #include <rte_common.h>
 #include <rte_memory.h>
@@ -80,6 +99,10 @@
 #include <rte_fbk_hash.h>
 #include <rte_string_fns.h>
 
+
+/******************************Internal headers*******************************/
+
+
 #include "shared/common.h"
 #include "onvm_mgr/args.h"
 #include "onvm_mgr/init.h"
@@ -87,14 +110,25 @@
 #include "shared/onvm_flow_table.h"
 #include "shared/onvm_flow_dir.h"
 
-/*
- * When doing reads from the NIC or the client queues,
- * use this batch size
- */
+
+/***********************************Macros************************************/
+
+
 #define PACKET_READ_SIZE ((uint16_t)32)
 
 #define TO_PORT 0
 #define TO_CLIENT 1
+
+
+/***************************Shared global variables***************************/
+
+
+/* ID to be assigned to the next NF that starts */
+extern uint16_t next_instance_id;
+
+
+/*******************************Data Structures*******************************/
+
 
 /*
  * Local buffers to put packets in, used to send packets in bursts to the
@@ -105,8 +139,6 @@ struct packet_buf {
         uint16_t count;
 };
 
-/* ID to be assigned to the next NF that starts */
-extern uint16_t next_instance_id;
 
 /** Thread state. This specifies which NFs the thread will handle and
  *  includes the packet buffers used by the thread for NFs and ports.
@@ -123,4 +155,4 @@ struct thread_info {
        struct packet_buf *port_tx_buf;
 };
 
-#endif
+#endif  // _ONVM_INCLUDES_H_
