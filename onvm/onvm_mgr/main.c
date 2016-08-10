@@ -73,7 +73,11 @@ rx_thread_main(void *arg) {
         struct rte_mbuf *pkts[PACKET_READ_SIZE];
         struct thread_info *rx = (struct thread_info*)arg;
 
-        RTE_LOG(INFO, APP, "Core %d: Running RX thread for RX queue %d\n", rte_lcore_id(), rx->queue_id);
+        RTE_LOG(INFO,
+                APP,
+                "Core %d: Running RX thread for RX queue %d\n",
+                rte_lcore_id(),
+                rx->queue_id);
 
         for (;;) {
                 /* Read ports */
@@ -85,7 +89,7 @@ rx_thread_main(void *arg) {
                         /* Now process the NIC packets read */
                         if (likely(rx_count > 0)) {
                                 // If there is no running NF, we drop all the packets of the batch.
-                                if(!num_clients) {
+                                if (!num_clients) {
                                         onvm_pkt_drop_batch(pkts, rx_count);
                                 } else {
                                         onvm_pkt_process_rx_batch(rx, pkts, rx_count);
@@ -105,9 +109,18 @@ tx_thread_main(void *arg) {
         struct thread_info* tx = (struct thread_info*)arg;
 
         if (tx->first_cl == tx->last_cl - 1) {
-                RTE_LOG(INFO, APP, "Core %d: Running TX thread for NF %d\n", rte_lcore_id(), tx->first_cl);
+                RTE_LOG(INFO,
+                        APP,
+                        "Core %d: Running TX thread for NF %d\n",
+                        rte_lcore_id(),
+                        tx->first_cl);
         } else if (tx->first_cl < tx->last_cl) {
-                RTE_LOG(INFO, APP, "Core %d: Running TX thread for NFs %d to %d\n", rte_lcore_id(), tx->first_cl, tx->last_cl-1);
+                RTE_LOG(INFO,
+                        APP,
+                        "Core %d: Running TX thread for NFs %d to %d\n",
+                        rte_lcore_id(),
+                        tx->first_cl,
+                        tx->last_cl-1);
         }
 
         for (;;) {
@@ -136,7 +149,6 @@ tx_thread_main(void *arg) {
 
                 /* Send a burst to every NF */
                 onvm_pkt_flush_all_nfs(tx);
-
         }
 
         return 0;
@@ -181,11 +193,16 @@ main(int argc, char *argv[]) {
          * We want to distribute the number of running NFs across available
          * TX threads
          */
-        if (num_clients == 0) clients_per_tx = ceil((float)MAX_CLIENTS/tx_lcores), temp_num_clients = (unsigned)MAX_CLIENTS;
-        else clients_per_tx = ceil((float)num_clients/tx_lcores), temp_num_clients = (unsigned)num_clients;
+        if (num_clients == 0) {
+                clients_per_tx = ceil((float)MAX_CLIENTS/tx_lcores);
+                temp_num_clients = (unsigned)MAX_CLIENTS;
+        } else {
+                clients_per_tx = ceil((float)num_clients/tx_lcores);
+                temp_num_clients = (unsigned)num_clients;
+        }
 
         for (i = 0; i < tx_lcores; i++) {
-                struct thread_info *tx = calloc(1,sizeof(struct thread_info));
+                struct thread_info *tx = calloc(1, sizeof(struct thread_info));
                 tx->queue_id = i;
                 tx->port_tx_buf = calloc(RTE_MAX_ETHPORTS, sizeof(struct packet_buf));
                 tx->nf_rx_buf = calloc(MAX_CLIENTS, sizeof(struct packet_buf));
@@ -193,7 +210,11 @@ main(int argc, char *argv[]) {
                 tx->last_cl = RTE_MIN((i+1) * clients_per_tx + 1, temp_num_clients);
                 cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
                 if (rte_eal_remote_launch(tx_thread_main, (void*)tx,  cur_lcore) == -EBUSY) {
-                        RTE_LOG(ERR, APP, "Core %d is already busy, can't use for client %d TX\n", cur_lcore, tx->first_cl);
+                        RTE_LOG(ERR,
+                                APP,
+                                "Core %d is already busy, can't use for client %d TX\n",
+                                cur_lcore,
+                                tx->first_cl);
                         return -1;
                 }
         }
@@ -202,11 +223,15 @@ main(int argc, char *argv[]) {
         for (i = 0; i < rx_lcores; i++) {
                 struct thread_info *rx = calloc(1, sizeof(struct thread_info));
                 rx->queue_id = i;
-		rx->port_tx_buf = NULL;
-		rx->nf_rx_buf = calloc(MAX_CLIENTS, sizeof(struct packet_buf));
+                rx->port_tx_buf = NULL;
+                rx->nf_rx_buf = calloc(MAX_CLIENTS, sizeof(struct packet_buf));
                 cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
                 if (rte_eal_remote_launch(rx_thread_main, (void *)rx, cur_lcore) == -EBUSY) {
-                        RTE_LOG(ERR, APP, "Core %d is already busy, can't use for RX queue id %d\n", cur_lcore, rx->queue_id);
+                        RTE_LOG(ERR,
+                                APP,
+                                "Core %d is already busy, can't use for RX queue id %d\n",
+                                cur_lcore,
+                                rx->queue_id);
                         return -1;
                 }
         }

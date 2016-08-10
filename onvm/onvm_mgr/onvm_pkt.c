@@ -60,24 +60,23 @@ void
 onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count) {
         uint16_t i;
         struct onvm_pkt_meta *meta;
-	struct onvm_flow_entry *flow_entry;
-	struct onvm_service_chain *sc;
-	int ret;
+        struct onvm_flow_entry *flow_entry;
+        struct onvm_service_chain *sc;
+        int ret;
 
         for (i = 0; i < rx_count; i++) {
                 meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)pkts[i])->udata64);
                 meta->src = 0;
                 meta->chain_index = 0;
-		ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
-		if (ret >= 0) {
-			sc = flow_entry->sc;
-			meta->action = onvm_sc_next_action(sc, pkts[i]);
-			meta->destination = onvm_sc_next_destination(sc, pkts[i]);
-		}
-		else {
-			meta->action = onvm_sc_next_action(default_chain, pkts[i]);
-			meta->destination = onvm_sc_next_destination(default_chain, pkts[i]);
-		}
+                ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
+                if (ret >= 0) {
+                        sc = flow_entry->sc;
+                        meta->action = onvm_sc_next_action(sc, pkts[i]);
+                        meta->destination = onvm_sc_next_destination(sc, pkts[i]);
+                } else {
+                        meta->action = onvm_sc_next_action(default_chain, pkts[i]);
+                        meta->destination = onvm_sc_next_destination(default_chain, pkts[i]);
+                }
                 /* PERF: this might hurt performance since it will cause cache
                  * invalidations. Ideally the data modified by the NF manager
                  * would be a different line than that modified/read by NFs.
@@ -85,7 +84,7 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
                  */
 
                 (meta->chain_index)++;
-		onvm_pkt_enqueue_nf(rx, meta->destination, pkts[i]);
+                onvm_pkt_enqueue_nf(rx, meta->destination, pkts[i]);
         }
 
         onvm_pkt_flush_all_nfs(rx);
@@ -108,7 +107,7 @@ onvm_pkt_process_tx_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint1
                         /* TODO: Here we drop the packet : there will be a flow table
                         in the future to know what to do with the packet next */
                         cl->stats.act_next++;
-			onvm_pkt_process_next_action(tx, pkts[i], cl);
+                        onvm_pkt_process_next_action(tx, pkts[i], cl);
                 } else if (meta->action == ONVM_NF_ACTION_TONF) {
                         cl->stats.act_tonf++;
                         onvm_pkt_enqueue_nf(tx, meta->destination, pkts[i]);
@@ -128,8 +127,8 @@ void
 onvm_pkt_flush_all_ports(struct thread_info *tx) {
         uint16_t i;
 
-        for(i = 0; i < ports->num_ports; i++)
-                onvm_pkt_flush_port_queue(tx, i); 
+        for (i = 0; i < ports->num_ports; i++)
+                onvm_pkt_flush_port_queue(tx, i);
 }
 
 
@@ -137,14 +136,14 @@ void
 onvm_pkt_flush_all_nfs(struct thread_info *tx) {
         uint16_t i;
 
-        for(i = 0; i < MAX_CLIENTS; i++)
-                onvm_pkt_flush_nf_queue(tx, i); 
+        for (i = 0; i < MAX_CLIENTS; i++)
+                onvm_pkt_flush_nf_queue(tx, i);
 }
 
 void
 onvm_pkt_drop_batch(struct rte_mbuf **pkts, uint16_t size) {
         uint16_t i;
-        for(i = 0; i<size; i++)
+        for (i = 0; i < size; i++)
                 rte_pktmbuf_free(pkts[i]);
 }
 
@@ -241,40 +240,39 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
 
 inline void
 onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl) {
-	struct onvm_flow_entry *flow_entry;
-	struct onvm_service_chain *sc;
-	struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pkt);
-	int ret;
+        struct onvm_flow_entry *flow_entry;
+        struct onvm_service_chain *sc;
+        struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pkt);
+        int ret;
 
-	ret = onvm_flow_dir_get_pkt(pkt, &flow_entry);
-	if (ret >= 0) {
-		sc = flow_entry->sc;
-		meta->action = onvm_sc_next_action(sc, pkt);
-		meta->destination = onvm_sc_next_destination(sc, pkt);
-	}
-	else {
-		meta->action = onvm_sc_next_action(default_chain, pkt);
-		meta->destination = onvm_sc_next_destination(default_chain, pkt);
-	}
+        ret = onvm_flow_dir_get_pkt(pkt, &flow_entry);
+        if (ret >= 0) {
+                sc = flow_entry->sc;
+                meta->action = onvm_sc_next_action(sc, pkt);
+                meta->destination = onvm_sc_next_destination(sc, pkt);
+        } else {
+                meta->action = onvm_sc_next_action(default_chain, pkt);
+                meta->destination = onvm_sc_next_destination(default_chain, pkt);
+        }
 
-	switch(meta->action) {
-		case ONVM_NF_ACTION_DROP:
+        switch (meta->action) {
+                case ONVM_NF_ACTION_DROP:
                         // if the packet is drop, then <return value> is 0
                         // and !<return value> is 1.
                         cl->stats.act_drop += !onvm_pkt_drop(pkt);
-			break;
-		case ONVM_NF_ACTION_TONF:
+                        break;
+                case ONVM_NF_ACTION_TONF:
                         cl->stats.act_tonf++;
-			onvm_pkt_enqueue_nf(tx, meta->destination, pkt);
-			break;
-		case ONVM_NF_ACTION_OUT:
+                        onvm_pkt_enqueue_nf(tx, meta->destination, pkt);
+                        break;
+                case ONVM_NF_ACTION_OUT:
                         cl->stats.act_out++;
-			onvm_pkt_enqueue_port(tx, meta->destination, pkt);
-			break;
-		default:
-			break;
-	}
-	(meta->chain_index)++;
+                        onvm_pkt_enqueue_port(tx, meta->destination, pkt);
+                        break;
+                default:
+                        break;
+        }
+        (meta->chain_index)++;
 }
 
 

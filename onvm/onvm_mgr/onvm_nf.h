@@ -124,4 +124,4 @@ inline void
 onvm_nf_stop(struct onvm_nf_info *nf_info);
 
 
-#endif
+#endif  // _ONVM_NF_H_

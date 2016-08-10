@@ -187,4 +187,4 @@ int
 onvm_pkt_drop(struct rte_mbuf *pkt);
 
 
-#endif
+#endif  // _ONVM_PKT_H_

@@ -59,8 +59,8 @@
 void
 onvm_stats_display_all(unsigned difftime) {
         onvm_stats_clear_terminal();
-	onvm_stats_display_ports(difftime);
-	onvm_stats_display_clients();
+        onvm_stats_display_ports(difftime);
+        onvm_stats_display_clients();
 }
 
 
@@ -101,7 +101,7 @@ onvm_stats_display_ports(unsigned difftime) {
         printf("\n\n");
         for (i = 0; i < ports->num_ports; i++) {
                 printf("Port %u - rx: %9"PRIu64"  (%9"PRIu64" pps)\t"
-                                 "tx: %9"PRIu64"  (%9"PRIu64" pps)\n",
+                                "tx: %9"PRIu64"  (%9"PRIu64" pps)\n",
                                 (unsigned)ports->id[i],
                                 ports->rx_stats.rx[ports->id[i]],
                                 (ports->rx_stats.rx[ports->id[i]] - rx_last[i])
@@ -120,7 +120,7 @@ void
 onvm_stats_display_clients(void) {
         unsigned i;
 
-	printf("\nCLIENTS\n");
+        printf("\nCLIENTS\n");
         printf("-------\n");
         for (i = 0; i < MAX_CLIENTS; i++) {
                 if (!onvm_nf_is_valid(&clients[i]))
@@ -137,7 +137,7 @@ onvm_stats_display_clients(void) {
                 const uint64_t act_returned = clients_stats->tx_returned[i];
 
                 printf("Client %2u - rx: %9"PRIu64" rx_drop: %9"PRIu64" next: %9"PRIu64" drop: %9"PRIu64" ret: %9"PRIu64"\n"
-                       "            tx: %9"PRIu64" tx_drop: %9"PRIu64" out:  %9"PRIu64" tonf: %9"PRIu64" buf: %9"PRIu64"\n",
+                                    "tx: %9"PRIu64" tx_drop: %9"PRIu64" out:  %9"PRIu64" tonf: %9"PRIu64" buf: %9"PRIu64"\n",
                                 clients[i].info->instance_id,
                                 rx, rx_drop, act_next, act_drop, act_returned,
                                 tx, tx_drop, act_out, act_tonf, act_buffer);

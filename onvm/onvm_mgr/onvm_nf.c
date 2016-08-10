@@ -52,15 +52,14 @@
 #include "onvm_nf.h"
 #include "onvm_stats.h"
 
-uint16_t next_instance_id=0;
+uint16_t next_instance_id = 0;
 
 
 /********************************Interfaces***********************************/
 
 
 inline int
-onvm_nf_is_valid(struct client *cl)
-{
+onvm_nf_is_valid(struct client *cl) {
         return cl && cl->info && cl->info->status == NF_RUNNING;
 }
 
@@ -75,7 +74,6 @@ onvm_nf_next_instance_id(void) {
                 next_instance_id++;
         }
         return next_instance_id;
-
 }
 
 
@@ -120,9 +118,8 @@ onvm_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt) {
 
 
 inline int
-onvm_nf_start(struct onvm_nf_info *nf_info)
-{
-        //TODO dynamically allocate memory here - make rx/tx ring
+onvm_nf_start(struct onvm_nf_info *nf_info) {
+        // TODO dynamically allocate memory here - make rx/tx ring
         // take code from init_shm_rings in init.c
         // flush rx/tx queue at the this index to start clean?
 
@@ -160,8 +157,7 @@ onvm_nf_start(struct onvm_nf_info *nf_info)
 
 
 inline void
-onvm_nf_stop(struct onvm_nf_info *nf_info)
-{
+onvm_nf_stop(struct onvm_nf_info *nf_info) {
         uint16_t nf_id = nf_info->instance_id;
         uint16_t service_id = nf_info->service_id;
         int mapIndex;
@@ -176,13 +172,13 @@ onvm_nf_stop(struct onvm_nf_info *nf_info)
         /* Remove this NF from the service map.
          * Need to shift all elements past it in the array left to avoid gaps */
         nf_per_service_count[service_id]--;
-        for(mapIndex = 0; mapIndex < MAX_CLIENTS_PER_SERVICE; mapIndex++) {
+        for (mapIndex = 0; mapIndex < MAX_CLIENTS_PER_SERVICE; mapIndex++) {
                 if (services[service_id][mapIndex] == nf_id) {
                         break;
                 }
         }
 
-        if (mapIndex < MAX_CLIENTS_PER_SERVICE) { // sanity error check
+        if (mapIndex < MAX_CLIENTS_PER_SERVICE) {  // sanity error check
                 services[service_id][mapIndex] = 0;
                 for (; mapIndex < MAX_CLIENTS_PER_SERVICE - 1; mapIndex++) {
                         // Shift the NULL to the end of the array

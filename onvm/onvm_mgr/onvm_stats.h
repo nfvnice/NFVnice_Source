@@ -125,4 +125,4 @@ void onvm_stats_clear_terminal(void);
 const char * onvm_stats_print_MAC(uint8_t port);
 
 
-#endif
+#endif  // _ONVM_STATS_H_
