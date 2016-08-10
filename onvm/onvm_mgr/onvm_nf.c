@@ -91,11 +91,11 @@ onvm_nf_check_status(void) {
                 nf = (struct onvm_nf_info *) new_nfs[i];
 
                 if (nf->status == NF_WAITING_FOR_ID) {
-                        if (onvm_nf_start(nf))
+                        if (!onvm_nf_start(nf))
                                 num_clients++;
                 } else if (nf->status == NF_STOPPED) {
-                        onvm_nf_stop(nf);
-                        num_clients--;
+                        if (!onvm_nf_stop(nf))
+                                num_clients--;
                 }
         }
 }
@@ -132,13 +132,13 @@ onvm_nf_start(struct onvm_nf_info *nf_info) {
         if (nf_id >= MAX_CLIENTS) {
                 // There are no more available IDs for this NF
                 nf_info->status = NF_NO_IDS;
-                return 0;
+                return 1;
         }
 
         if (onvm_nf_is_valid(&clients[nf_id])) {
                 // This NF is trying to declare an ID already in use
                 nf_info->status = NF_ID_CONFLICT;
-                return 0;
+                return 1;
         }
 
         // Keep reference to this NF in the manager
@@ -152,11 +152,11 @@ onvm_nf_start(struct onvm_nf_info *nf_info) {
 
         // Let the NF continue its init process
         nf_info->status = NF_STARTING;
-        return 1;
+        return 0;
 }
 
 
-inline void
+inline int
 onvm_nf_stop(struct onvm_nf_info *nf_info) {
         uint16_t nf_id = nf_info->instance_id;
         uint16_t service_id = nf_info->service_id;
@@ -195,7 +195,9 @@ onvm_nf_stop(struct onvm_nf_info *nf_info) {
         /* Lookup mempool for nf_info struct */
         nf_info_mp = rte_mempool_lookup(_NF_MEMPOOL_NAME);
         if (nf_info_mp == NULL)
-                return;
+                return 1;
 
         rte_mempool_put(nf_info_mp, (void*)nf_info);
+
+        return 0;
 }

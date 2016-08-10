@@ -120,7 +120,7 @@ onvm_nf_start(struct onvm_nf_info *nf_info);
  * Output : an error code
  *
  */
-inline void
+inline int
 onvm_nf_stop(struct onvm_nf_info *nf_info);
 
 
