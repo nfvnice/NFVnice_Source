@@ -64,6 +64,9 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
         struct onvm_service_chain *sc;
         int ret;
 
+        if (rx == NULL || pkts == NULL)
+                return;
+
         for (i = 0; i < rx_count; i++) {
                 meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)pkts[i])->udata64);
                 meta->src = 0;
@@ -96,6 +99,9 @@ onvm_pkt_process_tx_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint1
         uint16_t i;
         struct onvm_pkt_meta *meta;
 
+        if (tx == NULL || pkts == NULL || cl == NULL)
+                return;
+
         for (i = 0; i < tx_count; i++) {
                 meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)pkts[i])->udata64);
                 meta->src = cl->instance_id;
@@ -127,6 +133,9 @@ void
 onvm_pkt_flush_all_ports(struct thread_info *tx) {
         uint16_t i;
 
+        if (tx == NULL)
+                return;
+
         for (i = 0; i < ports->num_ports; i++)
                 onvm_pkt_flush_port_queue(tx, i);
 }
@@ -136,6 +145,9 @@ void
 onvm_pkt_flush_all_nfs(struct thread_info *tx) {
         uint16_t i;
 
+        if (tx == NULL)
+                return;
+
         for (i = 0; i < MAX_CLIENTS; i++)
                 onvm_pkt_flush_nf_queue(tx, i);
 }
@@ -143,6 +155,10 @@ onvm_pkt_flush_all_nfs(struct thread_info *tx) {
 void
 onvm_pkt_drop_batch(struct rte_mbuf **pkts, uint16_t size) {
         uint16_t i;
+
+        if (pkts == NULL)
+                return;
+
         for (i = 0; i < size; i++)
                 rte_pktmbuf_free(pkts[i]);
 }
@@ -155,6 +171,9 @@ void
 onvm_pkt_flush_port_queue(struct thread_info *tx, uint16_t port) {
         uint16_t i, sent;
         volatile struct tx_stats *tx_stats;
+
+        if (tx == NULL)
+                return;
 
         if (tx->port_tx_buf[port].count == 0)
                 return;
@@ -181,6 +200,9 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
         uint16_t i;
         struct client *cl;
 
+        if (thread == NULL)
+                return;
+
         if (thread->nf_rx_buf[client].count == 0)
                 return;
 
@@ -205,6 +227,11 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
 
 inline void
 onvm_pkt_enqueue_port(struct thread_info *tx, uint16_t port, struct rte_mbuf *buf) {
+
+        if (tx == NULL || buf == NULL)
+                return;
+
+
         tx->port_tx_buf[port].buffer[tx->port_tx_buf[port].count++] = buf;
         if (tx->port_tx_buf[port].count == PACKET_READ_SIZE) {
                 onvm_pkt_flush_port_queue(tx, port);
@@ -216,6 +243,10 @@ inline void
 onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct rte_mbuf *pkt) {
         struct client *cl;
         uint16_t dst_instance_id;
+
+
+        if (thread == NULL || pkt == NULL)
+                return;
 
         // map service to instance and check one exists
         dst_instance_id = onvm_nf_service_to_nf_map(dst_service_id, pkt);
@@ -240,6 +271,10 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
 
 inline void
 onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl) {
+
+        if (tx == NULL || pkt == NULL || cl == NULL)
+                return;
+
         struct onvm_flow_entry *flow_entry;
         struct onvm_service_chain *sc;
         struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pkt);
