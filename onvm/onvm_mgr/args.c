@@ -51,7 +51,7 @@
 
 #include "shared/common.h"
 #include "onvm_mgr/args.h"
-#include "onvm_mgr/init.h"
+#include "onvm_mgr/onvm_init.h"
 
 /* global var for number of clients - extern in header init.h */
 uint16_t num_clients;
