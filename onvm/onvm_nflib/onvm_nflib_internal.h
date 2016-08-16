@@ -144,18 +144,45 @@ static struct onvm_service_chain *default_chain;
 /******************************Internal functions*****************************/
 
 
+/*
+ * Function that initialize a nf info data structure.
+ *
+ * Input  : the tag to name the NF
+ * Output : the data structure initialized
+ *
+ */
 static struct onvm_nf_info *
 onvm_nflib_info_init(const char *tag);
 
 
+/*
+ * Function printing an explanation of command line instruction for a NF.
+ *
+ * Input : name of the executable containing the NF
+ *
+ */
 static void
 onvm_nflib_usage(const char *progname);
 
 
+/*
+ * Function that parses the global arguments common to all NFs.
+ *
+ * Input  : the number of arguments (following C standard library convention)
+ *          an array of strings representing these arguments
+ * Output : an error code
+ *
+ */
 static int
 onvm_nflib_parse_args(int argc, char *argv[]);
 
 
+/*
+ * Signal handler to catch SIGINT.
+ *
+ * Input : int corresponding to the signal catched
+ *
+ */
 static void
 onvm_nflib_handle_signal(int sig);
 
