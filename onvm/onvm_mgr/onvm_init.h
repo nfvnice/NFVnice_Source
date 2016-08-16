@@ -36,21 +36,74 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * init.h - initialization for simple onvm
  ********************************************************************/
 
-#ifndef _INIT_H_
-#define _INIT_H_
 
-/*
- * #include <rte_ring.h>
- * #include "args.h"
- */
+/******************************************************************************
+
+                                 onvm_init.h
+
+       Header for the initialisation function and global variables and
+       data structures.
+
+
+******************************************************************************/
+
+
+#ifndef _ONVM_INIT_H_
+#define _ONVM_INIT_H_
+
+
+/********************************DPDK library*********************************/
+
+#include <rte_byteorder.h>
+#include <rte_memcpy.h>
+#include <rte_malloc.h>
+#include <rte_fbk_hash.h>
+#include <rte_cycles.h>
+#include <rte_errno.h>
+
+
+/*****************************Internal library********************************/
+
+
+#include "shared/onvm_includes.h"
+#include "shared/common.h"
+#include "onvm_mgr/args.h"
+#include "onvm_mgr/onvm_init.h"
+#include "shared/onvm_sc_mgr.h"
+#include "shared/onvm_sc_common.h"
+#include "shared/onvm_flow_table.h"
+#include "shared/onvm_flow_dir.h"
+
+
+/***********************************Macros************************************/
+
+
+#define MBUFS_PER_CLIENT 1536
+#define MBUFS_PER_PORT 1536
+#define MBUF_CACHE_SIZE 512
+#define MBUF_OVERHEAD (sizeof(struct rte_mbuf) + RTE_PKTMBUF_HEADROOM)
+#define RX_MBUF_DATA_SIZE 2048
+#define MBUF_SIZE (RX_MBUF_DATA_SIZE + MBUF_OVERHEAD)
+
+#define NF_INFO_SIZE sizeof(struct onvm_nf_info)
+#define NF_INFO_CACHE 8
+
+#define RTE_MP_RX_DESC_DEFAULT 512
+#define RTE_MP_TX_DESC_DEFAULT 512
+#define CLIENT_QUEUE_RINGSIZE 128
+
+#define NO_FLAGS 0
 
 #define ONVM_NUM_RX_THREADS 1
 
 #define DYNAMIC_CLIENTS 0
 #define STATIC_CLIENTS 1
+
+
+/******************************Data structures********************************/
+
 
 /*
  * Define a client structure with all needed info, including
@@ -77,9 +130,6 @@ struct client {
         } stats;
 };
 
-extern struct client *clients;
-
-extern struct rte_ring *nf_info_queue;
 
 /*
  * Shared port info, including statistics information for display by server.
@@ -96,10 +146,12 @@ struct rx_stats{
         uint64_t rx[RTE_MAX_ETHPORTS];
 };
 
+
 struct tx_stats{
         uint64_t tx[RTE_MAX_ETHPORTS];
         uint64_t tx_drop[RTE_MAX_ETHPORTS];
 };
+
 
 struct port_info {
         uint8_t num_ports;
@@ -107,6 +159,15 @@ struct port_info {
         volatile struct rx_stats rx_stats;
         volatile struct tx_stats tx_stats;
 };
+
+
+
+/*************************External global variables***************************/
+
+
+extern struct client *clients;
+
+extern struct rte_ring *nf_info_queue;
 
 /* the shared port information: port numbers, rx and tx stats etc. */
 extern struct port_info *ports;
@@ -121,6 +182,18 @@ extern unsigned num_sockets;
 extern struct onvm_service_chain *default_chain;
 extern struct onvm_ft *sdn_ft;
 
+
+/**********************************Functions**********************************/
+
+/*
+ * Function that initialize all data structures, memory mapping and global
+ * variables.
+ *
+ * Input  : the number of arguments (following C conventions)
+ *          an array of the arguments as strings
+ * Output : an error code
+ *
+ */
 int init(int argc, char *argv[]);
 
-#endif  // _INIT_H_
+#endif  // _ONVM_INIT_H_
