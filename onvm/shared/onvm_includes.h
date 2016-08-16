@@ -59,10 +59,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <string.h>
+#include <unistd.h>
 #include <inttypes.h>
 #include <sys/queue.h>
 #include <errno.h>
