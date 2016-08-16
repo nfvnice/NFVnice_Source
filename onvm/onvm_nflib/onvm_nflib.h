@@ -35,34 +35,26 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * onvm_nflib.h - client lib NF for simple onvm
  ********************************************************************/
+
+
+/******************************************************************************
+
+                                onvm_nflib.h
+
+
+                           Header file for the API
+
+
+******************************************************************************/
+
 
 #ifndef _ONVM_NFLIB_H_
 #define _ONVM_NFLIB_H_
 #include <rte_mbuf.h>
 #include "common.h"
 
-/**
- * Initialize a NF Info Struct.
- * Allocates and returns a pointer to a struct that defines information
- * about a new NF.
- *
- * @param tag
- *   A buffer containing a uniquely-identifiable tag for this NF.
- *   For example, can be the application name (e.g. "bridge_nf")
- * @return
- *   On success, a pointer to the created info struct. Will exit on error
- */
-struct onvm_nf_info *
-onvm_nflib_info_init(const char *tag);
-
-/**
- * Stop this NF
- * Sets the info to be not running and exits this process gracefully
- */
-void
-onvm_nflib_stop(void);
+/************************************API**************************************/
 
 /**
  * Initialize the OpenNetVM container Library.
@@ -101,6 +93,7 @@ onvm_nflib_init(int argc, char *argv[], const char *nf_tag);
 int
 onvm_nflib_run(struct onvm_nf_info* info, int(*handler)(struct rte_mbuf* pkt, struct onvm_pkt_meta* action));
 
+
 /**
  * Return a packet that has previously had the ONVM_NF_ACTION_BUFFER action
  * called on it.
@@ -113,4 +106,13 @@ onvm_nflib_run(struct onvm_nf_info* info, int(*handler)(struct rte_mbuf* pkt, st
 int
 onvm_nflib_return_pkt(struct rte_mbuf* pkt);
 
-#endif
+
+/**
+ * Stop this NF
+ * Sets the info to be not running and exits this process gracefully
+ */
+void
+onvm_nflib_stop(void);
+
+
+#endif  // _ONVM_NFLIB_H_
