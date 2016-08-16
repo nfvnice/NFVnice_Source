@@ -66,9 +66,6 @@
 #include <inttypes.h>
 #include <sys/queue.h>
 #include <errno.h>
-#include <netinet/ip.h>
-#include <stdbool.h>
-#include <math.h>
 
 
 /********************************DPDK library*********************************/
@@ -79,7 +76,6 @@
 #include <rte_memzone.h>
 #include <rte_tailq.h>
 #include <rte_eal.h>
-#include <rte_byteorder.h>
 #include <rte_launch.h>
 #include <rte_per_lcore.h>
 #include <rte_lcore.h>
@@ -89,70 +85,17 @@
 #include <rte_log.h>
 #include <rte_debug.h>
 #include <rte_mempool.h>
-#include <rte_memcpy.h>
 #include <rte_mbuf.h>
 #include <rte_ether.h>
 #include <rte_interrupts.h>
 #include <rte_pci.h>
 #include <rte_ethdev.h>
-#include <rte_malloc.h>
-#include <rte_fbk_hash.h>
 #include <rte_string_fns.h>
 
 
 /******************************Internal headers*******************************/
 
 
-#include "shared/common.h"
-#include "onvm_mgr/args.h"
-#include "onvm_mgr/init.h"
-#include "shared/onvm_sc_mgr.h"
-#include "shared/onvm_flow_table.h"
-#include "shared/onvm_flow_dir.h"
-
-
-/***********************************Macros************************************/
-
-
-#define PACKET_READ_SIZE ((uint16_t)32)
-
-#define TO_PORT 0
-#define TO_CLIENT 1
-
-
-/***************************Shared global variables***************************/
-
-
-/* ID to be assigned to the next NF that starts */
-extern uint16_t next_instance_id;
-
-
-/*******************************Data Structures*******************************/
-
-
-/*
- * Local buffers to put packets in, used to send packets in bursts to the
- * clients or to the NIC
- */
-struct packet_buf {
-        struct rte_mbuf *buffer[PACKET_READ_SIZE];
-        uint16_t count;
-};
-
-
-/** Thread state. This specifies which NFs the thread will handle and
- *  includes the packet buffers used by the thread for NFs and ports.
- */
-struct thread_info {
-       unsigned queue_id;
-       unsigned first_cl;
-       unsigned last_cl;
-       /* FIXME: This is confusing since it is non-inclusive. It would be
-        *        better to have this take the first client and the number
-        *        of consecutive clients after it to handle.
-        */
-       struct packet_buf *nf_rx_buf;
-       struct packet_buf *port_tx_buf;
-};
+#include "common.h"
 
 #endif  // _ONVM_INCLUDES_H_
