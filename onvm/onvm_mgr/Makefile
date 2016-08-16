@@ -55,7 +55,7 @@ APP = onvm_mgr
 # all source are stored in SRCS-y
 SRCS-y := main.c init.c args.c onvm_stats.c onvm_pkt.c onvm_nf.c
 
-INC := onvm_includes.h init.h args.h onvm_stats.h onvm_nf.h onvm_pkt.h
+INC := onvm_mgr.h init.h args.h onvm_stats.h onvm_nf.h onvm_pkt.h
 
 CFLAGS += $(WERROR_FLAGS) -O3 $(USER_FLAGS)
 CFLAGS += -I$(SRCDIR)/../
