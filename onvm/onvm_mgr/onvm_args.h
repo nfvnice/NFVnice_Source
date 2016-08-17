@@ -36,14 +36,29 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * args.h - argument processing for simple onvm
  ********************************************************************/
 
-#ifndef _ARGS_H_
-#define _ARGS_H_
+
+/******************************************************************************
+
+                                 onvm_args.h
+
+    Header file with functions for parsing DPDK and ONVM command-line arguments
+
+
+******************************************************************************/
+
+
+#ifndef _ONVM_ARGS_H_
+#define _ONVM_ARGS_H_
+
+#include "getopt.h"
+
+#include "shared/onvm_includes.h"
+#include "onvm_mgr/onvm_init.h"
 
 #define DEFAULT_SERVICE_ID 1
 
 int parse_app_args(uint8_t max_ports, int argc, char *argv[]);
 
-#endif  // _ARGS_H_
+#endif  // _ONVM_ARGS_H_
