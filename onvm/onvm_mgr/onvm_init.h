@@ -67,10 +67,9 @@
 /*****************************Internal library********************************/
 
 
+#include "onvm_mgr/onvm_args.h"
 #include "shared/onvm_includes.h"
 #include "shared/common.h"
-#include "onvm_mgr/args.h"
-#include "onvm_mgr/onvm_init.h"
 #include "shared/onvm_sc_mgr.h"
 #include "shared/onvm_sc_common.h"
 #include "shared/onvm_flow_table.h"
