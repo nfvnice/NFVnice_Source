@@ -217,7 +217,7 @@ main(int argc, char *argv[]) {
         rx_lcores = ONVM_NUM_RX_THREADS;
 
         #ifdef INTERRUPT_SEM
-	wakeup_lcores = ONVM_NUM_WAKEUP_THREADS;
+        wakeup_lcores = ONVM_NUM_WAKEUP_THREADS;
         tx_lcores = rte_lcore_count() - rx_lcores - wakeup_lcores - 1;
 	#else
         tx_lcores = rte_lcore_count() - rx_lcores - 1;
