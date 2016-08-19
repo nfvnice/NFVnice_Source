@@ -59,6 +59,13 @@
 #include <getopt.h>
 #include <signal.h>
 
+//#ifdef INTERRUPT_SEM  //move maro to makefile, otherwise uncomemnt or need to include these after including common.h
+#include <sys/shm.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <semaphore.h>
+#include <fcntl.h>
+//#endif //INTERRUPT_SEM
 
 /*****************************Internal headers********************************/
 
@@ -113,6 +120,17 @@ static uint8_t keep_running = 1;
 static struct onvm_service_chain *default_chain;
 
 
+#ifdef INTERRUPT_SEM
+// to track packets per NF <used for sampling computation cost>
+uint64_t counter = 0;
+
+// atomic flag for
+static rte_atomic16_t *flag_p;        
+
+// Mutex for sem_wait
+static sem_t *mutex;
+#endif  //INTERRUPT_SEM
+
 /******************************Internal functions*****************************/
 
 
@@ -158,5 +176,15 @@ onvm_nflib_parse_args(int argc, char *argv[]);
 static void
 onvm_nflib_handle_signal(int sig);
 
+
+#ifdef INTERRUPT_SEM
+/*
+ * Function to initalize the shared cpu support
+ *
+ * Input  : Number of NF instances
+ */ 
+static void 
+init_shared_cpu_info(uint16_t instance_id);
+#endif  //INTERRUPT_SEM
 
 #endif  // _ONVM_NFLIB_INTERNAL_H_

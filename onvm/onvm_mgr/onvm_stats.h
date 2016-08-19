@@ -101,8 +101,9 @@ void onvm_stats_display_ports(unsigned difftime);
 /*
  * Function displaying statistics for all clients
  *
+ * Input : time passed since last display (to compute packet rate)
  */
-void onvm_stats_display_clients(void);
+void onvm_stats_display_clients(unsigned difftime);
 
 
 /******************************Helper functions*******************************/

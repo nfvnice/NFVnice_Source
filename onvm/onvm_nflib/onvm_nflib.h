@@ -52,8 +52,10 @@
 #ifndef _ONVM_NFLIB_H_
 #define _ONVM_NFLIB_H_
 #include <rte_mbuf.h>
+//#ifdef INTERRUPT_SEM  //move maro to makefile, otherwise uncomemnt or need to include these after including common.h
+#include <rte_cycles.h>
+//#endif
 #include "common.h"
-
 /************************************API**************************************/
 
 /**

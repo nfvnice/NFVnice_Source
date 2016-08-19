@@ -56,9 +56,9 @@
 int
 onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
         const struct rte_memzone *mz;
-	const struct rte_memzone *mz_scp;
+        const struct rte_memzone *mz_scp;
         struct rte_mempool *mp;
-	struct onvm_service_chain **scp;
+        struct onvm_service_chain **scp;
         int retval_eal, retval_parse, retval_final;
 
         if ((retval_eal = rte_eal_init(argc, argv)) < 0)
@@ -103,13 +103,13 @@ onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
                 rte_exit(EXIT_FAILURE, "Cannot get tx info structure\n");
         tx_stats = mz->addr;
 
-	mz_scp = rte_memzone_lookup(MZ_SCP_INFO);
-	if (mz_scp == NULL)
-		rte_exit(EXIT_FAILURE, "Cannot get service chain info structre\n");
-	scp = mz_scp->addr;
-	default_chain = *scp;
+        mz_scp = rte_memzone_lookup(MZ_SCP_INFO);
+        if (mz_scp == NULL)
+                rte_exit(EXIT_FAILURE, "Cannot get service chain info structre\n");
+        scp = mz_scp->addr;
+        default_chain = *scp;
 
-	onvm_sc_print(default_chain);
+        onvm_sc_print(default_chain);
 
         nf_info_ring = rte_ring_lookup(_NF_QUEUE_NAME);
         if (nf_info_ring == NULL)
@@ -153,6 +153,10 @@ onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
         /* Tell the manager we're ready to recieve packets */
         nf_info->status = NF_RUNNING;
 
+        #ifdef INTERRUPT_SEM
+        init_shared_cpu_info(nf_info->instance_id);
+        #endif
+
         RTE_LOG(INFO, APP, "Finished Process Init.\n");
         return retval_final;
 }
@@ -165,7 +169,12 @@ onvm_nflib_run(
         ) {
         void *pkts[PKT_READ_SIZE];
         struct onvm_pkt_meta* meta;
-
+        
+        #ifdef INTERRUPT_SEM
+        // To account NFs computation cost (sampled over SAMPLING_RATE packets)
+        uint64_t start_tsc = 0, end_tsc = 0;     
+        #endif
+        
         printf("\nClient process %d handling packets\n", info->instance_id);
         printf("[Press Ctrl-C to quit ...]\n");
 
@@ -185,12 +194,35 @@ onvm_nflib_run(
                         nb_pkts = (uint16_t)RTE_MIN(rte_ring_count(rx_ring), PKT_READ_SIZE);
 
                 if(nb_pkts == 0) {
+                        #ifdef INTERRUPT_SEM
+                        if ((!ONVM_SPECIAL_NF) || (info->instance_id != 1)) {                                
+                                rte_atomic16_set(flag_p, 1);
+                                sem_wait(mutex);
+                        }
+                        #endif
                         continue;
                 }
                 /* Give each packet to the user proccessing function */
                 for (i = 0; i < nb_pkts; i++) {
                         meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
+
+                        #ifdef INTERRUPT_SEM
+                        counter++;
+                        meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
+                        if (counter % SAMPLING_RATE == 0) {
+                                start_tsc = rte_rdtsc();
+                        }
+                        #endif
+
                         ret_act = (*handler)((struct rte_mbuf*)pkts[i], meta);
+                        
+                        #ifdef INTERRUPT_SEM
+                        if (counter % SAMPLING_RATE == 0) {
+                                end_tsc = rte_rdtsc();
+                                tx_stats->comp_cost[info->instance_id] = end_tsc - start_tsc;
+                        }
+                        #endif
+
                         /* NF returns 0 to return packets or 1 to buffer */
                         if(likely(ret_act == 0)) {
                                 pktsTX[tx_batch_size++] = pkts[i];
@@ -333,3 +365,40 @@ onvm_nflib_handle_signal(int sig)
         if (sig == SIGINT)
                 keep_running = 0;
 }
+
+
+#ifdef INTERRUPT_SEM
+static void 
+init_shared_cpu_info(uint16_t instance_id) {
+        const char *sem_name;
+        int shmid;
+        key_t key;
+        char *shm;
+
+        sem_name = get_sem_name(instance_id);
+        fprintf(stderr, "sem_name=%s for client %d\n", sem_name, instance_id);
+        mutex = sem_open(sem_name, 0, 0666, 0);
+        if (mutex == SEM_FAILED) {
+                perror("Unable to execute semaphore");
+                fprintf(stderr, "unable to execute semphore for client %d\n", instance_id);
+                sem_close(mutex);
+                exit(1);
+        }
+
+        /* get flag which is shared by server */
+        key = get_rx_shmkey(instance_id);
+        if ((shmid = shmget(key, SHMSZ, 0666)) < 0) {
+                perror("shmget");
+                fprintf(stderr, "unable to Locate the segment for client %d\n", instance_id);
+                exit(1);
+        }
+
+        if ((shm = shmat(shmid, NULL, 0)) == (char *) -1) {
+                fprintf(stderr, "can not attach the shared segment to the client space for client %d\n", instance_id);
+                exit(1);
+        }
+
+        flag_p = (rte_atomic16_t *)shm;
+}
+#endif
+

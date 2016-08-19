@@ -60,7 +60,7 @@ void
 onvm_stats_display_all(unsigned difftime) {
         onvm_stats_clear_terminal();
         onvm_stats_display_ports(difftime);
-        onvm_stats_display_clients();
+        onvm_stats_display_clients(difftime);
 }
 
 
@@ -117,8 +117,37 @@ onvm_stats_display_ports(unsigned difftime) {
 
 
 void
-onvm_stats_display_clients(void) {
+onvm_stats_display_clients(unsigned difftime) {
         unsigned i;
+
+        #ifdef INTERRUPT_SEM
+        uint64_t vol_rate;
+        uint64_t rx_drop_rate;
+        uint64_t serv_rate;
+        uint64_t serv_drop_rate;
+        uint64_t rx_qlen;
+        uint64_t tx_qlen;
+        uint64_t comp_cost;
+        uint64_t num_wakeups = 0;
+        uint64_t prev_num_wakeups = 0;
+        uint64_t wakeup_rate;
+        /* unsigned sleep_time = 1; // This info is not availble anymore: 
+                // must move entire wakeup to separate new function  onvm_stats_display_client_wakeup_info(difftime)
+        */
+        #else
+        printf ("diff_time= 0x%4x", difftime);       
+        #endif
+
+        #ifdef INTERRUPT_SEM
+        for (i = 0; i < ONVM_NUM_WAKEUP_THREADS; i++) {
+                num_wakeups += wakeup_infos[i].num_wakeups;
+                prev_num_wakeups += wakeup_infos[i].prev_num_wakeups;
+                wakeup_infos[i].prev_num_wakeups = wakeup_infos[i].num_wakeups;
+        }
+
+        wakeup_rate = (num_wakeups - prev_num_wakeups) / difftime; 
+        printf("num_wakeups=%"PRIu64", wakeup_rate=%"PRIu64"\n", num_wakeups, wakeup_rate);
+        #endif
 
         printf("\nCLIENTS\n");
         printf("-------\n");
@@ -141,6 +170,37 @@ onvm_stats_display_clients(void) {
                                 clients[i].info->instance_id,
                                 rx, rx_drop, act_next, act_drop, act_returned,
                                 tx, tx_drop, act_out, act_tonf, act_buffer);
+        
+          
+                #ifdef INTERRUPT_SEM
+                /* periodic/rate specific statistics of NF instance */ 
+                const uint64_t prev_rx = clients[i].stats.prev_rx;
+                const uint64_t prev_rx_drop = clients[i].stats.prev_rx_drop;
+                const uint64_t prev_tx = clients_stats->prev_tx[i];
+                const uint64_t prev_tx_drop = clients_stats->prev_tx_drop[i];
+
+                vol_rate = (rx - prev_rx) / difftime;
+                rx_drop_rate = (rx_drop - prev_rx_drop) / difftime;
+                serv_rate = (tx - prev_tx) / difftime;
+                serv_drop_rate = (tx_drop - prev_tx_drop) / difftime;
+                rx_qlen = rte_ring_count(clients[i].rx_q);
+                tx_qlen = rte_ring_count(clients[i].tx_q);
+                comp_cost = clients_stats->comp_cost[i];
+
+                printf("instance_id=%d, vol_rate=%"PRIu64", rx_drop_rate=%"PRIu64","
+                " comp_cost=%"PRIu64", serv_rate=%"PRIu64","
+                "serv_drop_rate=%"PRIu64", rx_qlen=%"PRIu64", tx_qlen=%"PRIu64", msg_flag=%d\n",
+                clients[i].info->instance_id, vol_rate, rx_drop_rate, comp_cost, 
+                serv_rate, serv_drop_rate, rx_qlen, tx_qlen, rte_atomic16_read(clients[i].shm_server));
+
+                //clients[i].stats.prev_rx = clients[i].stats.rx;
+                //clients[i].stats.prev_rx_drop = clients[i].stats.rx_drop;
+                //clients_stats->prev_tx[i] = clients_stats->tx[i];
+                //clients_stats->prev_tx_drop[i] = clients_stats->tx_drop[i];                
+                #endif
+
+
+
         }
 
         printf("\n");
