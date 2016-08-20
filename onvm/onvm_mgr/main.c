@@ -251,7 +251,7 @@ main(int argc, char *argv[]) {
                 clients_per_tx = ceil((float)num_clients/tx_lcores);
                 temp_num_clients = (unsigned)num_clients;
         }
-
+        num_clients = temp_num_clients;
         for (i = 0; i < tx_lcores; i++) {
                 struct thread_info *tx = calloc(1, sizeof(struct thread_info));
                 tx->queue_id = i;
@@ -269,7 +269,7 @@ main(int argc, char *argv[]) {
                         return -1;
                 }
         }
-
+       
         /* Launch RX thread main function for each RX queue on cores */
         for (i = 0; i < rx_lcores; i++) {
                 struct thread_info *rx = calloc(1, sizeof(struct thread_info));
@@ -286,19 +286,19 @@ main(int argc, char *argv[]) {
                         return -1;
                 }
         }
-
+        
         #ifdef INTERRUPT_SEM
-	int clients_per_wakethread = ceil(num_clients / wakeup_lcores);
+	int clients_per_wakethread = ceil(temp_num_clients / wakeup_lcores);
 	wakeup_infos = (struct wakeup_info *)calloc(wakeup_lcores, sizeof(struct wakeup_info));
 	if (wakeup_infos == NULL) {
 		printf("can not alloc space for wakeup_info\n");
 		exit(1);
 	}	
 	for (i = 0; i < wakeup_lcores; i++) {
-		wakeup_infos[i].first_client = RTE_MIN(i * clients_per_wakethread + 1, num_clients);
-		wakeup_infos[i].last_client = RTE_MIN((i+1) * clients_per_wakethread + 1, num_clients);
+		wakeup_infos[i].first_client = RTE_MIN(i * clients_per_wakethread + 1, temp_num_clients);
+		wakeup_infos[i].last_client = RTE_MIN((i+1) * clients_per_wakethread + 1, temp_num_clients);
 		cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
-		rte_eal_remote_launch(wakeup_nfs, (void*)&wakeup_infos[i], cur_lcore);	
+                rte_eal_remote_launch(wakeup_nfs, (void*)&wakeup_infos[i], cur_lcore);
 		printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
 	}
 	
@@ -309,9 +309,9 @@ main(int argc, char *argv[]) {
         */        
         #endif
 
-
         /* Master thread handles statistics and NF management */
         master_thread_main();
+        
         return 0;
 }
 
@@ -326,9 +326,6 @@ whether_wakeup_client(int instance_id)
 		return 0;
 	}
 	cur_entries = rte_ring_count(clients[instance_id].rx_q);
-	#ifdef DEBUG
-	printf("instance_id=%d, threashold=%d\n", instance_id, nfs_wakethr[instance_id]);
-	#endif
 	if (cur_entries >= nfs_wakethr[instance_id]){
 		return 1;
 	}
@@ -353,12 +350,14 @@ wakeup_nfs(void *arg)
 	struct wakeup_info *wakeup_info = (struct wakeup_info *)arg;
         unsigned i;
 
-	if (wakeup_info->first_client == 1) {
+	/*
+        if (wakeup_info->first_client == 1) {
 		wakeup_info->first_client += ONVM_SPECIAL_NF;
 	}
+        */
 
         while (true) {
-		for (i = wakeup_info->first_client; i <= wakeup_info->last_client; i++) {
+		for (i = wakeup_info->first_client; i < wakeup_info->last_client; i++) {
 			wakeup_client(i, wakeup_info);
                 }
         }
