@@ -124,8 +124,10 @@ static struct onvm_service_chain *default_chain;
 // to track packets per NF <used for sampling computation cost>
 uint64_t counter = 0;
 
-// atomic flag for
-static rte_atomic16_t *flag_p;        
+// flag (shared mem variable) to track state of NF and trigger wakeups
+// flag_p=1 => NF sleeping (waiting on semaphore)
+// flag_p=0 => NF is running and processing (not waiting on semaphore)   
+static rte_atomic16_t *flag_p;
 
 // Mutex for sem_wait
 static sem_t *mutex;

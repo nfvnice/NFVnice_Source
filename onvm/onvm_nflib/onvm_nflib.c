@@ -195,10 +195,10 @@ onvm_nflib_run(
 
                 if(nb_pkts == 0) {
                         #ifdef INTERRUPT_SEM
-                        if ((!ONVM_SPECIAL_NF) || (info->instance_id != 1)) {                                
-                                rte_atomic16_set(flag_p, 1);
-                                sem_wait(mutex);
-                        }
+                        /* For now discard the special NF instance and put all NFs to wait 
+                        if ((!ONVM_SPECIAL_NF) || (info->instance_id != 1)) {*/
+                        rte_atomic16_set(flag_p, 1);
+                        sem_wait(mutex);
                         #endif
                         continue;
                 }
@@ -362,8 +362,10 @@ onvm_nflib_parse_args(int argc, char *argv[]) {
 static void
 onvm_nflib_handle_signal(int sig)
 {
-        if (sig == SIGINT)
+        if (sig == SIGINT) {
                 keep_running = 0;
+        }
+        /* TODO: Main thread for INTERRUPT_SEM case: Must additionally relinquish SEM, SHM */
 }
 
 

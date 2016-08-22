@@ -174,7 +174,7 @@ tx_thread_main(void *arg) {
 
 
 /*******************************Main function*********************************/
-//TODO:
+//TODO: Move to apporpriate header or a different file for onvm_nf_wakeup_mgr/hdlr.c
 #ifdef INTERRUPT_SEM
 #include <signal.h>
 
@@ -219,9 +219,9 @@ main(int argc, char *argv[]) {
         #ifdef INTERRUPT_SEM
         wakeup_lcores = ONVM_NUM_WAKEUP_THREADS;
         tx_lcores = rte_lcore_count() - rx_lcores - wakeup_lcores - 1;
-	#else
+        #else
         tx_lcores = rte_lcore_count() - rx_lcores - 1;
-	#endif
+        #endif
 
 
         /* Offset cur_lcore to start assigning TX cores */
@@ -288,23 +288,23 @@ main(int argc, char *argv[]) {
         }
         
         #ifdef INTERRUPT_SEM
-	int clients_per_wakethread = ceil(temp_num_clients / wakeup_lcores);
-	wakeup_infos = (struct wakeup_info *)calloc(wakeup_lcores, sizeof(struct wakeup_info));
-	if (wakeup_infos == NULL) {
-		printf("can not alloc space for wakeup_info\n");
-		exit(1);
-	}	
-	for (i = 0; i < wakeup_lcores; i++) {
-		wakeup_infos[i].first_client = RTE_MIN(i * clients_per_wakethread + 1, temp_num_clients);
-		wakeup_infos[i].last_client = RTE_MIN((i+1) * clients_per_wakethread + 1, temp_num_clients);
-		cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
+        int clients_per_wakethread = ceil(temp_num_clients / wakeup_lcores);
+        wakeup_infos = (struct wakeup_info *)calloc(wakeup_lcores, sizeof(struct wakeup_info));
+        if (wakeup_infos == NULL) {
+                printf("can not alloc space for wakeup_info\n");
+                exit(1);
+        }        
+        for (i = 0; i < wakeup_lcores; i++) {
+                wakeup_infos[i].first_client = RTE_MIN(i * clients_per_wakethread + 1, temp_num_clients);
+                wakeup_infos[i].last_client = RTE_MIN((i+1) * clients_per_wakethread + 1, temp_num_clients);
+                cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
                 rte_eal_remote_launch(wakeup_nfs, (void*)&wakeup_infos[i], cur_lcore);
-		printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
-	}
-	
-        /* this call is Not needed anymore
-	cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
-	printf("monitor_lcore=%u\n", cur_lcore);
+                printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
+        }
+        
+        /* this change is Not needed anymore
+        cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
+        printf("monitor_lcore=%u\n", cur_lcore);
         rte_eal_remote_launch(monitor, NULL, cur_lcore);
         */        
         #endif
@@ -321,44 +321,44 @@ main(int argc, char *argv[]) {
 static inline int
 whether_wakeup_client(int instance_id)
 {
- 	uint16_t cur_entries;
-	if (clients[instance_id].rx_q == NULL) {
-		return 0;
-	}
-	cur_entries = rte_ring_count(clients[instance_id].rx_q);
-	if (cur_entries >= nfs_wakethr[instance_id]){
-		return 1;
-	}
-	return 0;
+         uint16_t cur_entries;
+        if (clients[instance_id].rx_q == NULL) {
+                return 0;
+        }
+        cur_entries = rte_ring_count(clients[instance_id].rx_q);
+        if (cur_entries >= nfs_wakethr[instance_id]){
+                return 1;
+        }
+        return 0;
 }
 
 static inline void
 wakeup_client(int instance_id, struct wakeup_info *wakeup_info) 
 {
-	if (whether_wakeup_client(instance_id) == 1) {
-		if (rte_atomic16_read(clients[instance_id].shm_server) ==1) {
-			wakeup_info->num_wakeups += 1;
-			rte_atomic16_set(clients[instance_id].shm_server, 0);
-			sem_post(clients[instance_id].mutex);	
-		}
-	}
+        if (whether_wakeup_client(instance_id) == 1) {
+                if (rte_atomic16_read(clients[instance_id].shm_server) ==1) {
+                        wakeup_info->num_wakeups += 1;
+                        rte_atomic16_set(clients[instance_id].shm_server, 0);
+                        sem_post(clients[instance_id].mutex);
+                }
+        }
 }
 
 static int
 wakeup_nfs(void *arg)
 {
-	struct wakeup_info *wakeup_info = (struct wakeup_info *)arg;
+        struct wakeup_info *wakeup_info = (struct wakeup_info *)arg;
         unsigned i;
 
-	/*
+        /*
         if (wakeup_info->first_client == 1) {
-		wakeup_info->first_client += ONVM_SPECIAL_NF;
-	}
+                wakeup_info->first_client += ONVM_SPECIAL_NF;
+        }
         */
 
         while (true) {
-		for (i = wakeup_info->first_client; i < wakeup_info->last_client; i++) {
-			wakeup_client(i, wakeup_info);
+                for (i = wakeup_info->first_client; i < wakeup_info->last_client; i++) {
+                        wakeup_client(i, wakeup_info);
                 }
         }
 
@@ -366,36 +366,36 @@ wakeup_nfs(void *arg)
 }
 
 static void signal_handler(int sig, siginfo_t *info, void *secret) {
-	int i;
-	(void)info;
-	(void)secret;
+        int i;
+        (void)info;
+        (void)secret;
  
-	//2 means terminal interrupt, 3 means terminal quit, 9 means kill and 15 means termination
-	if (sig <= 15) {
-		for (i = 1; i < num_clients; i++) {
-			sem_close(clients[i].mutex);
-			sem_unlink(clients[i].sem_name);
-		}	
-		#ifdef MONITOR
-//		rte_free(port_stats);
-//		rte_free(port_prev_stats);
-		#endif
-	}
-	
-	exit(1);
+        //2 means terminal interrupt, 3 means terminal quit, 9 means kill and 15 means termination
+        if (sig <= 15) {
+                for (i = 1; i < num_clients; i++) {
+                        sem_close(clients[i].mutex);
+                        sem_unlink(clients[i].sem_name);
+                }        
+                #ifdef MONITOR
+//                rte_free(port_stats);
+//                rte_free(port_prev_stats);
+                #endif
+        }
+        
+        exit(1);
 }
 static void 
 register_signal_handler(void) {
         unsigned i;
-	struct sigaction act;
-	memset(&act, 0, sizeof(act));	
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = SA_SIGINFO;
-	act.sa_handler = (void *)signal_handler;
+        struct sigaction act;
+        memset(&act, 0, sizeof(act));        
+        sigemptyset(&act.sa_mask);
+        act.sa_flags = SA_SIGINFO;
+        act.sa_handler = (void *)signal_handler;
 
-	for (i = 1; i < 31; i++) {
-		sigaction(i, &act, 0);
-	}
+        for (i = 1; i < 31; i++) {
+                sigaction(i, &act, 0);
+        }
 }
 #endif
 
