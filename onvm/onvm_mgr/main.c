@@ -321,7 +321,7 @@ main(int argc, char *argv[]) {
 static inline int
 whether_wakeup_client(int instance_id)
 {
-         uint16_t cur_entries;
+        uint16_t cur_entries;
         if (clients[instance_id].rx_q == NULL) {
                 return 0;
         }

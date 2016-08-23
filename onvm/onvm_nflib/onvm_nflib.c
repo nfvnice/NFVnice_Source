@@ -364,6 +364,12 @@ onvm_nflib_handle_signal(int sig)
 {
         if (sig == SIGINT) {
                 keep_running = 0;
+                #ifdef INTERRUPT_SEM
+                if ((mutex) && (rte_atomic16_read(flag_p) ==1)) {
+                        rte_atomic16_set(flag_p, 0);
+                        sem_post(mutex);
+                }
+                #endif
         }
         /* TODO: Main thread for INTERRUPT_SEM case: Must additionally relinquish SEM, SHM */
 }
