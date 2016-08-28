@@ -1,0 +1,66 @@
+To create and checkout a new branch
+git checkout -b <branch_name>
+
+To commit the branch on the origin <github.com>
+git push -u origin <branch_name>
+
+
+ 
+To rename a local branch and 
+
+
+To make a fork and setup the upstream
+git clone <forked repository url>
+git remote add upstream </url/to/original/repo>
+
+
+To reset the fork and update to the master of upstream
+git fetch upstream
+git checkout master
+git reset --hard upstream/master  
+git push origin master --force 
+
+
+Better commits:
+#To show the patch of changes that will be added
+git add -p
+#to show the diffs that will be committed
+git diff --cached
+#To view changes done for commit to add appropriate messages
+git commit -v
+
+
+#Getting updates:
+git remote add upstream git://github.com/emesene/emesene.git
+git pull upstream master
+
+
+Create the branch on your local machine and switch in this branch :
+$ git checkout -b [name_of_your_new_branch]
+
+Push the branch on github :
+$ git push origin [name_of_your_new_branch]
+
+You can see all branches created by using :
+$ git branch
+
+Add a new remote for your branch :
+$ git remote add [name_of_your_remote] 
+
+Push changes from your commit into your branch :
+$ git push [name_of_your_new_remote] [name_of_your_branch]
+
+Update your branch when the original branch from official repository has been updated :
+$ git fetch [name_of_your_remote]
+
+Then you need to apply to merge changes, if your branch is derivated from develop you need to do :
+$ git merge [name_of_your_remote]/develop
+
+Delete a branch on your local filesystem :
+$ git branch -d [name_of_your_new_branch]
+
+To force the deletion of local branch on your filesystem :
+$ git branch -D [name_of_your_new_branch]
+
+Delete the branch on github :
+$ git push origin :[name_of_your_new_branch]
