@@ -60,11 +60,15 @@
 #include <signal.h>
 
 //#ifdef INTERRUPT_SEM  //move maro to makefile, otherwise uncomemnt or need to include these after including common.h
+#include <unistd.h>
 #include <sys/shm.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <semaphore.h>
 #include <fcntl.h>
+#include <mqueue.h>
+#include <sys/stat.h>
+
 //#endif //INTERRUPT_SEM
 
 /*****************************Internal headers********************************/
@@ -129,8 +133,35 @@ uint64_t counter = 0;
 // flag_p=0 => NF is running and processing (not waiting on semaphore)   
 static rte_atomic16_t *flag_p;
 
+#ifdef USE_MQ
+static mqd_t mutex;
+#endif //USE_MQ
+
+#ifdef USE_FIFO
+static int mutex;
+#endif //USE_FIFO
+
+#ifdef  USE_SIGNAL
+static sigset_t mutex;
+#endif //USE_SIGNAL
+
+#ifdef USE_SEMAPHORE
 // Mutex for sem_wait
 static sem_t *mutex;
+#endif //USE_SIGNAL
+
+#ifdef USE_SOCKET
+static int mutex;
+#endif
+
+#ifdef USE_FLOCK
+static int mutex;    
+#endif
+
+#ifdef USE_MQ2
+static int mutex;
+#endif
+
 #endif  //INTERRUPT_SEM
 
 /******************************Internal functions*****************************/

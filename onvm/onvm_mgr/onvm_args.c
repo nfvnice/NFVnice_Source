@@ -89,7 +89,7 @@ parse_default_service(const char *services);
 static int
 parse_num_services(const char *services);
 
-
+#define USE_STATIC_IDS
 #ifdef USE_STATIC_IDS
 
 static int

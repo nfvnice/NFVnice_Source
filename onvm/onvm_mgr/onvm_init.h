@@ -61,6 +61,7 @@
 #include <sys/ipc.h>
 #include <semaphore.h>
 #include <fcntl.h>
+#include <mqueue.h>
 //#endif //INTERRUPT_SEM
 
 /********************************DPDK library*********************************/
@@ -142,13 +143,44 @@ struct client {
         } stats;
         
         /* mutex and semaphore name for NFs to wait on */ 
-        #ifdef INTERRUPT_SEM
+        #ifdef INTERRUPT_SEM        
         const char *sem_name;
-        sem_t *mutex;
         key_t shm_key;
         rte_atomic16_t *shm_server;
+
+        #ifdef USE_MQ
+        mqd_t mutex;
+        #endif
+        
+        #ifdef USE_FIFO
+        int mutex;       
+        #endif
+
+        #ifdef USE_SIGNAL
+        #endif
+
+        #ifdef USE_SEMAPHORE        
+        sem_t *mutex;
+        #endif
+
+        #ifdef USE_SOCKET
+        struct sockaddr_un mutex; //clients[instance_id].mutex
+        #endif
+
+        #ifdef USE_FLOCK
+        int mutex;       
+        #endif
+        
+        #ifdef USE_MQ2
+        int mutex;
+        #endif
+
         #endif
 };
+
+#if defined (INTERRUPT_SEM) && defined (USE_SOCKET)
+extern int onvm_socket_id;
+#endif
 
 /*
  * Shared port info, including statistics information for display by server.

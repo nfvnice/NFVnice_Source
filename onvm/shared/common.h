@@ -43,6 +43,18 @@
 
 #include <rte_mbuf.h>
 #include <stdint.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sched.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/file.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
 
 #define ONVM_MAX_CHAIN_LENGTH 4   // the maximum chain length
 #define MAX_CLIENTS 16            // total number of NFs allowed
@@ -55,7 +67,19 @@
 #define ONVM_NF_ACTION_OUT 3    // send the packet out the NIC port set in the argument field
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
+#define USE_SEMAPHORE           // Use Semaphore for IPC
+//#define USE_MQ                // USe Message Queue for IPC between NFs and NF manager
+//#define USE_FIFO              // Use Named Pipe (FIFO) -- cannot work in our model as Writer cannot be opened in nonblock
+//#define USE_SIGNAL              // Use Signals (SIGUSR1) for IPC
+//#define USE_SCHED_YIELD         // Use Explicit CPU Relinquish CPU, no explicit IPC other than shared mem read/write
+//#define USE_NANAO_SLEEP         // Use Sleep call to Reqlinqush CPU no explicit IPC other than shared mem read/write
+//#define USE_SOCKET              // Use socket for IPC, NFs block on recv and mgr sends to ublock clients
+//#define USE_FLOCK               // USE FILE_LOCK PREMITIVE for Blocking the NFs and mgr opens files in locked mode
+//#define USE_MQ2                 // USE SYS_V5 Message Queue
 
+//#ifdef USE_MQ2
+//typedef struct msgbuf { long mtype; char mtext[32];}msgbuf_t;
+//#endif
 
 //extern uint8_t rss_symmetric_key[40];
 
@@ -106,6 +130,9 @@ struct onvm_nf_info {
         uint16_t service_id;
         uint8_t status;
         const char *tag;
+        #if defined (INTERRUPT_SEM) && defined (USE_SIGNAL)
+        pid_t pid;
+        #endif
 };
 
 /*
@@ -135,7 +162,15 @@ struct onvm_service_chain {
 #ifdef INTERRUPT_SEM
 #define SHMSZ 4                         // size of shared memory segement (page_size)
 #define KEY_PREFIX 123                  // prefix len for key
+#ifdef USE_MQ
+#define MP_CLIENT_SEM_NAME "/MProc_Client_%u_SEM"
+#elif defined USE_FIFO
+#define MP_CLIENT_SEM_NAME "/MProc_Client_%u_SEM"
+#elif defined USE_SOCKET
+#define MP_CLIENT_SEM_NAME "/MProc_Client_%u_SEM"
+#else
 #define MP_CLIENT_SEM_NAME "MProc_Client_%u_SEM"
+#endif //USE_MQ
 #define MONITOR                         // Unused remove it
 #define ONVM_NUM_WAKEUP_THREADS 1
 #define CHAIN_LEN 4                     // Duplicate, remove and instead use ONVM_MAX_CHAIN_LENGTH

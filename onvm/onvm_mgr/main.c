@@ -159,6 +159,7 @@ tx_thread_main(void *arg) {
                         /* Now process the Client packets read */
                         if (likely(tx_count > 0)) {
                                 onvm_pkt_process_tx_batch(tx, pkts, tx_count, cl);
+                                //RTE_LOG(INFO,APP,"Core %d: processing %d TX packets for NF: %d \n", rte_lcore_id(),tx_count, i);
                         }
                 }
 
@@ -178,7 +179,7 @@ tx_thread_main(void *arg) {
 #ifdef INTERRUPT_SEM
 #include <signal.h>
 
-unsigned nfs_wakethr[MAX_CLIENTS] = {[0 ... MAX_CLIENTS-1] = 1};
+unsigned nfs_wakethr[MAX_CLIENTS] = {[0 ... MAX_CLIENTS-1] = 64};
 
 static void 
 register_signal_handler(void);
@@ -332,6 +333,59 @@ whether_wakeup_client(int instance_id)
         return 0;
 }
 
+static inline void 
+notify_client(int instance_id)
+{
+        #ifdef USE_MQ
+        static int msg = '\0';
+        //struct timespec timeout = {.tv_sec=0, .tv_nsec=1000};
+        //clock_gettime(CLOCK_REALTIME, &timeout);timeout..tv_nsec+=1000;
+        //msg = (unsigned int)mq_timedsend(clients[instance_id].mutex, (const char*) &msg, sizeof(msg),(unsigned int)prio, &timeout);
+        //msg = (unsigned int)mq_send(clients[instance_id].mutex, (const char*) &msg, sizeof(msg),(unsigned int)prio);
+        msg = mq_send(clients[instance_id].mutex, (const char*) &msg,0,0);
+        if (0 > msg) { perror ("mq_send failed!");}
+        #endif
+        
+        #ifdef USE_FIFO
+        unsigned msg = 1;
+        msg = write(clients[instance_id].mutex, (void*) &msg, sizeof(msg));
+        #endif
+        
+
+        #ifdef USE_SIGNAL
+        //static int count = 0;
+        //if (count < 100) { count++;
+        int sts = sigqueue(clients[instance_id].info->pid, SIGUSR1, (const union sigval)0);        
+        if (sts) perror ("sigqueue failed!!");        
+        //}
+        #endif
+
+        #ifdef USE_SEMAPHORE 
+        sem_post(clients[instance_id].mutex);
+        #endif 
+
+        #ifdef USE_SCHED_YIELD
+        rte_atomic16_read(clients[instance_id].shm_server);
+        #endif
+
+        #ifdef USE_SOCKET
+        static char msg[2] = "\0";
+        sendto(onvm_socket_id, msg, sizeof(msg), 0, (struct sockaddr *) &clients[instance_id].mutex, (socklen_t) sizeof(struct sockaddr_un));
+        #endif
+
+        #ifdef USE_FLOCK
+        if (0 > (flock(clients[instance_id].mutex, LOCK_UN|LOCK_NB))) { perror ("FILE UnLock Failed!!");}
+        #endif
+
+        #ifdef USE_MQ2
+        static unsigned long msg = 1;
+        //static msgbuf_t msg = {.mtype = 1, .mtext[0]='\0'};
+        //if (0 > msgsnd(clients[instance_id].mutex, (const void*) &msg, sizeof(msg.mtext), IPC_NOWAIT)) {
+        if (0 > msgsnd(clients[instance_id].mutex, (const void*) &msg, 0, IPC_NOWAIT)) {
+                perror ("Msgsnd Failed!!");
+        }
+        #endif
+}
 static inline void
 wakeup_client(int instance_id, struct wakeup_info *wakeup_info) 
 {
@@ -339,7 +393,7 @@ wakeup_client(int instance_id, struct wakeup_info *wakeup_info)
                 if (rte_atomic16_read(clients[instance_id].shm_server) ==1) {
                         wakeup_info->num_wakeups += 1;
                         rte_atomic16_set(clients[instance_id].shm_server, 0);
-                        sem_post(clients[instance_id].mutex);
+                        notify_client(instance_id);
                 }
         }
 }
@@ -373,8 +427,36 @@ static void signal_handler(int sig, siginfo_t *info, void *secret) {
         //2 means terminal interrupt, 3 means terminal quit, 9 means kill and 15 means termination
         if (sig <= 15) {
                 for (i = 1; i < num_clients; i++) {
+                        
+                        #ifdef USE_MQ
+                        mq_close(clients[i].mutex);
+                        mq_unlink(clients[i].sem_name);
+                        #endif                      
+
+                        #ifdef USE_FIFO
+                        close(clients[i].mutex);
+                        unlink(clients[i].sem_name);  
+                        #endif
+
+                        #ifdef USE_SIGNAL
+                        #endif
+                        
+                        #ifdef USE_SOCKET
+                        #endif             
+                        
+                        #ifdef USE_SEMAPHORE
                         sem_close(clients[i].mutex);
                         sem_unlink(clients[i].sem_name);
+                        #endif
+
+                        #ifdef USE_FLOCK
+                        flock(clients[i].mutex, LOCK_UN|LOCK_NB);
+                        close(clients[i].mutex);
+                        #endif
+
+                        #ifdef USE_MQ2
+                        msgctl(clients[i].mutex, IPC_RMID, 0);
+                        #endif
                 }        
                 #ifdef MONITOR
 //                rte_free(port_stats);

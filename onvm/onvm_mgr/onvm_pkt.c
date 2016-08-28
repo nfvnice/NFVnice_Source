@@ -72,6 +72,7 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
                 meta->src = 0;
                 meta->chain_index = 0;
                 ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
+                printf("\n************** sc_ret = [%d] *****************\n ", ret);
                 if (ret >= 0) {
                         sc = flow_entry->sc;
                         meta->action = onvm_sc_next_action(sc, pkts[i]);
