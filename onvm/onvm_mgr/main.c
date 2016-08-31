@@ -368,6 +368,10 @@ notify_client(int instance_id)
         rte_atomic16_read(clients[instance_id].shm_server);
         #endif
 
+        #ifdef USE_NANO_SLEEP
+        rte_atomic16_read(clients[instance_id].shm_server);
+        #endif
+
         #ifdef USE_SOCKET
         static char msg[2] = "\0";
         sendto(onvm_socket_id, msg, sizeof(msg), 0, (struct sockaddr *) &clients[instance_id].mutex, (socklen_t) sizeof(struct sockaddr_un));
@@ -384,6 +388,12 @@ notify_client(int instance_id)
         if (0 > msgsnd(clients[instance_id].mutex, (const void*) &msg, 0, IPC_NOWAIT)) {
                 perror ("Msgsnd Failed!!");
         }
+        #endif
+
+        #ifdef USE_ZMQ
+        static char msg[2] = "\0";
+        zmq_connect (onvm_socket_id,get_sem_name(instance_id));
+        zmq_send (onvm_socket_id, msg, sizeof(msg), 0);
         #endif
 }
 static inline void
@@ -457,6 +467,12 @@ static void signal_handler(int sig, siginfo_t *info, void *secret) {
                         #ifdef USE_MQ2
                         msgctl(clients[i].mutex, IPC_RMID, 0);
                         #endif
+
+                        #ifdef USE_ZMQ
+                        zmq_close(onvm_socket_id);
+                        zmq_ctx_destroy(onvm_socket_ctx);
+                        #endif
+
                 }        
                 #ifdef MONITOR
 //                rte_free(port_stats);

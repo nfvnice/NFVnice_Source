@@ -71,7 +71,11 @@ struct onvm_service_chain **default_sc_p;
 int onvm_socket_id;
 #endif
 
-
+#if defined (INTERRUPT_SEM) && defined (USE_ZMQ)
+void *zmq_ctx;
+void *onvm_socket_id;
+void *onvm_socket_ctx;
+#endif
 /*********************************Prototypes**********************************/
 
 
@@ -328,7 +332,15 @@ init_shm_rings(void) {
         #ifdef USE_MQ2
         int mutex;
         #endif
-
+        
+        #ifdef USE_ZMQ
+        zmq_ctx = zmq_init(2);
+        onvm_socket_ctx = zmq_ctx_new ();
+        onvm_socket_id = zmq_socket (onvm_socket_ctx, ZMQ_REQ); // ZMQ_PUSH ZMQ_PAIR
+        if (zmq_ctx == NULL || onvm_socket_ctx == NULL || onvm_socket_id == NULL) {
+                perror("onvm_mgr failed in zzmmq_socket\n");        
+        }
+        #endif
 
         #endif
         
@@ -376,7 +388,7 @@ init_shm_rings(void) {
                 fprintf(stderr, "sem_name=%s for client %d\n", sem_name, i);
                 
                 #ifdef USE_MQ //O_NONBLOCK
-               mutex = mq_open(sem_name, O_CREAT|O_WRONLY, 0666, &attr);
+                mutex = mq_open(sem_name, O_CREAT|O_WRONLY, 0666, &attr);
                 if (mutex < 0 ) {
                         perror("Unable to open mqd!");
                         fprintf(stderr, "unable to execute mq_open for client %d\n, error [%d, %d]", i, mutex, errno);
@@ -429,6 +441,10 @@ init_shm_rings(void) {
                         exit(1);
                 }
                 clients[i].mutex = mutex;
+                #endif
+
+                #ifdef USE_ZMQ
+                //zmq_connect(onvm_socket_id,sem_name);
                 #endif
 
                 key = get_rx_shmkey(i);       

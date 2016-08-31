@@ -66,16 +66,22 @@
 #define ONVM_NF_ACTION_TONF 2   // send to the NF specified in the argument field (assume it is on the same host)
 #define ONVM_NF_ACTION_OUT 3    // send the packet out the NIC port set in the argument field
 
-#define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
-#define USE_SEMAPHORE           // Use Semaphore for IPC
+//#define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
+//#define USE_SEMAPHORE           // Use Semaphore for IPC
 //#define USE_MQ                // USe Message Queue for IPC between NFs and NF manager
 //#define USE_FIFO              // Use Named Pipe (FIFO) -- cannot work in our model as Writer cannot be opened in nonblock
-//#define USE_SIGNAL              // Use Signals (SIGUSR1) for IPC
+//#define USE_SIGNAL             // Use Signals (SIGUSR1) for IPC
 //#define USE_SCHED_YIELD         // Use Explicit CPU Relinquish CPU, no explicit IPC other than shared mem read/write
-//#define USE_NANAO_SLEEP         // Use Sleep call to Reqlinqush CPU no explicit IPC other than shared mem read/write
+//#define USE_NANO_SLEEP         // Use Sleep call to Reqlinqush CPU no explicit IPC other than shared mem read/write
 //#define USE_SOCKET              // Use socket for IPC, NFs block on recv and mgr sends to ublock clients
 //#define USE_FLOCK               // USE FILE_LOCK PREMITIVE for Blocking the NFs and mgr opens files in locked mode
 //#define USE_MQ2                 // USE SYS_V5 Message Queue
+//#define USE_ZMQ                 // Use ZeroMQ sockets for communication
+
+
+#ifdef USE_ZMQ
+#include <zmq.h>
+#endif
 
 //#ifdef USE_MQ2
 //typedef struct msgbuf { long mtype; char mtext[32];}msgbuf_t;
@@ -168,6 +174,8 @@ struct onvm_service_chain {
 #define MP_CLIENT_SEM_NAME "/MProc_Client_%u_SEM"
 #elif defined USE_SOCKET
 #define MP_CLIENT_SEM_NAME "/MProc_Client_%u_SEM"
+#elif defined USE_ZMQ
+#define MP_CLIENT_SEM_NAME "ipc:///MProc_Client_%u_SEM"
 #else
 #define MP_CLIENT_SEM_NAME "MProc_Client_%u_SEM"
 #endif //USE_MQ

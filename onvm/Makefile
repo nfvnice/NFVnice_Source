@@ -40,6 +40,11 @@ ifeq ($(RTE_SDK),)
 $(error "Please define RTE_SDK environment variable")
 endif
 
+
+LDFLAGS += -L/usr/local/lib
+LDLIBS+= -lzmq
+#LDFLAGS += ./libzmq.a
+
 # Default target, can be overriden by command line or environment
 RTE_TARGET ?= x86_64-native-linuxapp-gcc
 
@@ -49,4 +54,11 @@ DIRS-$(CONFIG_RTE_EXEC_ENV_LINUXAPP) += shared
 DIRS-$(CONFIG_RTE_EXEC_ENV_LINUXAPP) += onvm_mgr
 DIRS-$(CONFIG_RTE_EXEC_ENV_LINUXAPP) += onvm_nflib
 
+
+
+#LD_LIBRARY_PATH += /usr/local/lib
+#LDFLAGS += -lzmq
+#LDLIBS += -L/usr/local/lib -lzmq.so
+#LD_FLAGS += -L/usr/local/lib -lzmq.so
+#LD_LIBS += -L/usr/local/lib -lzmq.so
 include $(RTE_SDK)/mk/rte.extsubdir.mk

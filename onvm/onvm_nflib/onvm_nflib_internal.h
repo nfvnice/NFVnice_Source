@@ -162,6 +162,12 @@ static int mutex;
 static int mutex;
 #endif
 
+#ifdef USE_ZMQ
+void *zmq_ctx;
+void *mutex_ctx;
+void* mutex;
+#endif
+
 #endif  //INTERRUPT_SEM
 
 /******************************Internal functions*****************************/

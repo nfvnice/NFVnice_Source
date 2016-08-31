@@ -214,9 +214,9 @@ void onvm_nf_yeild(struct onvm_nf_info* info) {
                 //static int counter = 0;
                 int res = sigwait(&mutex, &sig_rcvd);
                 if (res) { perror ("sigwait() Failed!!");  exit(1);}             
-                if (sig_rcvd == SIGINT) { printf("Recieved SIGINT: %d", sig_rcvd); exit(1); break;}
+                //if (sig_rcvd == SIGINT) { printf("Recieved SIGINT: %d", sig_rcvd); exit(1); break;}
                 if (sig_rcvd == SIGUSR1) { /* counter++; printf("[%d]", counter); printf("Recieved SIGUSR1: %d", sig_rcvd); */ break;}
-                if (sig_rcvd != SIGUSR1) { printf("Recieved other SIGNAL: %d", sig_rcvd); continue;}     
+                //if (sig_rcvd != SIGUSR1) { printf("Recieved other SIGNAL: %d", sig_rcvd); continue;}     
         }
         #endif
         
@@ -226,6 +226,12 @@ void onvm_nf_yeild(struct onvm_nf_info* info) {
 
         #ifdef USE_SCHED_YIELD
         sched_yield();
+        #endif
+
+        #ifdef USE_NANO_SLEEP
+        static struct timespec dur = {.tv_sec=0, .tv_nsec=10}, rem = {.tv_sec=0, .tv_nsec=0};
+        nanosleep(&dur, &rem); 
+        if (rem.tv_nsec > 0) { printf ("nano sleep obstructed with time [%d]\n", (int)rem.tv_nsec);}
         #endif
 
         #ifdef USE_SOCKET
@@ -261,6 +267,12 @@ void onvm_nf_yeild(struct onvm_nf_info* info) {
                 perror ("msgrcv Failed!!");
         }
         #endif
+
+        #ifdef USE_ZMQ
+        static char msg_t[2] = "\0";
+        zmq_recv(mutex, msg_t, sizeof(msg_t), 0);
+        #endif
+
 }
 #endif  //INTERRUPT_SEM
 
@@ -496,6 +508,11 @@ onvm_nflib_handle_signal(int sig)
                         #ifdef USE_MQ2
                         msgctl(mutex, IPC_RMID, 0);
                         #endif
+                        
+                        #ifdef USE_ZMQ
+                        zmq_close(mutex);
+                        zmq_ctx_destroy(mutex_ctx);
+                        #endif
                 }
                 #endif
         }
@@ -534,7 +551,7 @@ init_shared_cpu_info(uint16_t instance_id) {
         #ifdef USE_SIGNAL
         sigemptyset (&mutex);
 	sigaddset (&mutex, SIGUSR1);
-        sigaddset (&mutex, SIGINT);
+        //sigaddset (&mutex, SIGINT);
         sigprocmask(SIG_BLOCK, &mutex, NULL);
         #endif
         
@@ -575,7 +592,17 @@ init_shared_cpu_info(uint16_t instance_id) {
                 exit(1);
         }
         #endif
-
+        
+        #ifdef USE_ZMQ
+        if (NULL == (zmq_ctx = zmq_init(1))){ perror("zmq_init()! failed!!");}
+        if (NULL == (mutex_ctx = zmq_ctx_new ())){ perror("zmq_ctx_init()! failed!!");}
+        if (NULL == (mutex = zmq_socket (mutex_ctx, ZMQ_REP))){ perror("zmq_socket()! failed!!");} //ZMQ_PULL
+        if ( 0 != zmq_bind (mutex, sem_name)) {  //"tcp://*:5555" "ipc:///tmp/feeds/0"
+                perror ("Failed to create ZMQ socket!!");
+                exit(1);
+        }
+        #endif
+        
         /* get flag which is shared by server */
         key = get_rx_shmkey(instance_id);
         if ((shmid = shmget(key, SHMSZ, 0666)) < 0) {

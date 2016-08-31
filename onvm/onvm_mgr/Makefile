@@ -65,8 +65,12 @@ LDFLAGS += $(SRCDIR)/../shared/shared/$(RTE_TARGET)/onvm_flow_table.o
 LDFLAGS += $(SRCDIR)/../shared/shared/$(RTE_TARGET)/onvm_pkt_helper.o
 LDFLAGS += $(SRCDIR)/../shared/shared/$(RTE_TARGET)/onvm_flow_dir.o
 
+LDFLAGS += -L/usr/local/lib
+LDLIBS+= -lzmq
+#LDFLAGS += ./libzmq.a
+
 # for newer gcc, e.g. 4.4, no-strict-aliasing may not be necessary
 # and so the next line can be removed in those cases.
-EXTRA_CFLAGS += -fno-strict-aliasing
+EXTRA_CFLAGS += -fno-strict-aliasing -lzmq
 
 include $(RTE_SDK)/mk/rte.extapp.mk

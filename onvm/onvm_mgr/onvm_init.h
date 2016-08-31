@@ -168,18 +168,30 @@ struct client {
         #endif
 
         #ifdef USE_FLOCK
-        int mutex;       
+        int mutex;      
         #endif
         
         #ifdef USE_MQ2
         int mutex;
         #endif
 
+        #ifdef USE_ZMQ
+        //void *mutex;
+        //void *mutex_ctx;
+        #endif
+
+
         #endif
 };
 
 #if defined (INTERRUPT_SEM) && defined (USE_SOCKET)
 extern int onvm_socket_id;
+#endif
+
+#if defined (INTERRUPT_SEM) && defined (USE_ZMQ)
+extern void *zmq_ctx;
+extern void *onvm_socket_id;
+extern void *onvm_socket_ctx;
 #endif
 
 /*
