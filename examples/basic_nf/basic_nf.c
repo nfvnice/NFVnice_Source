@@ -1,0 +1,215 @@
+/*********************************************************************
+ *                     openNetVM
+ *       https://github.com/sdnfv/openNetVM
+ *
+ *  Copyright 2015 George Washington University
+ *            2015 University of California Riverside
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ * monitor.c - an example using onvm. Print a message each p package received
+ ********************************************************************/
+
+#include <unistd.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <sys/queue.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <string.h>
+
+#include <rte_common.h>
+#include <rte_mbuf.h>
+#include <rte_ip.h>
+
+#include "onvm_nflib.h"
+#include "onvm_pkt_helper.h"
+
+#define NF_TAG "basic_nf"
+
+//#define FAKE_COMPUTE
+#define FACT_VALUE 30
+long factorial(int n);
+long factorial(int n)
+{
+        long result;
+        if (n == 0 || n == 1) {
+                result = 1;
+        }
+        else {
+                result = factorial(n-1) * n;
+        }
+
+        return result;
+}
+
+/* Struct that contains information about this NF */
+struct onvm_nf_info *nf_info;
+
+/* number of package between each print */
+static uint32_t print_delay = 1000000;
+static uint32_t destination = 0;
+static uint16_t dst_flag = 0;
+/*
+ * Print a usage message
+ */
+static void
+usage(const char *progname) {
+        printf("Usage: %s [EAL args] -- [NF_LIB args] -- -p <print_delay>\n\n", progname);
+}
+
+/*
+ * Parse the application arguments.
+ */
+static int
+parse_app_args(int argc, char *argv[], const char *progname) {
+        int c;
+        printf("Processing Args!!!!!!!!!!!1");
+        while ((c = getopt (argc, argv, "d:p:")) != -1) {
+                switch (c) {
+                case 'p':
+                        print_delay = strtoul(optarg, NULL, 10);
+                        RTE_LOG(INFO, APP, "print_delay = %d\n", print_delay);
+                        break;
+                case 'd':
+                        destination = strtoul(optarg, NULL, 10);
+                        if (destination) dst_flag = 1;
+                        printf("Destination_flag: %d, Destination: %d", dst_flag, destination); 
+                        break;
+                case '?':
+                        usage(progname);
+                        if (optopt == 'p')
+                                RTE_LOG(INFO, APP, "Option -%c requires an argument.\n", optopt);
+                        else if (isprint(optopt))
+                                RTE_LOG(INFO, APP, "Unknown option `-%c'.\n", optopt);
+                        else
+                                RTE_LOG(INFO, APP, "Unknown option character `\\x%x'.\n", optopt);
+                        return -1;
+                default:
+                        usage(progname);
+                        return -1;
+                }
+        }
+        return optind;
+}
+
+static void
+do_additional_stat_display(void) {
+        static uint64_t last_cycles;
+        static uint64_t cur_pkts = 0;
+        static uint64_t last_pkts = 0;
+        uint64_t cur_rate = 0;
+        static uint64_t peak_rate = 0;
+        static uint64_t min_rate  = 0;
+
+        uint64_t cur_cycles = rte_get_tsc_cycles();
+        cur_pkts += print_delay;
+
+        cur_rate =  ((cur_pkts - last_pkts) * rte_get_timer_hz()) / (cur_cycles - last_cycles);
+        peak_rate = (cur_rate > peak_rate)? (cur_rate):(peak_rate);
+        min_rate = (min_rate == 0 || min_rate > cur_rate)? (cur_rate):(min_rate);        
+
+        printf("Total packets: %9"PRIu64" \n", cur_pkts);
+        printf("TX pkts per second: %9"PRIu64" \n", cur_rate);
+        printf("TX pkts Max rate: %9"PRIu64" and  Min rate: %9"PRIu64" \n", peak_rate, min_rate);
+
+        last_pkts = cur_pkts;
+        last_cycles = cur_cycles;
+
+        printf("\n\n");
+}
+/*
+ * This function displays stats. It uses ANSI terminal codes to clear
+ * screen when called. It is called from a single non-master
+ * thread in the server process, when the process is run with more
+ * than one lcore enabled.
+ */
+static void
+do_stats_display(struct rte_mbuf* pkt) {
+        const char clr[] = { 27, '[', '2', 'J', '\0' };
+        const char topLeft[] = { 27, '[', '1', ';', '1', 'H', '\0' };
+        static int pkt_process = 0;
+        struct ipv4_hdr* ip;
+
+        pkt_process += print_delay;
+
+        /* Clear screen and move to top left */
+        printf("%s%s", clr, topLeft);
+
+        printf("PACKETS\n");
+        printf("-----\n");
+        printf("Port : %d\n", pkt->port);
+        printf("Size : %d\n", pkt->pkt_len);
+        printf("Hash : %u\n", pkt->hash.rss);
+        printf("N°   : %d\n", pkt_process);
+        printf("\n\n");
+
+        ip = onvm_pkt_ipv4_hdr(pkt);
+        if (ip != NULL) {
+                onvm_pkt_print(pkt);
+        } else {
+                printf("No IP4 header found\n");
+        }
+        do_additional_stat_display();
+}
+
+static int
+packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) {
+        #ifdef FAKE_COMPUTE
+        int i;
+        for (i = 0; i < FAKE_COMPUTE_NUM; i++) {
+                factorial(FACT_VALUE);
+        }
+        #endif
+
+        static uint32_t counter = 0;
+        if (++counter == print_delay) {
+                do_stats_display(pkt);
+                counter = 0;
+        }
+
+        // IF specified destination, then do this instead
+        if (dst_flag) {      
+                meta->action = ONVM_NF_ACTION_TONF;
+                meta->destination = destination;
+        }
+        // ELSE: Forward to next NF (as defined in SDN rule/ default service chain) on the same port
+        else {
+                meta->action = ONVM_NF_ACTION_NEXT;
+                meta->destination = pkt->port;
+        }
+        return 0;
+}
+
+
+int main(int argc, char *argv[]) {
+        int arg_offset;
+
+        const char *progname = argv[0];
+        arg_offset = onvm_nflib_init(argc, argv, NF_TAG);
+
+        if (arg_offset < 0)
+                return -1;
+        argc -= arg_offset;
+        argv += arg_offset;
+
+        if (parse_app_args(argc, argv, progname) < 0)
+                rte_exit(EXIT_FAILURE, "Invalid command-line arguments\n");
+
+        onvm_nflib_run(nf_info, &packet_handler);
+        printf("If we reach here, program is ending");
+        return 0;
+}
