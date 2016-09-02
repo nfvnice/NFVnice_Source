@@ -1,3 +1,10 @@
+/*
+
+ strace -c ./build/latency_profiler
+ strace -T ./build/latency_profiler
+ taskset 0x04 ./build/latency_profiler
+
+*/
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -236,6 +243,60 @@ void test_mq()
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
 
+void test_mq_2()
+{
+        static char msg_t[256] = "\0";
+        static unsigned long int msg_prio=0;
+        //struct timespec timeout = {.tv_sec=0, .tv_nsec=1000};
+        static ssize_t rmsg_len = 0;
+        static mqd_t mutex;
+        struct mq_attr attr = {.mq_flags=0, .mq_maxmsg=1050, .mq_msgsize=sizeof(int), .mq_curmsgs=0};
+        mutex = mq_open("/mq_test", O_CREAT|O_RDWR, 0666, &attr);
+        if (0 > mutex) {
+                perror("Unable to open mqd");
+                exit(1);
+        }
+        
+        int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
+        int count = 1000, i =0;
+        static int msg = '\0';
+        pid_t pid = fork();
+        if (pid > 0) {
+                // prepopulate the messages
+                for ( i = 0; i < count; i++) {
+                        get_start_time();
+                        msg = mq_send(mutex, (const char*) &msg,0,0);
+                        get_stop_time();
+                        ttl_elapsed = get_elapsed_time();
+                        min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                        max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                        avg += ttl_elapsed;
+
+                        //printf("Run latency: %li ns\n", delta);
+                }
+                printf("MQ_SEND(2): Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+                avg = 0;
+        }
+        else if (pid == 0) {
+                //Now extract the messages one by one
+                for ( i = 0; i < count; i++) {
+
+                        get_start_time();
+                        rmsg_len = mq_receive(mutex, msg_t,sizeof(msg_t), (unsigned int *)&msg_prio);
+                        get_stop_time();
+
+                        ttl_elapsed = get_elapsed_time();
+                        min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                        max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                        avg += ttl_elapsed;
+
+                        //printf("Run latency: %li ns\n", delta);
+                        
+                }
+                printf("MQ_RECEIVE(2): Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+        }
+        /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+}
 void test_sem()
 
 {
@@ -282,6 +343,57 @@ void test_sem()
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
 
+
+void test_sem_2()
+
+{
+        //struct timespec timeout = {.tv_sec=0, .tv_nsec=1000};
+        sem_t* mutex = sem_open("/sem_test", O_CREAT, 0666, 0);
+        if (0 > mutex) {
+                perror("Unable to open mqd");
+                exit(1);
+        }
+        
+        int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
+        int count = 1000, i =0;
+        pid_t pid = fork();
+        if (pid > 0) {
+                // prepopulate the semaphore tokens
+                for ( i = 0; i < count; i++) {
+                        get_start_time();
+                        sem_post(mutex);
+                        get_stop_time();
+                        ttl_elapsed = get_elapsed_time();
+                        min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                        max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                        avg += ttl_elapsed;
+
+                        //printf("Run latency: %li ns\n", delta);
+                }
+                printf("SEM_POST(2): Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+                avg = 0;
+        }
+        else if (pid == 0){
+                //Now extract the tokens one by one
+                for ( i = 0; i < count; i++) {
+
+                        get_start_time();
+                        sem_wait(mutex);
+                        get_stop_time();
+
+                        ttl_elapsed = get_elapsed_time();
+                        min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                        max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                        avg += ttl_elapsed;
+
+                        //printf("Run latency: %li ns\n", delta);
+                        
+                }
+                printf("SEM_WAIT(2): Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+        }
+        /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+}
+
 int main()
 {
         #if defined(_POSIX_TIMERS) && (_POSIX_TIMERS > 0) && defined(_POSIX_MONOTONIC_CLOCK)
@@ -292,7 +404,9 @@ int main()
 
         test_clk_overhead();
         test_mq();
+        test_mq_2();
         test_sem();
+        test_sem_2();
         test_nanosleep();
         test_sched_yield();
 }
