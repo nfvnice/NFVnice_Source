@@ -84,7 +84,47 @@ onvm_stats_clear_client(uint16_t id) {
 
 
 /****************************Internal functions*******************************/
+static int 
+get_port_stats_rate(double period_time)
+{
+	int i;
+	uint64_t port_rx_rate=0, port_rx_err_rate=0, port_imissed_rate=0, \
+                port_rx_nombuf_rate=0, port_tx_rate=0, port_tx_err_rate=0;
 
+        struct rte_eth_stats port_stats[ports->num_ports];
+        static struct rte_eth_stats port_prev_stats[5];
+	for (i = 0; i < ports->num_ports; i++){
+		rte_eth_stats_get(ports->id[i], &port_stats[i]);	
+                printf("Port:%"PRIu8", rx:%"PRIu64", rx_err:%"PRIu64", rx_imissed:%"PRIu64" "
+		//	"ibadcrc:%"PRIu64", ibadlen:%"PRIu64", illerrc:%"PRIu64", errbc:%"PRIu64" "
+			"rx_nombuf:%"PRIu64", tx:%"PRIu64", tx_err:%"PRIu64"\n",
+			ports->id[i], port_stats[i].ipackets, port_stats[i].ierrors, port_stats[i].imissed, 
+			//port_stats[i].ibadcrc, port_stats[i].ibadlen, port_stats[i].illerrc, port_stats[i].errbc, 
+			port_stats[i].rx_nombuf, port_stats[i].opackets, 
+			port_stats[i].oerrors);
+
+		port_rx_rate = (port_stats[i].ipackets - port_prev_stats[i].ipackets) / period_time;
+		port_rx_err_rate = (port_stats[i].ierrors - port_prev_stats[i].ierrors) / period_time;
+		port_imissed_rate = (port_stats[i].imissed - port_prev_stats[i].imissed) / period_time;
+		port_rx_nombuf_rate = (port_stats[i].rx_nombuf - port_prev_stats[i].rx_nombuf) / period_time;
+		port_tx_rate = (port_stats[i].opackets - port_prev_stats[i].opackets) / period_time;
+		port_tx_err_rate = (port_stats[i].oerrors - port_prev_stats[i].oerrors) / period_time;
+
+		printf("Port:%"PRIu8", rx_rate:%"PRIu64", rx_err_rate:%"PRIu64", rx_imissed_rate:%"PRIu64" "
+			"rx_nombuf_rate:%"PRIu64", tx_rate:%"PRIu64", tx_err_rate:%"PRIu64"\n",
+			ports->id[i], port_rx_rate, port_rx_err_rate, port_imissed_rate,
+			port_rx_nombuf_rate, port_tx_rate, port_tx_err_rate);
+
+		port_prev_stats[i].ipackets = port_stats[i].ipackets;
+               	port_prev_stats[i].ierrors = port_stats[i].ierrors;
+                port_prev_stats[i].imissed = port_stats[i].imissed;
+                port_prev_stats[i].rx_nombuf = port_stats[i].rx_nombuf;
+                port_prev_stats[i].opackets = port_stats[i].opackets;
+                port_prev_stats[i].oerrors = port_stats[i].oerrors;
+        }
+
+	return 0;
+}
 
 void
 onvm_stats_display_ports(unsigned difftime) {
@@ -113,6 +153,7 @@ onvm_stats_display_ports(unsigned difftime) {
                 rx_last[i] = ports->rx_stats.rx[ports->id[i]];
                 tx_last[i] = ports->tx_stats.tx[ports->id[i]];
         }
+        get_port_stats_rate(difftime);
 }
 
 
@@ -193,10 +234,10 @@ onvm_stats_display_clients(unsigned difftime) {
                 clients[i].info->instance_id, vol_rate, rx_drop_rate, comp_cost, 
                 serv_rate, serv_drop_rate, rx_qlen, tx_qlen, rte_atomic16_read(clients[i].shm_server));
 
-                //clients[i].stats.prev_rx = clients[i].stats.rx;
-                //clients[i].stats.prev_rx_drop = clients[i].stats.rx_drop;
-                //clients_stats->prev_tx[i] = clients_stats->tx[i];
-                //clients_stats->prev_tx_drop[i] = clients_stats->tx_drop[i];                
+                clients[i].stats.prev_rx = clients[i].stats.rx;
+                clients[i].stats.prev_rx_drop = clients[i].stats.rx_drop;
+                clients_stats->prev_tx[i] = clients_stats->tx[i];
+                clients_stats->prev_tx_drop[i] = clients_stats->tx_drop[i];
                 #endif
 
 
