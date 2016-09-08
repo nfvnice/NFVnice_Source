@@ -67,11 +67,11 @@
 #define ONVM_NF_ACTION_OUT 3    // send the packet out the NIC port set in the argument field
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
-//#define USE_SEMAPHORE           // Use Semaphore for IPC
+#define USE_SEMAPHORE           // Use Semaphore for IPC
 //#define USE_MQ                // USe Message Queue for IPC between NFs and NF manager
 //#define USE_FIFO              // Use Named Pipe (FIFO) -- cannot work in our model as Writer cannot be opened in nonblock
 //#define USE_SIGNAL             // Use Signals (SIGUSR1) for IPC
-#define USE_SCHED_YIELD         // Use Explicit CPU Relinquish CPU, no explicit IPC other than shared mem read/write
+//#define USE_SCHED_YIELD         // Use Explicit CPU Relinquish CPU, no explicit IPC other than shared mem read/write
 //#define USE_NANO_SLEEP         // Use Sleep call to Reqlinqush CPU no explicit IPC other than shared mem read/write
 //#define USE_SOCKET              // Use socket for IPC, NFs block on recv and mgr sends to ublock clients
 //#define USE_FLOCK               // USE FILE_LOCK PREMITIVE for Blocking the NFs and mgr opens files in locked mode
@@ -118,6 +118,8 @@ struct client_tx_stats {
         volatile uint64_t prev_tx[MAX_CLIENTS];
         volatile uint64_t prev_tx_drop[MAX_CLIENTS];
         volatile uint64_t comp_cost[MAX_CLIENTS];
+        volatile uint64_t wkup_count[MAX_CLIENTS];
+        volatile uint64_t prev_wkup_count[MAX_CLIENTS];
         #endif
         /* FIXME: Why are these stats kept separately from the rest?
          * Would it be better to have an array of struct client_tx_stats instead

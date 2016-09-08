@@ -23,8 +23,9 @@ ctx_num=0
 vol_ctx_num=0
 invol_ctx_num=0
  
-result=/home/skulk901/ctx_dumps/$testcase
- 
+#result=/home/skulk901/ctx_dumps/$testcase
+result=./$testcase
+
 startTime=`cat ${result}/date.start`
 endTime=`cat ${result}/date.end`
 interval=$(($endTime-$startTime))

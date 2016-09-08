@@ -186,7 +186,7 @@ void onvm_nf_yeild(struct onvm_nf_info* info) {
         /* For now discard the special NF instance and put all NFs to wait */
         if ((!ONVM_SPECIAL_NF) || (info->instance_id != 1)) { }
         
-        
+        tx_stats->wkup_count[info->instance_id] += 1;
         rte_atomic16_set(flag_p, 1);
         
         #ifdef USE_MQ

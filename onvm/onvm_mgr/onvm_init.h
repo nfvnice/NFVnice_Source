@@ -138,7 +138,9 @@ struct client {
                 volatile uint64_t act_buffer;
                 #ifdef INTERRUPT_SEM
                 volatile uint64_t prev_rx;
-		volatile uint64_t prev_rx_drop;
+                volatile uint64_t prev_rx_drop;
+                volatile uint64_t wakeup_count;
+                volatile uint64_t prev_wakeup_count;
                 #endif
         } stats;
         
@@ -236,7 +238,7 @@ extern struct rte_ring *nf_info_queue;
 extern struct port_info *ports;
 
 extern struct rte_mempool *pktmbuf_pool;
-extern uint16_t num_clients;
+extern volatile uint16_t num_clients;
 extern uint16_t num_services;
 extern uint16_t default_service;
 extern uint16_t **services;

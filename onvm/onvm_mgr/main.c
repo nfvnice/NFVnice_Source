@@ -57,6 +57,95 @@
 struct wakeup_info *wakeup_infos;
 #endif //INTERRUPT_SEM
 
+#ifdef INTERRUPT_SEM
+#ifdef USE_MQ
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_MQ.csv";
+const char *cmd2 = "perf stat --cpu=8  -r 15 -o pidstat2_log_MQ.csv sleep 2"; //-I 2000
+//-I 2000
+#endif
+#ifdef USE_SEMAPHORE
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_SEM.csv";
+const char *cmd2 = "perf stat --cpu=8  -r 15 -o pidstat2_log_SEM.csv sleep 2"; //-I 2000
+#endif
+#ifdef USE_SCHED_YIELD
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_YLD.csv";
+const char *cmd2 = "perf stat --cpu=8 -r 15 -o pidstat2_log_YLD.csv sleep 2"; //-I 2000
+#endif
+#ifdef USE_SOCKET
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_SOCK.csv";
+const char *cmd2 = "perf stat --cpu=8 -r 15 -o pidstat2_log_SOCK.csv sleep 2"; //-I 2000
+#endif
+#ifdef USE_SIGNAL
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_SIG.csv";
+const char *cmd2 = "perf stat --cpu=8 -r 15 -o pidstat2_log_SIG.csv sleep 2"; //-I 2000
+#endif
+#ifdef USE_MQ2
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_MQ2.csv";
+const char *cmd2 = "perf stat --cpu=8 -r 15 -o pidstat2_log_MQ2.csv sleep 2"; //-I 2000
+#endif
+#ifdef USE_ZMQ
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_ZMQ.csv";
+const char *cmd2 = "perf stat --cpu=8 -r 15 -o pidstat2_log_ZMQ.csv sleep 2"; //-I 2000
+#endif
+#ifdef USE_FLOCK
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_FLK.csv";
+const char *cmd2 = "perf stat --cpu=8,10 --per-core -r 15 -o pidstat2_log_FLK.csv sleep 2"; //-I 2000
+#endif
+#ifdef USE_NANO_SLEEP
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_NNS.csv";
+const char *cmd2 = "perf stat --cpu=8,10 --per-core -r 15 -o pidstat2_log_NNS.csv sleep 2"; //-I 2000
+#endif
+
+//const char *cmd2 = "perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations --cpu=8,10 --per-core -o pidstat2_log.csv sleep 10"; //-I 2000
+//const char *cmd2 = "perf stat --cpu=8,10 --per-core -o pidstat2_log.csv sleep 30"; //-I 2000
+static int do_performance_log(void __attribute__((unused)) *pd_data) {
+        /* ls -al | grep '^d' */
+        FILE *pp=NULL, *pp2=NULL;
+        //pp = popen("ls -al", "r");
+        pp = popen(cmd, "r");
+        pp2 = popen(cmd2, "r");
+        int done = 0;
+        if (pp != NULL && pp2 !=NULL) {
+                while (1) {
+                        char *line;
+                        char buf[1000];
+                        line = fgets(buf, sizeof buf, pp);
+                        if (line == NULL) done |= 0x01; //break;
+                        //if (line[0] == 'd') printf("%s", line); // line includes '\n'
+                        //printf("%s", line);
+
+                        line = fgets(buf, sizeof buf, pp2);
+                        if (line == NULL) done |= 0x02; //break;
+                        //if (line[0] == 'd') printf("%s", line); // line includes '\n'
+                        //printf("%s", line);
+                        if(done == 0x03) break;
+                }
+                pclose(pp);
+                pclose(pp2);
+        }
+
+
+
+        return 0;
+}
+static int
+performance_log_thread(void *pdata) {
+        while (1) {
+                if(pdata){;}
+
+                if(!num_clients) continue;
+
+                sleep(20);
+
+                printf("********************* Starting to LOG PEFORMANCE COUNTERS!!!! *************\n\n");
+                do_performance_log(pdata);
+                printf("********************* END of LOG PEFORMANCE COUNTERS!!!! *************\n\n");
+                break;
+        }
+        return 0;
+}
+#endif
+
 /*******************************Worker threads********************************/
 
 
@@ -219,7 +308,7 @@ main(int argc, char *argv[]) {
 
         #ifdef INTERRUPT_SEM
         wakeup_lcores = ONVM_NUM_WAKEUP_THREADS;
-        tx_lcores = rte_lcore_count() - rx_lcores - wakeup_lcores - 1;
+        tx_lcores = rte_lcore_count() - rx_lcores - wakeup_lcores - 1 -1;
         #else
         tx_lcores = rte_lcore_count() - rx_lcores - 1;
         #endif
@@ -252,7 +341,7 @@ main(int argc, char *argv[]) {
                 clients_per_tx = ceil((float)num_clients/tx_lcores);
                 temp_num_clients = (unsigned)num_clients;
         }
-        num_clients = temp_num_clients;
+        //num_clients = temp_num_clients;
         for (i = 0; i < tx_lcores; i++) {
                 struct thread_info *tx = calloc(1, sizeof(struct thread_info));
                 tx->queue_id = i;
@@ -303,6 +392,11 @@ main(int argc, char *argv[]) {
                 printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
         }
         
+        cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
+        printf("performance_record_lcore=%u\n", cur_lcore);
+        rte_eal_remote_launch(performance_log_thread,NULL, cur_lcore);
+
+
         /* this change is Not needed anymore
         cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
         printf("monitor_lcore=%u\n", cur_lcore);
@@ -402,6 +496,7 @@ wakeup_client(int instance_id, struct wakeup_info *wakeup_info)
         if (whether_wakeup_client(instance_id) == 1) {
                 if (rte_atomic16_read(clients[instance_id].shm_server) ==1) {
                         wakeup_info->num_wakeups += 1;
+                        clients[instance_id].stats.wakeup_count+=1;
                         rte_atomic16_set(clients[instance_id].shm_server, 0);
                         notify_client(instance_id);
                 }
@@ -436,7 +531,7 @@ static void signal_handler(int sig, siginfo_t *info, void *secret) {
  
         //2 means terminal interrupt, 3 means terminal quit, 9 means kill and 15 means termination
         if (sig <= 15) {
-                for (i = 1; i < num_clients; i++) {
+                for (i = 1; i < MAX_CLIENTS; i++) {
                         
                         #ifdef USE_MQ
                         mq_close(clients[i].mutex);
@@ -496,4 +591,6 @@ register_signal_handler(void) {
         }
 }
 #endif
+
+
 

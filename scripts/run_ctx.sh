@@ -15,7 +15,9 @@ num_bridge=1 #$((num_clients))
 #types="basic_nf bridge monitor forward"
 types="bridge forward"
  
-result=/home/skulk901/ctx_dumps/$testcase
+#result=/home/skulk901/ctx_dumps/$testcase
+result=./$testcase
+
 mkdir -p $result
  
 for type in $types
