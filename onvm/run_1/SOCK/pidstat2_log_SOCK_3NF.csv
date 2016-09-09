@@ -1,0 +1,18 @@
+# started on Thu Sep  8 16:57:07 2016
+
+
+ Performance counter stats for 'CPU(s) 8' (30 runs):
+
+       1000.074945      task-clock (msec)         #    0.999 CPUs utilized            ( +-  0.00% ) [100.00%]
+           136,094      context-switches          #    0.136 M/sec                    ( +-  0.04% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                    ( +- 33.30% ) [100.00%]
+                 8      page-faults               #    0.008 K/sec                    ( +- 20.68% )
+     3,092,901,914      cycles                    #    3.093 GHz                      ( +-  0.00% ) [100.00%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     1,583,386,043      instructions              #    0.51  insns per cycle          ( +-  0.02% ) [100.00%]
+       245,843,965      branches                  #  245.826 M/sec                    ( +-  0.03% ) [100.00%]
+         1,381,935      branch-misses             #    0.56% of all branches          ( +-  0.08% )
+
+       1.000579912 seconds time elapsed                                          ( +-  0.00% )
+

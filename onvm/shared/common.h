@@ -77,6 +77,10 @@
 //#define USE_FLOCK               // USE FILE_LOCK PREMITIVE for Blocking the NFs and mgr opens files in locked mode
 //#define USE_MQ2                 // USE SYS_V5 Message Queue
 //#define USE_ZMQ                 // Use ZeroMQ sockets for communication
+#if (defined(INTERRUPT_SEM) && !defined(USE_SEMAPHORE) && !defined(USE_MQ) && !defined(USE_FIFO) && !defined(USE_SIGNAL) \
+&& !defined(USE_SCHED_YIELD) && !defined(USE_NANO_SLEEP) && !defined(USE_SOCKET) && !defined(USE_FLOCK) && !defined(USE_MQ2) && !defined(USE_ZMQ))
+#define USE_POLL_MODE
+#endif
 
 #ifdef USE_ZMQ
 #include <zmq.h>

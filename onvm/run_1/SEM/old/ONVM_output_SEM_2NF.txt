@@ -1,0 +1,47 @@
+PORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:683839260, rx_err:0, rx_imissed:3052213 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14865304, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:42843067, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:6013767, tx_err_rate:0
+num_wakeups=508051, wakeup_rate=60708
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=197642, avg_wakeups=4774, yields=4774, msg_flag=0, 
+avg_ppw=2052, avg_good_ppw=1935,  pkts_per_yield=1935
+rx_rate=9797664, rx_drop_rate=5067596, rx_qlen=0
+tx_rate=9240452, tx_drop_rate=557312, tx_qlen=108
+Client 11:[11],  comp_cost=107, avg_wakeups=55934, yields=55933, msg_flag=0, 
+avg_ppw=109, avg_good_ppw=107,  pkts_per_yield=107
+rx_rate=6105592, rx_drop_rate=3134752, rx_qlen=64
+tx_rate=6013480, tx_drop_rate=92112, tx_qlen=0
+
+
+
+
+
+PORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:668973956, rx_err:0, rx_imissed:3052213 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867972, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:36829300, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:6013964, tx_err_rate:0
+num_wakeups=447343, wakeup_rate=60799
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=177974, avg_wakeups=4760, yields=4760, msg_flag=0, 
+avg_ppw=2057, avg_good_ppw=1941,  pkts_per_yield=1941
+rx_rate=9795343, rx_drop_rate=5072505, rx_qlen=120
+tx_rate=9241179, tx_drop_rate=554124, tx_qlen=0
+Client 11:[11],  comp_cost=104, avg_wakeups=56038, yields=56039, msg_flag=1, 
+avg_ppw=108, avg_good_ppw=107,  pkts_per_yield=107
+rx_rate=6105499, rx_drop_rate=3135712, rx_qlen=32
+tx_rate=6013995, tx_drop_rate=91536, tx_qlen=64
+
+

@@ -59,41 +59,45 @@ struct wakeup_info *wakeup_infos;
 
 #ifdef INTERRUPT_SEM
 #ifdef USE_MQ
-const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_MQ.csv";
-const char *cmd2 = "perf stat --cpu=8  -r 15 -o pidstat2_log_MQ.csv sleep 2"; //-I 2000
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log_MQ.csv";
+const char *cmd2 = "perf stat --cpu=8  -r 30 -o pidstat2_log_MQ.csv sleep 1"; //-I 2000
 //-I 2000
 #endif
 #ifdef USE_SEMAPHORE
-const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_SEM.csv";
-const char *cmd2 = "perf stat --cpu=8  -r 15 -o pidstat2_log_SEM.csv sleep 2"; //-I 2000
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log_SEM.csv";
+const char *cmd2 = "perf stat --cpu=8  -r 30 -o pidstat2_log_SEM.csv sleep 1"; //-I 2000
 #endif
 #ifdef USE_SCHED_YIELD
-const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_YLD.csv";
-const char *cmd2 = "perf stat --cpu=8 -r 15 -o pidstat2_log_YLD.csv sleep 2"; //-I 2000
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log_YLD.csv";
+const char *cmd2 = "perf stat --cpu=8 -r 30 -o pidstat2_log_YLD.csv sleep 1"; //-I 2000
 #endif
 #ifdef USE_SOCKET
-const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_SOCK.csv";
-const char *cmd2 = "perf stat --cpu=8 -r 15 -o pidstat2_log_SOCK.csv sleep 2"; //-I 2000
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log_SOCK.csv";
+const char *cmd2 = "perf stat --cpu=8 -r 30 -o pidstat2_log_SOCK.csv sleep 1"; //-I 2000
 #endif
 #ifdef USE_SIGNAL
-const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_SIG.csv";
-const char *cmd2 = "perf stat --cpu=8 -r 15 -o pidstat2_log_SIG.csv sleep 2"; //-I 2000
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log_SIG.csv";
+const char *cmd2 = "perf stat --cpu=8 -r 30 -o pidstat2_log_SIG.csv sleep 1"; //-I 2000
 #endif
 #ifdef USE_MQ2
-const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_MQ2.csv";
-const char *cmd2 = "perf stat --cpu=8 -r 15 -o pidstat2_log_MQ2.csv sleep 2"; //-I 2000
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log_MQ2.csv";
+const char *cmd2 = "perf stat --cpu=8 -r 30 -o pidstat2_log_MQ2.csv sleep 1"; //-I 2000
 #endif
 #ifdef USE_ZMQ
-const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_ZMQ.csv";
-const char *cmd2 = "perf stat --cpu=8 -r 15 -o pidstat2_log_ZMQ.csv sleep 2"; //-I 2000
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log_ZMQ.csv";
+const char *cmd2 = "perf stat --cpu=8 -r 30 -o pidstat2_log_ZMQ.csv sleep 1"; //-I 2000
 #endif
 #ifdef USE_FLOCK
-const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_FLK.csv";
-const char *cmd2 = "perf stat --cpu=8,10 --per-core -r 15 -o pidstat2_log_FLK.csv sleep 2"; //-I 2000
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log_FLK.csv";
+const char *cmd2 = "perf stat --cpu=8,10 --per-core -r 30 -o pidstat2_log_FLK.csv sleep 1"; //-I 2000
 #endif
 #ifdef USE_NANO_SLEEP
-const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log_NNS.csv";
-const char *cmd2 = "perf stat --cpu=8,10 --per-core -r 15 -o pidstat2_log_NNS.csv sleep 2"; //-I 2000
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log_NNS.csv";
+const char *cmd2 = "perf stat --cpu=8,10 --per-core -r 30 -o pidstat2_log_NNS.csv sleep 1"; //-I 2000
+#endif
+#ifdef USE_POLL_MODE
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log_POLL.csv";
+const char *cmd2 = "perf stat --cpu=8  -r 30 -o pidstat2_log_POLL.csv sleep 1"; //-I 2000
 #endif
 
 //const char *cmd2 = "perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations --cpu=8,10 --per-core -o pidstat2_log.csv sleep 10"; //-I 2000
@@ -107,25 +111,22 @@ static int do_performance_log(void __attribute__((unused)) *pd_data) {
         int done = 0;
         if (pp != NULL && pp2 !=NULL) {
                 while (1) {
-                        char *line;
+                        char *line = NULL;
                         char buf[1000];
                         line = fgets(buf, sizeof buf, pp);
                         if (line == NULL) done |= 0x01; //break;
-                        //if (line[0] == 'd') printf("%s", line); // line includes '\n'
                         //printf("%s", line);
 
                         line = fgets(buf, sizeof buf, pp2);
                         if (line == NULL) done |= 0x02; //break;
-                        //if (line[0] == 'd') printf("%s", line); // line includes '\n'
                         //printf("%s", line);
+
                         if(done == 0x03) break;
                 }
+                sleep(10);
                 pclose(pp);
                 pclose(pp2);
         }
-
-
-
         return 0;
 }
 static int
@@ -140,7 +141,15 @@ performance_log_thread(void *pdata) {
                 printf("********************* Starting to LOG PEFORMANCE COUNTERS!!!! *************\n\n");
                 do_performance_log(pdata);
                 printf("********************* END of LOG PEFORMANCE COUNTERS!!!! *************\n\n");
+
+                sleep(20);
+
                 break;
+        }
+        //return 0;
+        while (1) {
+                printf("********************* IDLING PEFORMANCE COUNTERS!!!! *************\n\n");
+                sleep(10);
         }
         return 0;
 }
@@ -488,6 +497,10 @@ notify_client(int instance_id)
         static char msg[2] = "\0";
         zmq_connect (onvm_socket_id,get_sem_name(instance_id));
         zmq_send (onvm_socket_id, msg, sizeof(msg), 0);
+        #endif
+
+        #ifdef USE_POLL_MODE
+        rte_atomic16_read(clients[instance_id].shm_server);
         #endif
 }
 static inline void

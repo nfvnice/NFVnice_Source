@@ -375,6 +375,7 @@ init_shm_rings(void) {
                 clients[i].tx_q = rte_ring_create(tq_name,
                                 ringsize, socket_id,
                                 RING_F_SC_DEQ);                 /* multi prod, single cons */
+                                //but it should be RING_F_SP_ENQ
 
                 if (clients[i].rx_q == NULL)
                         rte_exit(EXIT_FAILURE, "Cannot create rx ring queue for client %u\n", i);

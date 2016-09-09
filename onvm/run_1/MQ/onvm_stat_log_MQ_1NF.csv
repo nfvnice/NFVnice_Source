@@ -1,0 +1,944 @@
+EAL: Detected 56 lcore(s)
+EAL: Probing VFIO support...
+PMD: bnxt_rte_pmd_init() called for (null)
+EAL: PCI device 0000:04:00.0 on NUMA socket 0
+EAL:   probe driver: 8086:10fb rte_ixgbe_pmd
+EAL: PCI device 0000:04:00.1 on NUMA socket 0
+EAL:   probe driver: 8086:10fb rte_ixgbe_pmd
+EAL: PCI device 0000:05:00.0 on NUMA socket 0
+EAL:   probe driver: 8086:10fb rte_ixgbe_pmd
+EAL: PCI device 0000:05:00.1 on NUMA socket 0
+EAL:   probe driver: 8086:10fb rte_ixgbe_pmd
+EAL: PCI device 0000:08:00.0 on NUMA socket 0
+EAL:   probe driver: 8086:10fb rte_ixgbe_pmd
+EAL: PCI device 0000:08:00.1 on NUMA socket 0
+EAL:   probe driver: 8086:10fb rte_ixgbe_pmd
+Creating mbuf pool 'MProc_pktmbuf_pool' [27648 mbufs] ...
+Creating mbuf pool 'NF_INFO_MEMPOOL' ...
+Port 0 init ... 
+Port 0 socket id 0 ... 
+Port 0 Rx rings 1 ... 
+done: 
+Port 1 init ... 
+Port 1 socket id 0 ... 
+Port 1 Rx rings 1 ... 
+done: 
+
+Checking link status.sem_name=/MProc_Client_0_SEM for client 0
+sem_name=/MProc_Client_1_SEM for client 1
+sem_name=/MProc_Client_2_SEM for client 2
+sem_name=/MProc_Client_3_SEM for client 3
+sem_name=/MProc_Client_4_SEM for client 4
+sem_name=/MProc_Client_5_SEM for client 5
+sem_name=/MProc_Client_6_SEM for client 6
+sem_name=/MProc_Client_7_SEM for client 7
+sem_name=/MProc_Client_8_SEM for client 8
+sem_name=/MProc_Client_9_SEM for client 9
+sem_name=/MProc_Client_10_SEM for client 10
+sem_name=/MProc_Client_11_SEM for client 11
+sem_name=/MProc_Client_12_SEM for client 12
+sem_name=/MProc_Client_13_SEM for client 13
+sem_name=/MProc_Client_14_SEM for client 14
+sem_name=/MProc_Client_15_SEM for client 15
+done
+Port 0 Link Up - speed 10000 Mbps - full-duplex
+Port 1 Link Up - speed 10000 Mbps - full-duplex
+Default service chain: send to sdn NF
+cur_index:1, action:2, destination:1
+
+APP: Finished Process Init.
+APP: 7 cores available in total
+APP: 1 cores available for handling manager RX queues
+APP: 3 cores available for handling TX queues
+APP: 1 cores available for handling wakeup
+APP: 1 cores available for handling stats
+APP: Core 1: Running TX thread for NFs 1 to 6
+APP: Core 2: Running TX thread for NFs 7 to 12
+APP: Core 3: Running TX thread for NFs 13 to 15
+APP: Core 4: Running RX thread for RX queue 0
+wakeup lcore_id=5, first_client=1, last_client=16
+performance_record_lcore=6
+APP: Core 0: Running master thread
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:59457752, rx_err:0, rx_imissed:3166577 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:59457752, rx_err_rate:0, rx_imissed_rate:3166577 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:0, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+num_wakeups=0, wakeup_rate=0
+
+CLIENTS
+-------
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:74325244, rx_err:0, rx_imissed:3166577 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867492, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:0, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+num_wakeups=0, wakeup_rate=0
+
+CLIENTS
+-------
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:89192876, rx_err:0, rx_imissed:3166577 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867632, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:0, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+num_wakeups=0, wakeup_rate=0
+
+CLIENTS
+-------
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:104058216, rx_err:0, rx_imissed:3166577 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14865340, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:0, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+num_wakeups=0, wakeup_rate=0
+
+CLIENTS
+-------
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:118926288, rx_err:0, rx_imissed:3166577 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868072, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:0, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+num_wakeups=0, wakeup_rate=0
+
+CLIENTS
+-------
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:133773604, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14847316, rx_err_rate:0, rx_imissed_rate:19721 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:9161890, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9161890, tx_err_rate:0
+num_wakeups=11228, wakeup_rate=11228
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=65, avg_wakeups=11228, yields=11228, msg_flag=0, 
+avg_ppw=1222, avg_good_ppw=816,  pkts_per_yield=816
+rx_rate=13722588, rx_drop_rate=17264, rx_qlen=36
+tx_rate=9162218, tx_drop_rate=4560334, tx_qlen=109
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:148642064, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868460, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:19075360, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9913470, tx_err_rate:0
+num_wakeups=23217, wakeup_rate=11989
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=29, avg_wakeups=11989, yields=11989, msg_flag=0, 
+avg_ppw=1238, avg_good_ppw=826,  pkts_per_yield=826
+rx_rate=14844908, rx_drop_rate=23524, rx_qlen=68
+tx_rate=9913454, tx_drop_rate=4931434, tx_qlen=120
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:163509632, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867568, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:28982947, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9907587, tx_err_rate:0
+num_wakeups=35121, wakeup_rate=11904
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=24, avg_wakeups=11904, yields=11905, msg_flag=1, 
+avg_ppw=1246, avg_good_ppw=832,  pkts_per_yield=832
+rx_rate=14836872, rx_drop_rate=30736, rx_qlen=96
+tx_rate=9907285, tx_drop_rate=4929555, tx_qlen=0
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:178377404, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867772, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:38893643, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9910696, tx_err_rate:0
+num_wakeups=47050, wakeup_rate=11929
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=18, avg_wakeups=11929, yields=11928, msg_flag=0, 
+avg_ppw=1244, avg_good_ppw=830,  pkts_per_yield=830
+rx_rate=14843020, rx_drop_rate=24564, rx_qlen=124
+tx_rate=9910933, tx_drop_rate=4932059, tx_qlen=96
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:193246148, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868744, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:48802707, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9909064, tx_err_rate:0
+num_wakeups=58981, wakeup_rate=11931
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=11931, yields=11931, msg_flag=0, 
+avg_ppw=1244, avg_good_ppw=830,  pkts_per_yield=830
+rx_rate=14848310, rx_drop_rate=20486, rx_qlen=0
+tx_rate=9909073, tx_drop_rate=4939345, tx_qlen=87
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:208113460, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867312, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:58735354, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9932647, tx_err_rate:0
+num_wakeups=71003, wakeup_rate=12022
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=77, avg_wakeups=12022, yields=12022, msg_flag=0, 
+avg_ppw=1234, avg_good_ppw=826,  pkts_per_yield=826
+rx_rate=14846817, rx_drop_rate=20535, rx_qlen=4
+tx_rate=9932643, tx_drop_rate=4914154, tx_qlen=120
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:222981164, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867704, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:68650804, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9915450, tx_err_rate:0
+num_wakeups=83007, wakeup_rate=12004
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=33, avg_wakeups=12004, yields=12004, msg_flag=0, 
+avg_ppw=1236, avg_good_ppw=826,  pkts_per_yield=826
+rx_rate=14841516, rx_drop_rate=26096, rx_qlen=36
+tx_rate=9915434, tx_drop_rate=4926078, tx_qlen=91
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:237849884, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868720, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:78565309, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9914505, tx_err_rate:0
+num_wakeups=95051, wakeup_rate=12044
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=12044, yields=12044, msg_flag=0, 
+avg_ppw=1232, avg_good_ppw=823,  pkts_per_yield=823
+rx_rate=14849123, rx_drop_rate=19553, rx_qlen=56
+tx_rate=9914445, tx_drop_rate=4934650, tx_qlen=82
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:252714332, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14864448, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:88480337, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9915028, tx_err_rate:0
+num_wakeups=107059, wakeup_rate=12008
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=39, avg_wakeups=12008, yields=12008, msg_flag=0, 
+avg_ppw=1236, avg_good_ppw=825,  pkts_per_yield=825
+rx_rate=14842648, rx_drop_rate=21876, rx_qlen=12
+tx_rate=9915016, tx_drop_rate=4927672, tx_qlen=86
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:267582264, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867932, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:98389406, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9909069, tx_err_rate:0
+num_wakeups=119039, wakeup_rate=11980
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=11980, yields=11980, msg_flag=0, 
+avg_ppw=1238, avg_good_ppw=827,  pkts_per_yield=827
+rx_rate=14842096, rx_drop_rate=25796, rx_qlen=72
+tx_rate=9909034, tx_drop_rate=4933006, tx_qlen=83
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:282449272, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867008, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:108314749, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9925343, tx_err_rate:0
+num_wakeups=131011, wakeup_rate=11972
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=44, avg_wakeups=11972, yields=11972, msg_flag=0, 
+avg_ppw=1240, avg_good_ppw=829,  pkts_per_yield=829
+rx_rate=14845437, rx_drop_rate=21511, rx_qlen=36
+tx_rate=9925330, tx_drop_rate=4920135, tx_qlen=88
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:297317052, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867780, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:118225955, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9911206, tx_err_rate:0
+num_wakeups=143047, wakeup_rate=12036
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=24, avg_wakeups=12036, yields=12036, msg_flag=0, 
+avg_ppw=1233, avg_good_ppw=823,  pkts_per_yield=823
+rx_rate=14844365, rx_drop_rate=23363, rx_qlen=20
+tx_rate=9911171, tx_drop_rate=4933206, tx_qlen=76
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:312184732, rx_err:0, rx_imissed:3186298 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867680, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:128134187, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9908232, tx_err_rate:0
+num_wakeups=154964, wakeup_rate=11917
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=11917, yields=11917, msg_flag=0, 
+avg_ppw=1245, avg_good_ppw=831,  pkts_per_yield=831
+rx_rate=14847578, rx_drop_rate=20082, rx_qlen=84
+tx_rate=9908192, tx_drop_rate=4939326, tx_qlen=95
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:326851816, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14667084, rx_err_rate:0, rx_imissed_rate:199719 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:137937271, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9803084, tx_err_rate:0
+num_wakeups=168381, wakeup_rate=13417
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=42, avg_wakeups=13417, yields=13417, msg_flag=0, 
+avg_ppw=1085, avg_good_ppw=730,  pkts_per_yield=730
+rx_rate=14567080, rx_drop_rate=100164, rx_qlen=28
+tx_rate=9803139, tx_drop_rate=4763993, tx_qlen=127
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:341719884, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868068, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:147843660, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9906389, tx_err_rate:0
+num_wakeups=180397, wakeup_rate=12016
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=39, avg_wakeups=12016, yields=12016, msg_flag=0, 
+avg_ppw=1234, avg_good_ppw=824,  pkts_per_yield=824
+rx_rate=14838376, rx_drop_rate=29368, rx_qlen=16
+tx_rate=9906267, tx_drop_rate=4932133, tx_qlen=121
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:356586420, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14866536, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:157751863, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9908203, tx_err_rate:0
+num_wakeups=192397, wakeup_rate=12000
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=12000, yields=12000, msg_flag=0, 
+avg_ppw=1237, avg_good_ppw=825,  pkts_per_yield=825
+rx_rate=14846562, rx_drop_rate=19942, rx_qlen=24
+tx_rate=9908185, tx_drop_rate=4938337, tx_qlen=120
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:371453848, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867428, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:167680466, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9928603, tx_err_rate:0
+num_wakeups=204521, wakeup_rate=12124
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=56, avg_wakeups=12124, yields=12124, msg_flag=0, 
+avg_ppw=1224, avg_good_ppw=818,  pkts_per_yield=818
+rx_rate=14846304, rx_drop_rate=21128, rx_qlen=12
+tx_rate=9928604, tx_drop_rate=4917708, tx_qlen=121
+
+********************* Starting to LOG PEFORMANCE COUNTERS!!!! *************
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:386320340, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14866492, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:177596680, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9916214, tx_err_rate:0
+num_wakeups=216585, wakeup_rate=12064
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=12064, yields=12064, msg_flag=0, 
+avg_ppw=1230, avg_good_ppw=821,  pkts_per_yield=821
+rx_rate=14844376, rx_drop_rate=22100, rx_qlen=44
+tx_rate=9916208, tx_drop_rate=4928164, tx_qlen=115
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:401188132, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867792, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:187525027, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9928347, tx_err_rate:0
+num_wakeups=228489, wakeup_rate=11904
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=18, avg_wakeups=11904, yields=11904, msg_flag=0, 
+avg_ppw=1246, avg_good_ppw=834,  pkts_per_yield=834
+rx_rate=14835727, rx_drop_rate=32041, rx_qlen=12
+tx_rate=9928300, tx_drop_rate=4907439, tx_qlen=87
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:416052408, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14864276, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:197439063, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9914036, tx_err_rate:0
+num_wakeups=240325, wakeup_rate=11836
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=18, avg_wakeups=11836, yields=11836, msg_flag=0, 
+avg_ppw=1253, avg_good_ppw=837,  pkts_per_yield=837
+rx_rate=14838109, rx_drop_rate=26239, rx_qlen=32
+tx_rate=9914116, tx_drop_rate=4923965, tx_qlen=120
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:430920884, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868476, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:207365288, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9926225, tx_err_rate:0
+num_wakeups=252233, wakeup_rate=11908
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=29, avg_wakeups=11908, yields=11908, msg_flag=0, 
+avg_ppw=1246, avg_good_ppw=833,  pkts_per_yield=833
+rx_rate=14844560, rx_drop_rate=23840, rx_qlen=37
+tx_rate=9926104, tx_drop_rate=4918447, tx_qlen=119
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:445787860, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14866976, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:217284388, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9919100, tx_err_rate:0
+num_wakeups=264106, wakeup_rate=11873
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=18, avg_wakeups=11873, yields=11873, msg_flag=0, 
+avg_ppw=1250, avg_good_ppw=835,  pkts_per_yield=835
+rx_rate=14841928, rx_drop_rate=24932, rx_qlen=0
+tx_rate=9919105, tx_drop_rate=4922864, tx_qlen=124
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:460655832, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867972, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:227218316, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9933928, tx_err_rate:0
+num_wakeups=275973, wakeup_rate=11867
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=11867, yields=11867, msg_flag=0, 
+avg_ppw=1250, avg_good_ppw=837,  pkts_per_yield=837
+rx_rate=14841915, rx_drop_rate=26073, rx_qlen=55
+tx_rate=9933824, tx_drop_rate=4908016, tx_qlen=96
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:475522700, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14866868, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:237135538, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9917222, tx_err_rate:0
+num_wakeups=287852, wakeup_rate=11879
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=39, avg_wakeups=11879, yields=11879, msg_flag=0, 
+avg_ppw=1248, avg_good_ppw=834,  pkts_per_yield=834
+rx_rate=14834065, rx_drop_rate=32767, rx_qlen=28
+tx_rate=9917294, tx_drop_rate=4916822, tx_qlen=118
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:490389468, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14866768, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:247059081, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9923543, tx_err_rate:0
+num_wakeups=299738, wakeup_rate=11886
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=18, avg_wakeups=11886, yields=11886, msg_flag=0, 
+avg_ppw=1248, avg_good_ppw=834,  pkts_per_yield=834
+rx_rate=14843536, rx_drop_rate=23220, rx_qlen=32
+tx_rate=9923497, tx_drop_rate=4920003, tx_qlen=98
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:505256796, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867328, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:256974353, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9915272, tx_err_rate:0
+num_wakeups=311649, wakeup_rate=11911
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=44, avg_wakeups=11911, yields=11911, msg_flag=0, 
+avg_ppw=1246, avg_good_ppw=832,  pkts_per_yield=832
+rx_rate=14841472, rx_drop_rate=25904, rx_qlen=44
+tx_rate=9915251, tx_drop_rate=4926237, tx_qlen=67
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:520124540, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867744, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:266895397, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9921044, tx_err_rate:0
+num_wakeups=323603, wakeup_rate=11954
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=11954, yields=11955, msg_flag=1, 
+avg_ppw=1241, avg_good_ppw=829,  pkts_per_yield=829
+rx_rate=14843281, rx_drop_rate=24331, rx_qlen=36
+tx_rate=9921078, tx_drop_rate=4922235, tx_qlen=94
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:534992088, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867548, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:276815091, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9919694, tx_err_rate:0
+num_wakeups=335547, wakeup_rate=11944
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=41, avg_wakeups=11944, yields=11943, msg_flag=0, 
+avg_ppw=1242, avg_good_ppw=830,  pkts_per_yield=830
+rx_rate=14840660, rx_drop_rate=26884, rx_qlen=60
+tx_rate=9919703, tx_drop_rate=4920937, tx_qlen=120
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:549859092, rx_err:0, rx_imissed:3386017 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867004, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:286741267, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9926176, tx_err_rate:0
+num_wakeups=347454, wakeup_rate=11907
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=65, avg_wakeups=11907, yields=11907, msg_flag=0, 
+avg_ppw=1246, avg_good_ppw=833,  pkts_per_yield=833
+rx_rate=14841065, rx_drop_rate=25851, rx_qlen=28
+tx_rate=9926156, tx_drop_rate=4914937, tx_qlen=100
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:564724748, rx_err:0, rx_imissed:3386052 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14865656, rx_err_rate:0, rx_imissed_rate:35 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:296661386, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9920119, tx_err_rate:0
+num_wakeups=359370, wakeup_rate=11916
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=53, avg_wakeups=11916, yields=11916, msg_flag=0, 
+avg_ppw=1244, avg_good_ppw=832,  pkts_per_yield=832
+rx_rate=14835324, rx_drop_rate=30312, rx_qlen=28
+tx_rate=9920116, tx_drop_rate=4915204, tx_qlen=90
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:579592804, rx_err:0, rx_imissed:3386052 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868056, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:306576974, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9915588, tx_err_rate:0
+num_wakeups=371209, wakeup_rate=11839
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=39, avg_wakeups=11839, yields=11839, msg_flag=0, 
+avg_ppw=1253, avg_good_ppw=837,  pkts_per_yield=837
+rx_rate=14842387, rx_drop_rate=25649, rx_qlen=68
+tx_rate=9915555, tx_drop_rate=4926768, tx_qlen=90
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:594459724, rx_err:0, rx_imissed:3386052 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14866920, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:316500767, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9923793, tx_err_rate:0
+num_wakeups=383180, wakeup_rate=11971
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=29, avg_wakeups=11971, yields=11971, msg_flag=0, 
+avg_ppw=1239, avg_good_ppw=828,  pkts_per_yield=828
+rx_rate=14842988, rx_drop_rate=23780, rx_qlen=44
+tx_rate=9923678, tx_drop_rate=4919322, tx_qlen=65
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:609328364, rx_err:0, rx_imissed:3386052 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868640, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:326419497, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9918730, tx_err_rate:0
+num_wakeups=395083, wakeup_rate=11903
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=11903, yields=11903, msg_flag=0, 
+avg_ppw=1246, avg_good_ppw=833,  pkts_per_yield=833
+rx_rate=14842544, rx_drop_rate=26052, rx_qlen=16
+tx_rate=9918724, tx_drop_rate=4923840, tx_qlen=103
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:624195212, rx_err:0, rx_imissed:3386052 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14866848, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:336341541, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9922044, tx_err_rate:0
+num_wakeups=407017, wakeup_rate=11934
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=44, avg_wakeups=11934, yields=11934, msg_flag=0, 
+avg_ppw=1243, avg_good_ppw=831,  pkts_per_yield=831
+rx_rate=14842342, rx_drop_rate=24506, rx_qlen=0
+tx_rate=9922071, tx_drop_rate=4920287, tx_qlen=118
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:639062400, rx_err:0, rx_imissed:3386052 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867188, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:346257716, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9916175, tx_err_rate:0
+num_wakeups=418854, wakeup_rate=11837
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=29, avg_wakeups=11837, yields=11837, msg_flag=0, 
+avg_ppw=1253, avg_good_ppw=837,  pkts_per_yield=837
+rx_rate=14841751, rx_drop_rate=25469, rx_qlen=40
+tx_rate=9916121, tx_drop_rate=4925598, tx_qlen=76
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:653930124, rx_err:0, rx_imissed:3386052 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867724, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:356165933, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9908217, tx_err_rate:0
+num_wakeups=430699, wakeup_rate=11845
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=29, avg_wakeups=11845, yields=11845, msg_flag=0, 
+avg_ppw=1253, avg_good_ppw=836,  pkts_per_yield=836
+rx_rate=14843368, rx_drop_rate=24244, rx_qlen=36
+tx_rate=9908212, tx_drop_rate=4935168, tx_qlen=85
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:668796916, rx_err:0, rx_imissed:3386052 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14866792, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:366087604, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9921671, tx_err_rate:0
+num_wakeups=442564, wakeup_rate=11865
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=35, avg_wakeups=11865, yields=11865, msg_flag=0, 
+avg_ppw=1251, avg_good_ppw=836,  pkts_per_yield=836
+rx_rate=14844472, rx_drop_rate=22416, rx_qlen=48
+tx_rate=9921744, tx_drop_rate=4922712, tx_qlen=123
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:683665216, rx_err:0, rx_imissed:3386052 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868300, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:376005265, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9917661, tx_err_rate:0
+num_wakeups=454431, wakeup_rate=11867
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=47, avg_wakeups=11867, yields=11867, msg_flag=0, 
+avg_ppw=1250, avg_good_ppw=835,  pkts_per_yield=835
+rx_rate=14843637, rx_drop_rate=24499, rx_qlen=72
+tx_rate=9917539, tx_drop_rate=4926082, tx_qlen=69
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:698533248, rx_err:0, rx_imissed:3386052 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868032, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:385925374, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9920109, tx_err_rate:0
+num_wakeups=466350, wakeup_rate=11919
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=44, avg_wakeups=11919, yields=11919, msg_flag=0, 
+avg_ppw=1244, avg_good_ppw=832,  pkts_per_yield=832
+rx_rate=14838052, rx_drop_rate=29944, rx_qlen=28
+tx_rate=9920091, tx_drop_rate=4918021, tx_qlen=78
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:713398200, rx_err:0, rx_imissed:3386684 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14864952, rx_err_rate:0, rx_imissed_rate:632 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:395850098, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9924724, tx_err_rate:0
+num_wakeups=478207, wakeup_rate=11857
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=24, avg_wakeups=11857, yields=11857, msg_flag=0, 
+avg_ppw=1251, avg_good_ppw=837,  pkts_per_yield=837
+rx_rate=14840227, rx_drop_rate=24681, rx_qlen=20
+tx_rate=9924696, tx_drop_rate=4915539, tx_qlen=91
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:728264084, rx_err:0, rx_imissed:3386684 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14865884, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:405763995, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9913897, tx_err_rate:0
+num_wakeups=490153, wakeup_rate=11946
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=86, avg_wakeups=11946, yields=11946, msg_flag=0, 
+avg_ppw=1242, avg_good_ppw=829,  pkts_per_yield=829
+rx_rate=14841792, rx_drop_rate=24076, rx_qlen=80
+tx_rate=9913861, tx_drop_rate=4927887, tx_qlen=75
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:743131780, rx_err:0, rx_imissed:3386684 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867696, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:415687023, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9923028, tx_err_rate:0
+num_wakeups=502123, wakeup_rate=11970
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=11970, yields=11970, msg_flag=0, 
+avg_ppw=1240, avg_good_ppw=828,  pkts_per_yield=828
+rx_rate=14846475, rx_drop_rate=21265, rx_qlen=40
+tx_rate=9922966, tx_drop_rate=4923509, tx_qlen=66
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:757999840, rx_err:0, rx_imissed:3386684 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868060, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:425598612, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9911589, tx_err_rate:0
+num_wakeups=513915, wakeup_rate=11792
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=24, avg_wakeups=11792, yields=11792, msg_flag=0, 
+avg_ppw=1258, avg_good_ppw=840,  pkts_per_yield=840
+rx_rate=14845040, rx_drop_rate=23076, rx_qlen=44
+tx_rate=9911574, tx_drop_rate=4933418, tx_qlen=123
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:772867144, rx_err:0, rx_imissed:3386684 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14867304, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:435525048, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9926436, tx_err_rate:0
+num_wakeups=525903, wakeup_rate=11988
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=11988, yields=11988, msg_flag=0, 
+avg_ppw=1238, avg_good_ppw=828,  pkts_per_yield=828
+rx_rate=14843883, rx_drop_rate=23245, rx_qlen=60
+tx_rate=9926395, tx_drop_rate=4917468, tx_qlen=88
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:787735228, rx_err:0, rx_imissed:3386684 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868084, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:445450295, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9925247, tx_err_rate:0
+num_wakeups=537915, wakeup_rate=12012
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=39, avg_wakeups=12012, yields=12012, msg_flag=0, 
+avg_ppw=1235, avg_good_ppw=826,  pkts_per_yield=826
+rx_rate=14843592, rx_drop_rate=24512, rx_qlen=0
+tx_rate=9925234, tx_drop_rate=4918414, tx_qlen=117
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:802603228, rx_err:0, rx_imissed:3386684 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868000, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:455374704, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9924409, tx_err_rate:0
+num_wakeups=549804, wakeup_rate=11889
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=18, avg_wakeups=11889, yields=11889, msg_flag=0, 
+avg_ppw=1248, avg_good_ppw=834,  pkts_per_yield=834
+rx_rate=14842621, rx_drop_rate=25383, rx_qlen=36
+tx_rate=9924421, tx_drop_rate=4918160, tx_qlen=119
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:817469868, rx_err:0, rx_imissed:3386684 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14866640, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:465282703, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9907999, tx_err_rate:0
+num_wakeups=561713, wakeup_rate=11909
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=21, avg_wakeups=11909, yields=11909, msg_flag=0, 
+avg_ppw=1246, avg_good_ppw=831,  pkts_per_yield=831
+rx_rate=14844376, rx_drop_rate=22184, rx_qlen=12
+tx_rate=9907985, tx_drop_rate=4936435, tx_qlen=123
+
+[2J[1;1HPORTS
+-----
+Port 0: '8c:dc:d4:ac:6a:fc'	Port 1: '8c:dc:d4:ac:6c:7c'	
+
+Port:0, rx:832338100, rx_err:0, rx_imissed:3386684 rx_nombuf:0, tx:0, tx_err:0
+Port:0, rx_rate:14868232, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:0, tx_err_rate:0
+Port:1, rx:0, rx_err:0, rx_imissed:0 rx_nombuf:0, tx:475204646, tx_err:0
+Port:1, rx_rate:0, rx_err_rate:0, rx_imissed_rate:0 rx_nombuf_rate:0, tx_rate:9921943, tx_err_rate:0
+num_wakeups=573617, wakeup_rate=11904
+
+CLIENTS
+-------
+Client  1:[1],  comp_cost=27, avg_wakeups=11904, yields=11904, msg_flag=0, 
+avg_ppw=1247, avg_good_ppw=833,  pkts_per_yield=833
+rx_rate=14845172, rx_drop_rate=23036, rx_qlen=72
+tx_rate=9921910, tx_drop_rate=4923174, tx_qlen=84
+

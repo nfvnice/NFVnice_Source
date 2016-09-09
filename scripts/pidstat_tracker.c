@@ -10,9 +10,9 @@ typedef struct peformance_data_inputs {
         char *nf_tags;
 }pd_inputs_t;
 
-const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 2 15 | tee pidstat_log.csv";
+const char *cmd = "pidstat -C \"bridge|forward\" -lrsuwh 1 30 | tee pidstat_log.csv";
 
-const char *cmd2 = "perf stat --cpu=8,10 --per-core -r 15 -o pidstat2_log.csv sleep 2"; //-I 2000
+const char *cmd2 = "perf stat --cpu=8,10 --per-core -r 30 -o pidstat2_log.csv sleep 1"; //-I 2000
 //const char *cmd2 = "perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations --cpu=8,10 --per-core -o pidstat2_log.csv sleep 10"; //-I 2000
 //const char *cmd2 = "perf stat --cpu=8,10 --per-core -o pidstat2_log.csv sleep 30"; //-I 2000
 

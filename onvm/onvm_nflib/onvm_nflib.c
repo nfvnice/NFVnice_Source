@@ -273,6 +273,9 @@ void onvm_nf_yeild(struct onvm_nf_info* info) {
         zmq_recv(mutex, msg_t, sizeof(msg_t), 0);
         #endif
 
+        #ifdef USE_POLL_MODE
+        // no operation; continue;
+        #endif
 }
 #endif  //INTERRUPT_SEM
 
