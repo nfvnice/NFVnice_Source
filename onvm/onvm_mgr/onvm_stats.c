@@ -140,7 +140,7 @@ onvm_stats_display_ports(unsigned difftime) {
                                 onvm_stats_print_MAC(ports->id[i]));
         printf("\n\n");
 
-        #ifndef USE_EXTENDED_PORT_STATS
+        //#ifndef USE_EXTENDED_PORT_STATS
         /* Arrays to store last TX/RX count to calculate rate */
         static uint64_t tx_last[RTE_MAX_ETHPORTS];
         static uint64_t rx_last[RTE_MAX_ETHPORTS];
@@ -159,9 +159,9 @@ onvm_stats_display_ports(unsigned difftime) {
                 rx_last[i] = ports->rx_stats.rx[ports->id[i]];
                 tx_last[i] = ports->tx_stats.tx[ports->id[i]];
         }
-        #else
+        //#else
         get_port_stats_rate(difftime);
-        #endif
+        //#endif
 }
 
 

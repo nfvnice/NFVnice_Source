@@ -53,8 +53,6 @@
 
 
 /********************************Global variables*****************************/
-
-
 struct client *clients = NULL;
 struct port_info *ports = NULL;
 
@@ -77,8 +75,6 @@ void *onvm_socket_id;
 void *onvm_socket_ctx;
 #endif
 /*********************************Prototypes**********************************/
-
-
 static int init_mbuf_pools(void);
 static int init_client_info_pool(void);
 static int init_port(uint8_t port_num);

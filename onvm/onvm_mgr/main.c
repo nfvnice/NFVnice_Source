@@ -103,16 +103,15 @@ const char *cmd2 = "perf stat --cpu=8  -r 30 -o pidstat2_log_POLL.csv sleep 1"; 
 //const char *cmd2 = "perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations --cpu=8,10 --per-core -o pidstat2_log.csv sleep 10"; //-I 2000
 //const char *cmd2 = "perf stat --cpu=8,10 --per-core -o pidstat2_log.csv sleep 30"; //-I 2000
 static int do_performance_log(void __attribute__((unused)) *pd_data) {
-        /* ls -al | grep '^d' */
-        FILE *pp=NULL, *pp2=NULL;
-        //pp = popen("ls -al", "r");
+        FILE *pp =NULL;
+        FILE *pp2 =NULL;
+        char buf[32];
         pp = popen(cmd, "r");
         pp2 = popen(cmd2, "r");
         int done = 0;
-        if (pp != NULL && pp2 !=NULL) {
+        if (pp != NULL && pp2 != NULL) {
                 while (1) {
                         char *line = NULL;
-                        char buf[1000];
                         line = fgets(buf, sizeof buf, pp);
                         if (line == NULL) done |= 0x01; //break;
                         //printf("%s", line);
@@ -123,6 +122,7 @@ static int do_performance_log(void __attribute__((unused)) *pd_data) {
 
                         if(done == 0x03) break;
                 }
+                printf("\n perf_logger: %d\n", done);
                 sleep(10);
                 pclose(pp);
                 pclose(pp2);
@@ -131,6 +131,7 @@ static int do_performance_log(void __attribute__((unused)) *pd_data) {
 }
 static int
 performance_log_thread(void *pdata) {
+        //if(!pdata) return 0;
         while (1) {
                 if(pdata){;}
 
@@ -404,7 +405,7 @@ main(int argc, char *argv[]) {
         cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
         printf("performance_record_lcore=%u\n", cur_lcore);
         rte_eal_remote_launch(performance_log_thread,NULL, cur_lcore);
-
+        //performance_log_thread(NULL);
 
         /* this change is Not needed anymore
         cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);

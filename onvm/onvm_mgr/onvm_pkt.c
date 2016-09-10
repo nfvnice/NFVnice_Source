@@ -213,6 +213,24 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
         if (!onvm_nf_is_valid(cl))
                 return;
 
+        //#define PRE_PROCESS_DROP_ON_RX
+        #ifdef PRE_PROCESS_DROP_ON_RX
+        //#define MAX_RING_QUEUE_SIZE (CLIENT_QUEUE_RINGSIZE - PACKET_READ_SIZE)
+        /* check here for the Tx Ring size to drop apriori to pushing to NFs Rx Ring */
+        if(rte_ring_count(cl->tx_q) >= (CLIENT_QUEUE_RINGSIZE-rte_ring_count(cl->rx_q) - thread->nf_rx_buf[client].count - PACKET_READ_SIZE) ) {
+        //if(rte_ring_count(cl->tx_q) >= (CLIENT_QUEUE_RINGSIZE-rte_ring_count(cl->rx_q)) ) {
+        //if(rte_ring_count(cl->tx_q) >= MAX_RING_QUEUE_SIZE) {
+        //if (rte_ring_full(cl->tx_q)) {
+                for (i = 0; i < thread->nf_rx_buf[client].count; i++) {
+                        onvm_pkt_drop(thread->nf_rx_buf[client].buffer[i]);
+                }
+                cl->stats.rx_drop += thread->nf_rx_buf[client].count;
+                thread->nf_rx_buf[client].count = 0;
+                //cl->stats.rx_drop += !onvm_pkt_drop(pkt); //onvm_pkt_drop(pkt); -- This call doesnt always ensure that freed packet is set to null; hence not a good way; revert others as well.
+                return;
+        }
+        #endif //PRE_PROCESS_DROP_ON_RX
+
         if (rte_ring_enqueue_bulk(cl->rx_q, (void **)thread->nf_rx_buf[client].buffer,
                         thread->nf_rx_buf[client].count) != 0) {
                 for (i = 0; i < thread->nf_rx_buf[client].count; i++) {
@@ -263,6 +281,24 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
                 return;
         }
 
+        /* For Drop: Earlier the better, but this part is not only expensive,
+         * but can lead to drop of intermittent packets and not batch of packets, and can still result in Tx drops.
+         */
+        //#define PRE_PROCESS_DROP_ON_RX_0
+        #ifdef PRE_PROCESS_DROP_ON_RX_0
+        #define MAX_RING_QUEUE_SIZE (CLIENT_QUEUE_RINGSIZE - PACKET_READ_SIZE)
+        /* check here for the Tx Ring size to drop apriori to pushing to NF */
+        //if(rte_ring_count(cl->tx_q) >= (CLIENT_QUEUE_RINGSIZE-rte_ring_count(cl->rx_q) - thread->nf_rx_buf[dst_instance_id].count) ) {
+        if(rte_ring_count(cl->tx_q) >= (CLIENT_QUEUE_RINGSIZE-rte_ring_count(cl->rx_q)) ) {
+        //if(rte_ring_count(cl->tx_q) >= MAX_RING_QUEUE_SIZE) {
+        //if (rte_ring_full(cl->tx_q)) {
+                onvm_pkt_drop(pkt);
+                cl->stats.rx_drop+=1;
+                //cl->stats.rx_drop += !onvm_pkt_drop(pkt); //onvm_pkt_drop(pkt); -- This call doesnt always ensure that freed packet is set to null; hence not a good way; revert others as well.
+                return;
+        }
+        #endif //PRE_PROCESS_DROP_ON_RX_0
+
         thread->nf_rx_buf[dst_instance_id].buffer[thread->nf_rx_buf[dst_instance_id].count++] = pkt;
         if (thread->nf_rx_buf[dst_instance_id].count == PACKET_READ_SIZE) {
                 onvm_pkt_flush_nf_queue(thread, dst_instance_id);
@@ -293,9 +329,11 @@ onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struc
 
         switch (meta->action) {
                 case ONVM_NF_ACTION_DROP:
+                        onvm_pkt_drop(pkt);
+                        cl->stats.act_drop++;
                         // if the packet is drop, then <return value> is 0
                         // and !<return value> is 1.
-                        cl->stats.act_drop += !onvm_pkt_drop(pkt);
+                        //cl->stats.act_drop += !onvm_pkt_drop(pkt);
                         break;
                 case ONVM_NF_ACTION_TONF:
                         cl->stats.act_tonf++;
