@@ -215,6 +215,7 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
 
         //#define PRE_PROCESS_DROP_ON_RX
         #ifdef PRE_PROCESS_DROP_ON_RX
+        #ifdef DROP_APPROACH_2
         //#define MAX_RING_QUEUE_SIZE (CLIENT_QUEUE_RINGSIZE - PACKET_READ_SIZE)
         /* check here for the Tx Ring size to drop apriori to pushing to NFs Rx Ring */
         if(rte_ring_count(cl->tx_q) >= (CLIENT_QUEUE_RINGSIZE-rte_ring_count(cl->rx_q) - thread->nf_rx_buf[client].count - PACKET_READ_SIZE) ) {
@@ -229,6 +230,7 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
                 //cl->stats.rx_drop += !onvm_pkt_drop(pkt); //onvm_pkt_drop(pkt); -- This call doesnt always ensure that freed packet is set to null; hence not a good way; revert others as well.
                 return;
         }
+        #endif // DROP_APPROACH_2
         #endif //PRE_PROCESS_DROP_ON_RX
 
         if (rte_ring_enqueue_bulk(cl->rx_q, (void **)thread->nf_rx_buf[client].buffer,

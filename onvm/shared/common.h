@@ -68,12 +68,17 @@
 
 /* Note: Make the PACKET_READ_SIZE defined in onvm_mgr.h same as PKT_READ_SIZE defined in onvm_nflib_internal.h, better get rid of latter */
 #define PRE_PROCESS_DROP_ON_RX  // To lookup NF Tx queue occupancy and drop packets pro-actively before pushing to NFs Rx Ring.
+//#define DROP_APPROACH_1
+#define DROP_APPROACH_2
+//#define DROP_APPROACH_3
+//#define DROP_APPROACH_3_WITH_YIELD
+
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
-#define USE_SEMAPHORE           // Use Semaphore for IPC
+//#define USE_SEMAPHORE           // Use Semaphore for IPC
 //#define USE_MQ                // USe Message Queue for IPC between NFs and NF manager
 //#define USE_FIFO              // Use Named Pipe (FIFO) -- cannot work in our model as Writer cannot be opened in nonblock
 //#define USE_SIGNAL             // Use Signals (SIGUSR1) for IPC
-//#define USE_SCHED_YIELD         // Use Explicit CPU Relinquish CPU, no explicit IPC other than shared mem read/write
+#define USE_SCHED_YIELD         // Use Explicit CPU Relinquish CPU, no explicit IPC other than shared mem read/write
 //#define USE_NANO_SLEEP         // Use Sleep call to Reqlinqush CPU no explicit IPC other than shared mem read/write
 //#define USE_SOCKET              // Use socket for IPC, NFs block on recv and mgr sends to ublock clients
 //#define USE_FLOCK               // USE FILE_LOCK PREMITIVE for Blocking the NFs and mgr opens files in locked mode
@@ -126,7 +131,12 @@ struct client_tx_stats {
         volatile uint64_t comp_cost[MAX_CLIENTS];
         volatile uint64_t wkup_count[MAX_CLIENTS];
         volatile uint64_t prev_wkup_count[MAX_CLIENTS];
-        #endif
+        #ifdef PRE_PROCESS_DROP_ON_RX
+        #ifdef DROP_APPROACH_1
+        volatile uint64_t tx_predrop[MAX_CLIENTS];
+        #endif  //DROP_APPROACH_1
+        #endif  //PRE_PROCESS_DROP_ON_RX
+        #endif  //INTERRUPT_SEM
         /* FIXME: Why are these stats kept separately from the rest?
          * Would it be better to have an array of struct client_tx_stats instead
          * of putting the array inside the struct? How can we avoid cache

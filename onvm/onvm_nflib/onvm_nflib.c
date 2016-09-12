@@ -302,8 +302,12 @@ onvm_nflib_run(
         for (; keep_running;) {
                 uint16_t i, j, nb_pkts = PKT_READ_SIZE;
                 void *pktsTX[PKT_READ_SIZE];
-                int tx_batch_size = 0;
+                uint32_t tx_batch_size = 0;
                 int ret_act;
+
+
+                /* $$$$$: TEST only( remove later): wait for signal from NF Manager to start $$$$$ */
+                onvm_nf_yeild(info);
 
                 /* try dequeuing max possible packets first, if that fails, get the
                  * most we can. Loop body should only execute once, maximum */
@@ -317,6 +321,23 @@ onvm_nflib_run(
                         #endif
                         continue;
                 }
+
+                /* Precheck if Tx buffer can hold the processed packets, if not Drop */
+                #ifdef PRE_PROCESS_DROP_ON_RX
+                #ifdef DROP_APPROACH_1
+                /* check here for the Tx Ring size to drop apriori to pushing to NFs Rx Ring */
+                if(rte_ring_free_count(tx_ring) <= PKT_READ_SIZE) {
+                        for (j = 0; j < nb_pkts; j++) {
+                                 rte_pktmbuf_free(pkts[j]);
+                                 //Note: Difficult to account for number of Dropped buffers as client struct is not shared.
+                                 tx_stats->tx_predrop[nf_info->instance_id]++;
+                        }
+                        nb_pkts=0;continue;
+                }
+                #endif //DROP_APPROACH_1
+                #endif //PRE_PROCESS_DROP_ON_RX
+
+
                 /* Give each packet to the user proccessing function */
                 for (i = 0; i < nb_pkts; i++) {
                         meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
@@ -348,10 +369,28 @@ onvm_nflib_run(
                 }
 
                 if (unlikely(tx_batch_size > 0 && rte_ring_enqueue_bulk(tx_ring, pktsTX, tx_batch_size) == -ENOBUFS)) {
+                        #ifdef PRE_PROCESS_DROP_ON_RX
+                        #ifdef DROP_APPROACH_3
+                        int ret_status = -ENOBUFS;
+                        do
+                        {
+                                j++;
+                                #ifdef DROP_APPROACH_3_WITH_YIELD
+                                sched_yield();
+                                #endif
+                                if (tx_batch_size <= rte_ring_free_count(tx_ring)) {
+                                        ret_status = rte_ring_enqueue_bulk(tx_ring, pktsTX, tx_batch_size);
+                                        //if ( 0 ==  ret_status) break;
+                                }
+                        }while(ret_status);
+                        //printf("Total Retry attempts [%d]:", j);
+                        #else
                         tx_stats->tx_drop[info->instance_id] += tx_batch_size;
                         for (j = 0; j < tx_batch_size; j++) {
                                 rte_pktmbuf_free(pktsTX[j]);
                         }
+                        #endif
+                        #endif
                 } else {
                         tx_stats->tx[info->instance_id] += tx_batch_size;
                 }
@@ -524,6 +563,14 @@ onvm_nflib_handle_signal(int sig)
 
 
 #ifdef INTERRUPT_SEM
+static void set_cpu_sched_policy_and_mode(void) {
+        return;
+        struct sched_param param;
+        pid_t my_pid = getpid();
+        sched_getparam(my_pid, &param);
+        param.__sched_priority = 20;
+        sched_setscheduler(my_pid, SCHED_RR, &param);
+}
 static void 
 init_shared_cpu_info(uint16_t instance_id) {
         const char *sem_name;
@@ -620,6 +667,8 @@ init_shared_cpu_info(uint16_t instance_id) {
         }
 
         flag_p = (rte_atomic16_t *)shm;
+
+        set_cpu_sched_policy_and_mode();
 }
 #endif
 

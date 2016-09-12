@@ -210,9 +210,18 @@ onvm_stats_display_clients(unsigned difftime) {
                 if (!onvm_nf_is_valid(&clients[i]))
                         continue;
                 const uint64_t rx = clients[i].stats.rx;
-                const uint64_t rx_drop = clients[i].stats.rx_drop;
+                const uint64_t rx_drop = clients[i].stats.rx_drop
+                        #ifdef PRE_PROCESS_DROP_ON_RX
+                        #ifdef DROP_APPROACH_1
+                               + clients_stats->tx_predrop[i]
+                        #endif
+                        #endif
+                                                           ;
+
                 const uint64_t tx = clients_stats->tx[i];
                 const uint64_t tx_drop = clients_stats->tx_drop[i];
+
+
 
                 #ifndef INTERRUPT_SEM
                 const uint64_t act_drop = clients[i].stats.act_drop;
