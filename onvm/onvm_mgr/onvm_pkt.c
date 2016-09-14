@@ -213,6 +213,9 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
         if (!onvm_nf_is_valid(cl))
                 return;
 
+        /* Note: Adding check here might have impact on cases where NF is transferring packets from its Tx queue to Rx queue
+         * Possible situation where the service Id is repeated in the chain and Instance is same for processing.
+         */
         //#define PRE_PROCESS_DROP_ON_RX
         #ifdef PRE_PROCESS_DROP_ON_RX
         #ifdef DROP_APPROACH_2
