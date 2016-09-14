@@ -29,6 +29,7 @@
 #include <fcntl.h>           /* For O_* constants */
 #include <sys/stat.h>        /* For mode constants */
 #include <semaphore.h>
+#define USE_THIS_CLOCK  CLOCK_THREAD_CPUTIME_ID //CLOCK_PROCESS_CPUTIME_ID //CLOCK_MONOTONIC
 
 #ifdef USE_ZMQ
 #include <zmq.h>
@@ -53,7 +54,7 @@ unsigned long int avg_lat = 0;
 int get_cur_time(void* ct)
 {
 #ifdef HAS_CLOCK_GETTIME_MONOTONIC
-    if (clock_gettime(CLOCK_MONOTONIC,(struct timespec *)ct) == -1) {
+    if (clock_gettime(USE_THIS_CLOCK,(struct timespec *)ct) == -1) {
       perror("clock_gettime");
       return 1;
     }
@@ -68,7 +69,7 @@ int get_cur_time(void* ct)
 int get_start_time()
 {
 #ifdef HAS_CLOCK_GETTIME_MONOTONIC
-    if (clock_gettime(CLOCK_MONOTONIC, &start) == -1) {
+    if (clock_gettime(USE_THIS_CLOCK, &start) == -1) {
       perror("clock_gettime");
       return 1;
     }
@@ -83,7 +84,7 @@ int get_start_time()
 int get_stop_time()
 {
 #ifdef HAS_CLOCK_GETTIME_MONOTONIC
-    if (clock_gettime(CLOCK_MONOTONIC, &stop) == -1) {
+    if (clock_gettime(USE_THIS_CLOCK, &stop) == -1) {
       perror("clock_gettime");
       return 1;
     }
@@ -151,7 +152,7 @@ void test_nanosleep()
         {
                 get_start_time();
                 //nanosleep(&dur, &rem);
-                clock_nanosleep(CLOCK_MONOTONIC, 0,  &dur, &rem);      // TIMER_ABSTIME    
+                clock_nanosleep(CLOCK_MONOTONIC, 0,  &dur, &rem);      // TIMER_ABSTIME
                 get_stop_time();
                 ttl_elapsed = get_elapsed_time();
                 min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));

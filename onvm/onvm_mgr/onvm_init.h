@@ -89,8 +89,8 @@
 /***********************************Macros************************************/
 
 
-#define MBUFS_PER_CLIENT  10240 //1536
-#define MBUFS_PER_PORT 10240 //1536
+#define MBUFS_PER_CLIENT 1536 //65536 //10240 //1536
+#define MBUFS_PER_PORT 1536 //65536 //10240 //1536
 #define MBUF_CACHE_SIZE 512
 #define MBUF_OVERHEAD (sizeof(struct rte_mbuf) + RTE_PKTMBUF_HEADROOM)
 #define RX_MBUF_DATA_SIZE 2048
@@ -99,9 +99,9 @@
 #define NF_INFO_SIZE sizeof(struct onvm_nf_info)
 #define NF_INFO_CACHE 8
 
-#define RTE_MP_RX_DESC_DEFAULT 512
-#define RTE_MP_TX_DESC_DEFAULT 512
-#define CLIENT_QUEUE_RINGSIZE 128  //128
+#define RTE_MP_RX_DESC_DEFAULT 1024 //1024 //1536 //2048 //1024 //512
+#define RTE_MP_TX_DESC_DEFAULT 1024 //1024 //1536 //2048 //1024 //512
+#define CLIENT_QUEUE_RINGSIZE 4096 //4096 //4096  //4096 //128
 
 #define NO_FLAGS 0
 

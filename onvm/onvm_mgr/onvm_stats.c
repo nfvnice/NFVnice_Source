@@ -275,7 +275,7 @@ onvm_stats_display_clients(unsigned difftime) {
                 vol_rate, rx_drop_rate, rx_qlen, serv_rate, serv_drop_rate, tx_qlen);
 
                 clients[i].stats.prev_rx = clients[i].stats.rx;
-                clients[i].stats.prev_rx_drop = clients[i].stats.rx_drop;
+                clients[i].stats.prev_rx_drop = rx_drop; //clients[i].stats.rx_drop;
                 clients_stats->prev_tx[i] = clients_stats->tx[i];
                 clients_stats->prev_tx_drop[i] = clients_stats->tx_drop[i];
                 #endif

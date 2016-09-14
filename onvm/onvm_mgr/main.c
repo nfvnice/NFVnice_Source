@@ -106,6 +106,7 @@ static int do_performance_log(void __attribute__((unused)) *pd_data) {
         FILE *pp =NULL;
         FILE *pp2 =NULL;
         char buf[32];
+        return 0;
         pp = popen(cmd, "r");
         pp2 = popen(cmd2, "r");
         int done = 0;

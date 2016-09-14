@@ -82,7 +82,7 @@
 
 
 // Number of packets to attempt to read from queue
-#define PKT_READ_SIZE  ((uint16_t)32) 
+#define PKT_READ_SIZE  ((uint16_t)32)
 
 
 /******************************Global Variables*******************************/

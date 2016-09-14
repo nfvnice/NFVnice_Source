@@ -277,6 +277,22 @@ void onvm_nf_yeild(struct onvm_nf_info* info) {
         // no operation; continue;
         #endif
 }
+
+uint64_t compute_start_cycles(void);// __attribute__((always_inline));
+uint64_t compute_total_cycles(uint64_t start_t); //__attribute__((always_inline));
+
+uint64_t compute_start_cycles(void)
+{
+
+        return rte_rdtsc();
+        //return (uint64_t) 100;
+}
+uint64_t compute_total_cycles(uint64_t start_t)
+{
+       uint64_t end_t = compute_start_cycles();
+       return end_t - start_t;
+}
+
 #endif  //INTERRUPT_SEM
 
 int
@@ -289,7 +305,7 @@ onvm_nflib_run(
         
         #ifdef INTERRUPT_SEM
         // To account NFs computation cost (sampled over SAMPLING_RATE packets)
-        uint64_t start_tsc = 0, end_tsc = 0;
+        uint64_t start_tsc = 0; // end_tsc = 0;
         #endif
         
         printf("\nClient process %d handling packets\n", info->instance_id);
@@ -307,7 +323,7 @@ onvm_nflib_run(
 
 
                 /* $$$$$: TEST only( remove later): wait for signal from NF Manager to start $$$$$ */
-                onvm_nf_yeild(info);
+                //onvm_nf_yeild(info);
 
                 /* try dequeuing max possible packets first, if that fails, get the
                  * most we can. Loop body should only execute once, maximum */
@@ -329,9 +345,9 @@ onvm_nflib_run(
                 if(rte_ring_free_count(tx_ring) <= PKT_READ_SIZE) {
                         for (j = 0; j < nb_pkts; j++) {
                                  rte_pktmbuf_free(pkts[j]);
-                                 //Note: Difficult to account for number of Dropped buffers as client struct is not shared.
-                                 tx_stats->tx_predrop[nf_info->instance_id]++;
                         }
+                        //Note: Difficult to account for number of Dropped buffers as client struct is not shared.
+                        tx_stats->tx_predrop[nf_info->instance_id]+=nb_pkts;
                         nb_pkts=0;continue;
                 }
                 #endif //DROP_APPROACH_1
@@ -346,7 +362,7 @@ onvm_nflib_run(
                         counter++;
                         meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
                         if (counter % SAMPLING_RATE == 0) {
-                                start_tsc = rte_rdtsc();
+                                start_tsc = compute_start_cycles(); //rte_rdtsc();
                         }
                         #endif
 
@@ -354,8 +370,9 @@ onvm_nflib_run(
                         
                         #ifdef INTERRUPT_SEM
                         if (counter % SAMPLING_RATE == 0) {
-                                end_tsc = rte_rdtsc();
-                                tx_stats->comp_cost[info->instance_id] = end_tsc - start_tsc;
+                                //end_tsc = rte_rdtsc();
+                                //tx_stats->comp_cost[info->instance_id] = end_tsc - start_tsc;
+                                tx_stats->comp_cost[info->instance_id] = compute_total_cycles(start_tsc);
                         }
                         #endif
 
