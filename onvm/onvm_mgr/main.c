@@ -218,7 +218,7 @@ rx_thread_main(void *arg) {
         return 0;
 }
 
-
+#define PACKET_READ_SIZE_TX ((uint16_t)(PACKET_READ_SIZE*4))
 static int
 tx_thread_main(void *arg) {
         struct client *cl;
@@ -253,7 +253,7 @@ tx_thread_main(void *arg) {
                         while (tx_count > 0 &&
                                 unlikely(rte_ring_dequeue_bulk(cl->tx_q, (void **) pkts, tx_count) != 0)) {
                                 tx_count = (uint16_t)RTE_MIN(rte_ring_count(cl->tx_q),
-                                        PACKET_READ_SIZE);
+                                                PACKET_READ_SIZE);
                         }
 
                         /* Now process the Client packets read */

@@ -5,7 +5,7 @@
  *   BSD LICENSE
  *
  *   Copyright(c)
- *            2015-2016 George Wfashington University
+ *            2015-2016 George Washington University
  *            2015-2016 University of California Riverside
  *   All rights reserved.
  *
