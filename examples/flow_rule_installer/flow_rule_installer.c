@@ -326,7 +326,10 @@ static int
 setup_service_chain_for_flow_entry(struct onvm_service_chain *sc) {
         static uint32_t next_sc = 0;
         int index = 0, service_id=0, chain_len = 0;
-        for(index =0; index < ONVM_MAX_CHAIN_LENGTH; index++) {
+        if (0 == max_service_chains) { 
+                return 0;
+        }
+        for(index =0; index < max_service_chains; index++) {
                 service_id = services[next_sc][index];
                 if (service_id > 0){
                         /* if(chain_len == 0){
@@ -339,10 +342,14 @@ setup_service_chain_for_flow_entry(struct onvm_service_chain *sc) {
                 }
         }
         if(chain_len){
-                printf("setup the service chain of length: %d",chain_len);
+                printf("setup the service chain of length: %d\n ",chain_len);
                 //next_sc = (next_sc+1)%max_service_chains;
         }
-        next_sc = (next_sc == (uint32_t)max_service_chains)?(0):(next_sc+1);
+        else
+        {
+                printf("Didnt setup the service chain of length: %d\n ",chain_len);
+        }
+        next_sc = (next_sc == ((uint32_t)(max_service_chains-1))?(0):(next_sc+1));
         return chain_len;
 }
 
@@ -547,7 +554,7 @@ static int
 setup_flow_rule_and_sc_entries(void) {
 
         int ret = 0;
-        uint32_t random_flows = populate_random_flow_rules(MIN(globals.max_ft_rules/2,MAX_FLOW_TABLE_ENTRIES));
+        uint32_t random_flows = 0; //populate_random_flow_rules(MIN(globals.max_ft_rules/2,MAX_FLOW_TABLE_ENTRIES));
         max_ft_entries+= random_flows;
 
         /* Now add the Flow Tuples to the Global Flow Table with appropriate Service chains */
