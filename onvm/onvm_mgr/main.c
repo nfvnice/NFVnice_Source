@@ -188,6 +188,7 @@ static int
 rx_thread_main(void *arg) {
         uint16_t i, rx_count;
         struct rte_mbuf *pkts[PACKET_READ_SIZE];
+        //struct rte_mbuf *pkts[1024];
         struct thread_info *rx = (struct thread_info*)arg;
 
         RTE_LOG(INFO,

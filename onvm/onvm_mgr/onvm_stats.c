@@ -143,21 +143,28 @@ onvm_stats_display_ports(unsigned difftime) {
         //#ifndef USE_EXTENDED_PORT_STATS
         /* Arrays to store last TX/RX count to calculate rate */
         static uint64_t tx_last[RTE_MAX_ETHPORTS];
+        static uint64_t tx_drop_last[RTE_MAX_ETHPORTS];
         static uint64_t rx_last[RTE_MAX_ETHPORTS];
 
         for (i = 0; i < ports->num_ports; i++) {
                 printf("Port %u - rx: %9"PRIu64"  (%9"PRIu64" pps)\t"
-                                "tx: %9"PRIu64"  (%9"PRIu64" pps)\n",
+                                "tx: %9"PRIu64"  (%9"PRIu64" pps) \t"
+                                "tx_drop: %9"PRIu64"  (%9"PRIu64" pps)\n",
                                 (unsigned)ports->id[i],
                                 ports->rx_stats.rx[ports->id[i]],
                                 (ports->rx_stats.rx[ports->id[i]] - rx_last[i])
                                         /difftime,
-                                ports->tx_stats.tx[ports->id[i]],
+                                        ports->tx_stats.tx[ports->id[i]],
                                 (ports->tx_stats.tx[ports->id[i]] - tx_last[i])
-                                        /difftime);
+                                        /difftime,
+                                        ports->tx_stats.tx_drop[ports->id[i]],
+                                (ports->tx_stats.tx_drop[ports->id[i]] - tx_drop_last[i])
+                                        /difftime
+                                );
 
                 rx_last[i] = ports->rx_stats.rx[ports->id[i]];
                 tx_last[i] = ports->tx_stats.tx[ports->id[i]];
+                tx_drop_last[i] = ports->tx_stats.tx_drop[ports->id[i]];
         }
         //#else
         get_port_stats_rate(difftime);

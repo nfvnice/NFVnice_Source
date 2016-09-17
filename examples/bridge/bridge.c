@@ -62,7 +62,7 @@
 struct onvm_nf_info *nf_info;
 
 /* number of package between each print */
-static uint32_t print_delay = 1000000;
+static uint32_t print_delay = 5000000;
 
 /*
  * Print a usage message
