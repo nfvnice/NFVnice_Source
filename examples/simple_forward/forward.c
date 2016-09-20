@@ -52,6 +52,7 @@
 #include <rte_common.h>
 #include <rte_mbuf.h>
 #include <rte_ip.h>
+#include <rte_ether.h>
 
 #include "onvm_nflib.h"
 #include "onvm_pkt_helper.h"
@@ -149,6 +150,42 @@ do_stats_display(struct rte_mbuf* pkt) {
         }
 }
 
+void
+do_check_and_insert_vlan_tag(struct rte_mbuf* pkt);
+void
+do_check_and_insert_vlan_tag(struct rte_mbuf* pkt) {
+        /* This function will check if it is a valid ETH Packet
+         * and if it is not a vlan_tagged, inserts a vlan tag
+         */
+        struct ether_hdr *eth = rte_pktmbuf_mtod(pkt, struct ether_hdr *);
+        if (!eth) {
+                exit(0);
+                return ;
+        }
+        if (ETHER_TYPE_IPv4 == rte_be_to_cpu_16(eth->ether_type)) {
+                if (rte_vlan_insert(&pkt)) {
+                        printf("\nFailed to Insert Vlan Header to the Packet!!!!\n");
+                        return;
+                }
+                struct vlan_hdr *vlan = (struct vlan_hdr*)(rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr));
+                vlan->vlan_tci = rte_cpu_to_be_16((uint16_t)0x10);
+                //vlan->eth_proto = rte_cpu_to_be_16(ETHER_TYPE_ARP);
+                //printf("\nVLAN [0x%x, 0x%x] is already inserted!\n", rte_be_to_cpu_16(vlan->vlan_tci), rte_be_to_cpu_16(vlan->eth_proto));
+        }
+        else if (ETHER_TYPE_VLAN == rte_be_to_cpu_16(eth->ether_type)) {
+                /*
+                 struct vlan_hdr *vlan = (struct vlan_hdr*)(rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr));
+                 if (vlan) {
+                         printf("\nVLAN [0x%x, 0x%x] is already inserted!\n", rte_be_to_cpu_16(vlan->vlan_tci), rte_be_to_cpu_16(vlan->eth_proto));
+                }
+                */
+        }
+        else {
+                printf("\nUnknown Ethernet Type [0x%x]!\n ", rte_be_to_cpu_16(eth->ether_type));
+        }
+
+        return;
+}
 static int
 packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) {
         static uint32_t counter = 0;
@@ -156,6 +193,9 @@ packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) {
                 do_stats_display(pkt);
                 counter = 0;
         }
+
+        //do_check_and_insert_vlan_tag(pkt);
+        //if(0 == counter) do_stats_display(pkt);
 
         meta->action = ONVM_NF_ACTION_TONF;
         meta->destination = destination;
