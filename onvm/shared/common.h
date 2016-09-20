@@ -68,13 +68,13 @@
 
 /* Note: Make the PACKET_READ_SIZE defined in onvm_mgr.h same as PKT_READ_SIZE defined in onvm_nflib_internal.h, better get rid of latter */
 #define PRE_PROCESS_DROP_ON_RX  // To lookup NF Tx queue occupancy and drop packets pro-actively before pushing to NFs Rx Ring.
-#define DROP_APPROACH_1
+//#define DROP_APPROACH_1
 //#define DROP_APPROACH_2s
-//#define DROP_APPROACH_3
-//#define DROP_APPROACH_3_WITH_YIELD
+#define DROP_APPROACH_3
+#define DROP_APPROACH_3_WITH_YIELD
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
-#define USE_SEMAPHORE           // Use Semaphore for IPC
+//#define USE_SEMAPHORE           // Use Semaphore for IPC
 //#define USE_MQ                // USe Message Queue for IPC between NFs and NF manager
 //#define USE_FIFO              // Use Named Pipe (FIFO) -- cannot work in our model as Writer cannot be opened in nonblock
 //#define USE_SIGNAL             // Use Signals (SIGUSR1) for IPC
@@ -121,10 +121,10 @@ struct client_tx_stats {
         /* these stats hold how many packets the manager will actually receive,
          * and how many packets were dropped because the manager's queue was full.
          */
-        uint64_t tx[MAX_CLIENTS];
-        uint64_t tx_drop[MAX_CLIENTS];
-        uint64_t tx_buffer[MAX_CLIENTS];
-        uint64_t tx_returned[MAX_CLIENTS];
+        volatile uint64_t tx[MAX_CLIENTS];
+        volatile uint64_t tx_drop[MAX_CLIENTS];
+        volatile uint64_t tx_buffer[MAX_CLIENTS];
+        volatile uint64_t tx_returned[MAX_CLIENTS];
 
         #ifdef PRE_PROCESS_DROP_ON_RX
         #ifdef DROP_APPROACH_1
@@ -133,11 +133,11 @@ struct client_tx_stats {
         #endif  //PRE_PROCESS_DROP_ON_RX
 
         #ifdef INTERRUPT_SEM
-        volatile uint64_t prev_tx[MAX_CLIENTS];
-        volatile uint64_t prev_tx_drop[MAX_CLIENTS];
-        volatile uint64_t comp_cost[MAX_CLIENTS];
         volatile uint64_t wkup_count[MAX_CLIENTS];
-        volatile uint64_t prev_wkup_count[MAX_CLIENTS];
+        uint64_t prev_tx[MAX_CLIENTS];
+        uint64_t prev_tx_drop[MAX_CLIENTS];
+        uint64_t comp_cost[MAX_CLIENTS];
+        uint64_t prev_wkup_count[MAX_CLIENTS];
         #endif  //INTERRUPT_SEM
         /* FIXME: Why are these stats kept separately from the rest?
          * Would it be better to have an array of struct client_tx_stats instead

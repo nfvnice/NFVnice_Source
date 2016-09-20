@@ -115,7 +115,14 @@ onvm_pkt_udp_hdr(struct rte_mbuf* pkt) {
 
 struct ipv4_hdr*
 onvm_pkt_ipv4_hdr(struct rte_mbuf* pkt) {
+
+        struct ether_hdr *eth = rte_pktmbuf_mtod(pkt, struct ether_hdr *);
         struct ipv4_hdr* ipv4 = (struct ipv4_hdr*)(rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr));
+
+        if (ETHER_TYPE_VLAN == rte_be_to_cpu_16(eth->ether_type)) {
+                //ipv4 = (struct ipv4_hdr*)(rte_pktmbuf_mtod(ipv4, uint8_t*) + sizeof(struct vlan_hdr));
+                ipv4 = (struct ipv4_hdr*)(rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr)+sizeof(struct vlan_hdr));
+        }
 
         /* In an IP packet, the first 4 bits determine the version.
          * The next 4 bits are called the Internet Header Length, or IHL.

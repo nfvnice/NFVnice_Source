@@ -90,7 +90,7 @@
 
 
 #define MBUFS_PER_CLIENT 1536 //65536 //10240 //1536
-#define MBUFS_PER_PORT 1536 //65536 //10240 //1536
+#define MBUFS_PER_PORT 10240 //65536 //10240 //1536
 #define MBUF_CACHE_SIZE 512
 #define MBUF_OVERHEAD (sizeof(struct rte_mbuf) + RTE_PKTMBUF_HEADROOM)
 #define RX_MBUF_DATA_SIZE 2048
@@ -99,9 +99,9 @@
 #define NF_INFO_SIZE sizeof(struct onvm_nf_info)
 #define NF_INFO_CACHE 8
 
-#define RTE_MP_RX_DESC_DEFAULT 1024 //1024 //1536 //2048 //1024 //512
-#define RTE_MP_TX_DESC_DEFAULT 1024 //1024 //1536 //2048 //1024 //512
-#define CLIENT_QUEUE_RINGSIZE 4096 //4096 //4096  //4096 //128
+#define RTE_MP_RX_DESC_DEFAULT 1024 //512 //1536 //2048 //1024 //512 (use 1024)
+#define RTE_MP_TX_DESC_DEFAULT 1024 //512 //1536 //2048 //1024 //512 (use 1024)
+#define CLIENT_QUEUE_RINGSIZE 4096  //128 //4096  //4096 //128   (use 4096)
 
 #define NO_FLAGS 0
 
@@ -137,10 +137,10 @@ struct client {
                 volatile uint64_t act_next;
                 volatile uint64_t act_buffer;
                 #ifdef INTERRUPT_SEM
-                volatile uint64_t prev_rx;
-                volatile uint64_t prev_rx_drop;
                 volatile uint64_t wakeup_count;
-                volatile uint64_t prev_wakeup_count;
+                uint64_t prev_rx;
+                uint64_t prev_rx_drop;
+                uint64_t prev_wakeup_count;
                 #endif
         } stats;
         
