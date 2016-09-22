@@ -342,7 +342,7 @@ onvm_nflib_run(
                 #ifdef PRE_PROCESS_DROP_ON_RX
                 #ifdef DROP_APPROACH_1
                 /* check here for the Tx Ring size to drop apriori to pushing to NFs Rx Ring */
-                if(rte_ring_free_count(tx_ring) <= PKT_READ_SIZE) {
+                if(rte_ring_free_count(tx_ring) < PKT_READ_SIZE) {
                         for (j = 0; j < nb_pkts; j++) {
                                  rte_pktmbuf_free(pkts[j]);
                         }
@@ -351,6 +351,8 @@ onvm_nflib_run(
                         nb_pkts=0;continue;
                 }
                 #endif //DROP_APPROACH_1
+                #else
+                (void)j;
                 #endif //PRE_PROCESS_DROP_ON_RX
 
 
@@ -391,23 +393,27 @@ onvm_nflib_run(
                         int ret_status = -ENOBUFS;
                         do
                         {
-                                j++;
+                                //j++;
                                 #ifdef DROP_APPROACH_3_WITH_YIELD
                                 sched_yield();
                                 #endif
                                 if (tx_batch_size <= rte_ring_free_count(tx_ring)) {
                                         ret_status = rte_ring_enqueue_bulk(tx_ring, pktsTX, tx_batch_size);
-                                        //if ( 0 ==  ret_status) break;
+                                        if ( 0 ==  ret_status){
+                                                tx_stats->tx[info->instance_id] += tx_batch_size;
+                                                tx_batch_size=0;
+                                                //break;
+                                        }
                                 }
                         }while(ret_status);
                         //printf("Total Retry attempts [%d]:", j);
-                        #else
+                        #endif
+                        #endif
+                        //#else
                         tx_stats->tx_drop[info->instance_id] += tx_batch_size;
                         for (j = 0; j < tx_batch_size; j++) {
                                 rte_pktmbuf_free(pktsTX[j]);
                         }
-                        #endif
-                        #endif
                 } else {
                         tx_stats->tx[info->instance_id] += tx_batch_size;
                 }

@@ -138,9 +138,9 @@ struct client {
                 volatile uint64_t act_buffer;
                 #ifdef INTERRUPT_SEM
                 volatile uint64_t wakeup_count;
-                uint64_t prev_rx;
-                uint64_t prev_rx_drop;
-                uint64_t prev_wakeup_count;
+                volatile uint64_t prev_rx;
+                volatile uint64_t prev_rx_drop;
+                volatile uint64_t prev_wakeup_count;
                 #endif
         } stats;
         

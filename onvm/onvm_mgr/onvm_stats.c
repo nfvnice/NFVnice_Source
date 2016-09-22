@@ -256,9 +256,6 @@ onvm_stats_display_clients(unsigned difftime) {
                 const uint64_t avg_wakeups = ( clients[i].stats.wakeup_count -  clients[i].stats.prev_wakeup_count);
                 const uint64_t yields =  (clients_stats->wkup_count[i] - clients_stats->prev_wkup_count[i]);
 
-                clients[i].stats.prev_wakeup_count = clients[i].stats.wakeup_count;
-                clients_stats->prev_wkup_count[i] = clients_stats->wkup_count[i];
-
                 vol_rate = (rx - prev_rx) / difftime;
                 rx_drop_rate = (rx_drop - prev_rx_drop) / difftime;
                 serv_rate = (tx - prev_tx) / difftime;
@@ -281,10 +278,13 @@ onvm_stats_display_clients(unsigned difftime) {
                 avg_pkts_per_wakeup, good_pkts_per_wakeup, yield_rate,
                 vol_rate, rx_drop_rate, rx_qlen, serv_rate, serv_drop_rate, tx_qlen);
 
-                clients[i].stats.prev_rx = clients[i].stats.rx;
+                clients[i].stats.prev_rx = rx; //clients[i].stats.rx;
                 clients[i].stats.prev_rx_drop = rx_drop; //clients[i].stats.rx_drop;
-                clients_stats->prev_tx[i] = clients_stats->tx[i];
-                clients_stats->prev_tx_drop[i] = clients_stats->tx_drop[i];
+                clients_stats->prev_tx[i] = tx; //clients_stats->tx[i];
+                clients_stats->prev_tx_drop[i] = tx_drop; //clients_stats->tx_drop[i];
+
+                clients[i].stats.prev_wakeup_count = clients[i].stats.wakeup_count;
+                clients_stats->prev_wkup_count[i] = clients_stats->wkup_count[i];
                 #endif
 
 
