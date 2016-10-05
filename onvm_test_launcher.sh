@@ -17,10 +17,8 @@
 #set -e
 
 cleanup() {
-    sudo mn -c
-    sudo fuser -k 6633/tcp
-    #sudo killall -9 python
-    #sudo rm -rf /home/mininet/mptcp/results/* 
+    onvm_dir=$base_dir/onvm
+    sudo $onvm_dir/kill_all.sh
     echo "*** cleanup completed ****"
 }
 ctrlc() {
@@ -35,18 +33,6 @@ exptid=`date +%b%d-%H:%M`
 exptid=`date +%b%d-%H-%M`
 clean_make=0
 base_dir="/home/skulk901"
-conf_file="demotopo_conf.csv"
-rsrc_file="list4.csv"
-svcch_file="svc_chain_dict.csv"
-#rsrc_file=$base_dir"/nfv_rsrc_files/list4.csv"
-#svcch_file=$base_dir"/svc_chains/svc_chain_dict.csv"
-controller_ip="172.23.0.33"
-controller_port=6633
-cluster_list=""
-test_file="inc_flows1.py"
-ecn_sw_flag=0
-ecn_ctrl_flag=0
-sel_ecn_ctrl_flag=0
 cur_dir=`pwd`
 rootdir=$cur_dir/../$exptid
 if [ $# -ge 1 ];
@@ -166,7 +152,7 @@ max_clients=3
 launch_nf_clients() {
     nf_base_dir=$base_dir"/examples"
     nf_arr=("dummy" "simple_forward" "simple_forward" "bridge")
-
+        
     for i in `seq 1 $max_clients`; do
         #echo "\n Enter $i nf_name:"
         #read nf_name
@@ -186,7 +172,8 @@ launch_nf_clients() {
         echo "*** Launching NF_${i}_${nf_name} with command: $cmd in dir: $nf_dir ****"
         gnome-terminal --title="NF_${i}_${nf_name}" --working-directory=$nf_dir -x $cmd &
         echo "*** Launch NF_${i}_${nf_name} completed!: $cmd, `pwd` $? ****"
-        cd $cur_dir    
+        cd $cur_dir
+        sleep 0.5
     done
 
     #pid=$!

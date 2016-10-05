@@ -71,7 +71,7 @@ uint8_t is_static_clients;
 static const char *progname;
 
 
-/****************************Internal prototypes******************************/
+/***********************Internal Functions prototypes*************************/
 
 
 static void

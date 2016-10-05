@@ -1,0 +1,151 @@
+Linux 3.19.0-39-lowlatency (flashstack-3) 	10/03/2016 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541255     0      1326   16.36    0.00    0.00   16.36     8      0.00      0.00 2121384   3672   0.00     136      32    778.18      1.82  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541255     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    780.00      0.91  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541255     0      1337   71.82    0.00    0.00   71.82     8      0.00      0.00 2121380   3676   0.00     136      32    772.73      8.18  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541256     0      1326   17.00    1.00    0.00   18.00     8      0.00      0.00 2121384   3672   0.00     136      32    780.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541256     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    779.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541256     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    774.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541257     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541257     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    780.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541257     0      1337   73.00    0.00    0.00   73.00     8      0.00      0.00 2121380   3676   0.00     136      32    776.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541258     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    780.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541258     0      1331   55.00    0.00    0.00   55.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541258     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    774.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541259     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    782.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541259     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541259     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    774.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541260     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541260     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541260     0      1337   73.00    0.00    0.00   73.00     8      0.00      0.00 2121380   3676   0.00     136      32    777.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541261     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    781.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541261     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541261     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541262     0      1326   17.00    1.00    0.00   18.00     8      0.00      0.00 2121384   3672   0.00     136      32    780.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541262     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541262     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541263     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    783.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541263     0      1331   54.00    0.00    0.00   54.00     8      0.00      0.00 2121384   3664   0.00     136      32    783.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541263     0      1337   73.00    0.00    0.00   73.00     8      0.00      0.00 2121380   3676   0.00     136      32    777.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541264     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    781.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541264     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541264     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541265     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    782.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541265     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541265     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    776.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541266     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541266     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    780.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541266     0      1337   73.00    0.00    0.00   73.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541267     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    781.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541267     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541267     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541268     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    780.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541268     0      1331   54.00    0.00    0.00   54.00     8      0.00      0.00 2121384   3664   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541268     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    776.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541269     0      1326   16.00    1.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541269     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541269     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541270     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    780.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541270     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541270     0      1337   73.00    0.00    0.00   73.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541271     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    780.00      3.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541271     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541271     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541272     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541272     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541272     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    774.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541273     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    782.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541273     0      1331   54.00    0.00    0.00   54.00     8      0.00      0.00 2121384   3664   0.00     136      32    783.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541273     0      1337   73.00    0.00    0.00   73.00     8      0.00      0.00 2121380   3676   0.00     136      32    777.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541274     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    781.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541274     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541274     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541275     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    780.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541275     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      0.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541275     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541276     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    782.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541276     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541276     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541277     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    784.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541277     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    785.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541277     0      1337   73.00    0.00    0.00   73.00     8      0.00      0.00 2121380   3676   0.00     136      32    779.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541278     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541278     0      1331   54.00    0.00    0.00   54.00     8      0.00      0.00 2121384   3664   0.00     136      32    782.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541278     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541279     0      1326   17.00    1.00    0.00   18.00     8      0.00      0.00 2121384   3672   0.00     136      32    780.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541279     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    780.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541279     0      1337   73.00    0.00    0.00   73.00     8      0.00      0.00 2121380   3676   0.00     136      32    776.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541280     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    781.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541280     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541280     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    774.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541281     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    779.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541281     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    780.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541281     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    774.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541282     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541282     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541282     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541283     0      1326   16.00    0.00    0.00   16.00     8      0.00      0.00 2121384   3672   0.00     136      32    779.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541283     0      1331   54.00    0.00    0.00   54.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541283     0      1337   73.00    0.00    0.00   73.00     8      0.00      0.00 2121380   3676   0.00     136      32    773.00      8.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1475541284     0      1326   17.00    0.00    0.00   17.00     8      0.00      0.00 2121384   3672   0.00     136      32    781.00      2.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 1 -- -d 2 
+ 1475541284     0      1331    0.00    0.00    0.00    0.00     8      0.00      0.00 2121384   3664   0.00     136      32    781.00      1.00  ./build/forward -l 8 -n 3 --proc-type=secondary -- -r 3 -n 9 -- -d 4 
+ 1475541284     0      1337   72.00    0.00    0.00   72.00     8      0.00      0.00 2121380   3676   0.00     136      32    775.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 3 

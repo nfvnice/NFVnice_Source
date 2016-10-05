@@ -1,7 +1,7 @@
 #!/bin/bash 
-# Example: ./set_sched_type fifo 30
-# Example: ./set_sched_type r 30
-# Example: ./set_sched_type o
+# Example: ./tune_cfs.sh 0
+# Example: ./tune_cfs.sh 1
+# Example: ./tune_cfs.sh [any > 1] [sched_latency_ns] [sched_min_granularity_ns] [sched_wakeup_granularity_ns]
 
 #CFS TUNABLE PARAMETERS
 #    sched_min_granularity_ns (16000000): Minimum preemption granularity for processor-bound tasks. Tasks are guaranteed to run for this minimum time before they are preempted.
@@ -60,18 +60,54 @@ do_set_cfs_ibm_optimal() {
         do_read_defaults
 }
 
+do_set_predef_vals () {
+
+        case $inp_mode in
+        "2")
+                inp_sched_latency_ns=500000
+                inp_sched_min_granularity_ns=250000
+                inp_sched_wakeup_granularity_ns=25000
+        ;;
+        "3")
+                inp_sched_latency_ns=250000
+                inp_sched_min_granularity_ns=100000
+                inp_sched_wakeup_granularity_ns=100000
+        ;;
+        "4")
+                inp_sched_latency_ns=100000
+                inp_sched_min_granularity_ns=100000
+                inp_sched_wakeup_granularity_ns=25000
+        ;;
+        "5")
+                inp_sched_latency_ns=100000
+                inp_sched_min_granularity_ns=100000
+                inp_sched_wakeup_granularity_ns=1000000
+        ;;
+        esac
+        
+        echo "********* Applying Predefined CFS Parameters $inp_mode: min_gran=$inp_sched_min_granularity_ns, lat=$inp_sched_latency_ns, wake_gran=$inp_sched_wakeup_granularity_ns **********"
+        echo $inp_sched_min_granularity_ns > /proc/sys/kernel/sched_min_granularity_ns
+        echo $inp_sched_latency_ns > /proc/sys/kernel/sched_latency_ns
+        echo $inp_sched_wakeup_granularity_ns > /proc/sys/kernel/sched_wakeup_granularity_ns
+
+        do_read_defaults
+}
+
 #Set the Latency Round Bounds between 10ns and 1sec] Must be atleast 4 times greater than min_gran_ns. 
 #Practical reasons val should be [ 250ns and 100ms ]
+#Note: System rejects val below 100microsec [100000 ... ]
 min_sched_latency_ns=10
 max_sched_latency_ns=1000000000
 
 #Set the per process run time (similar to slice) [2ns to 250ms ]: must be atleast 4 times less than sched_latency 
 #Practical reasons val should be [ 250ns and 100ms ]
-min_sched_min_granularity_ns=2
+#Note: System rejects val below 100microsec [100000 ... ]
+min_sched_min_granularity_ns=100000
 max_sched_min_granularity_ns=250000000
 
 #Set the per process wakeup [smaller => easier to evict, bigger => tougher to evict] compared to sched_min_granularity_ns
 #Practical reason keep lower than sched_min_granularity_ns
+#System accepts any value between [1... ]
 min_sched_wakeup_granularity_ns=2
 max_sched_wakeup_granularity_ns=250000000
 
@@ -88,6 +124,9 @@ elif [ $inp_mode -eq "0" ] ; then
         exit 0
 elif [ $inp_mode -eq "1" ] ; then
         do_set_cfs_ibm_optimal
+        exit 0
+elif [  $inp_mode -gt "1" -a   $inp_mode -le "5" ] ; then
+        do_set_predef_vals
         exit 0
 fi
 
@@ -117,8 +156,6 @@ elif [ $inp_sched_wakeup_granularity_ns -gt $max_sched_wakeup_granularity_ns ] ;
         inp_sched_wakeup_granularity_ns=$def_sched_wakeup_granularity_ns
 fi
 
-
-
 do_set_cfs_params() {
         
         echo "********* Applying new CFS Parameters **********"
@@ -126,9 +163,9 @@ do_set_cfs_params() {
         echo "sched_latency_ns: $inp_sched_latency_ns"   
         echo "sched_wakeup_granularity_ns: $inp_sched_wakeup_granularity_ns"
 
-        #echo $inp_sched_min_granularity_ns > /proc/sys/kernel/sched_min_granularity_ns
-        #echo $inp_sched_latency_ns > /proc/sys/kernel/sched_latency_ns
-        #echo $inp_sched_wakeup_granularity_ns > /proc/sys/kernel/sched_wakeup_granularity_ns
+        echo "$inp_sched_min_granularity_ns" > /proc/sys/kernel/sched_min_granularity_ns
+        echo "$inp_sched_latency_ns" > /proc/sys/kernel/sched_latency_ns
+        echo "$inp_sched_wakeup_granularity_ns" > /proc/sys/kernel/sched_wakeup_granularity_ns
         
         #sysctl -w kernel.sched_min_granularity_ns $inp_sched_min_granularity_ns
         #sysctl -w kernel.sched_latency_ns $inp_sched_latency_ns
@@ -137,5 +174,5 @@ do_set_cfs_params() {
 
         do_read_defaults
 }
-#do_set_cfs_params
+do_set_cfs_params
 

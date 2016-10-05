@@ -1,0 +1,88 @@
+Linux 3.19.0-39-lowlatency (flashstack-3) 	09/09/2016 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436444     0     53196   99.08    0.00    0.00   99.08     8      7.34      0.00 3169948   3668   0.00     136      32      0.00   1445.87  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436445     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436446     0     53196   99.00    0.00    0.00   99.00     8      5.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436447     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436448     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1467.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436449     0     53196  100.00    0.00    0.00  100.00     8      8.00      0.00 3169948   3668   0.00     136      32      0.00   1433.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436450     0     53196   99.00    0.00    0.00   99.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436451     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436452     0     53196  100.00    0.00    0.00  100.00     8      5.00      0.00 3169948   3668   0.00     136      32      0.00   1464.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436453     0     53196   99.00    0.00    0.00   99.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436454     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1467.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436455     0     53196  100.00    1.00    0.00  101.00     8      8.00      0.00 3169948   3668   0.00     136      32      0.00   1464.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436456     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1435.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436457     0     53196   99.00    0.00    0.00   99.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436458     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436459     0     53196  100.00    0.00    0.00  100.00     8      5.00      0.00 3169948   3668   0.00     136      32      0.00   1464.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436460     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436461     0     53196   99.00    0.00    0.00   99.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1464.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436462     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1435.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436463     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436464     0     53196  100.00    0.00    0.00  100.00     8      8.00      0.00 3169948   3668   0.00     136      32      0.00   1464.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436465     0     53196   99.00    0.00    0.00   99.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436466     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1467.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436467     0     53196   99.00    0.00    0.00   99.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1464.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436468     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1466.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436469     0     53196  100.00    0.00    0.00  100.00     8      5.00      0.00 3169948   3668   0.00     136      32      0.00   1435.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436470     0     53196  100.00    0.00    0.00  100.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436471     0     53196   99.00    0.00    0.00   99.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1473436472     0     53196  100.00    1.00    0.00  101.00     8      0.00      0.00 3169948   3668   0.00     136      32      0.00   1465.00  ./build/bridge -l 8 -n 3 --proc-type=secondary -- -r 1 

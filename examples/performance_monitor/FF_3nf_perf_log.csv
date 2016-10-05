@@ -1,0 +1,18 @@
+# started on Mon Oct  3 17:39:41 2016
+
+
+ Performance counter stats for 'CPU(s) 0-14' (30 runs):
+
+      15016.560329      task-clock (msec)         #   15.007 CPUs utilized            ( +-  0.00% ) [100.00%]
+            16,720      context-switches          #    0.001 M/sec                    ( +-  1.02% ) [100.00%]
+                18      cpu-migrations            #    0.001 K/sec                    ( +- 24.93% ) [100.00%]
+               123      page-faults               #    0.008 K/sec                    ( +- 58.63% )
+    21,931,186,634      cycles                    #    1.460 GHz                      ( +-  0.38% ) [100.00%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+    59,254,521,667      instructions              #    2.70  insns per cycle          ( +-  0.07% ) [100.00%]
+    10,213,690,517      branches                  #  680.162 M/sec                    ( +-  0.12% ) [100.00%]
+         3,500,674      branch-misses             #    0.03% of all branches          ( +-  2.47% )
+
+       1.000652408 seconds time elapsed                                          ( +-  0.00% )
+

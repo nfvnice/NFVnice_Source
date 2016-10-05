@@ -60,7 +60,7 @@ long factorial(int n)
 struct onvm_nf_info *nf_info;
 
 /* number of package between each print */
-static uint32_t print_delay = 1000000;
+static uint32_t print_delay = 5000000;
 static uint32_t destination = 0;
 static uint16_t dst_flag = 0;
 static uint32_t comp_cost_level = 0; // 0=No overhead, 1=Min, 2=Med, 3=Max
@@ -181,7 +181,7 @@ do_compute_at_cost( void ) {
         static int i=0,j=0,k=0;
         static uint64_t start_cycles = 0;
         if (0 == comp_cost_cycles) {
-                start_cycles = rte_get_tsc_cycles();
+                start_cycles = rte_rdtsc_precise(); //rte_get_tsc_cycles();
                 switch(comp_cost_level){
                 default:
                 break;
@@ -204,7 +204,8 @@ do_compute_at_cost( void ) {
                 factorial(j);
         }
         if (0 == comp_cost_cycles) {
-                comp_cost_cycles = rte_get_tsc_cycles() - start_cycles;
+                //comp_cost_cycles = rte_get_tsc_cycles() - start_cycles;
+                comp_cost_cycles =  rte_rdtsc_precise() - start_cycles;
         }
         return 0;
 }
@@ -221,6 +222,7 @@ packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) {
         if (++counter == print_delay) {
                 do_stats_display(pkt);
                 counter = 0;
+                comp_cost_cycles=0;
         }
 
         // IF specified destination, then do this instead

@@ -35,3 +35,13 @@ do
    
 done
 
+max_clients=3
+def_share_val=1024
+cg_base_dir="/sys/fs/cgroup/cpu"
+cg_name="nf_"
+reset_cgroup_nf_shares() {
+    for i in `seq 1 $max_clients`; do
+    echo $def_share_val > $cg_base_dir/${cg_name}${i}/cpu.shares
+    done
+}
+reset_cgroup_nf_shares

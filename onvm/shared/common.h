@@ -71,7 +71,9 @@
 //#define DROP_APPROACH_1
 //#define DROP_APPROACH_2s
 #define DROP_APPROACH_3
-//#define DROP_APPROACH_3_WITH_YIELD
+#define DROP_APPROACH_3_WITH_YIELD
+//#define DROP_APPROACH_3_WITH_POLL
+//#define DROP_APPROACH_3_WITH_SYNC
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
 #define USE_SEMAPHORE           // Use Semaphore for IPC
@@ -92,6 +94,9 @@
 #ifdef USE_ZMQ
 #include <zmq.h>
 #endif
+
+/* Enable this flag to assign a distinct CGROUP for each NF instance */
+#define USE_CGROUPS_PER_NF_INSTANCE
 
 
 //#ifdef USE_MQ2
@@ -157,8 +162,16 @@ struct onvm_nf_info {
         uint16_t service_id;
         uint8_t status;
         const char *tag;
-        #if defined (INTERRUPT_SEM) && defined (USE_SIGNAL)
+
         pid_t pid;
+
+#if defined (USE_CGROUPS_PER_NF_INSTANCE)
+        //char cgroup_name[256];
+        uint32_t cpu_share;
+#endif
+
+        #if defined (INTERRUPT_SEM) && defined (USE_SIGNAL)
+        //pid_t pid;
         #endif
 };
 
@@ -203,7 +216,9 @@ struct onvm_service_chain {
 #define MONITOR                         // Unused remove it
 #define ONVM_NUM_WAKEUP_THREADS 1
 #define CHAIN_LEN 4                     // Duplicate, remove and instead use ONVM_MAX_CHAIN_LENGTH
-#define SAMPLING_RATE 1000000           // sampling rate to estimate NFs computation cost
+//1000003 1000033 1000037 1000039 1000081 1000099 1000117 1000121 1000133
+//#define SAMPLING_RATE 1000000           // sampling rate to estimate NFs computation cost
+#define SAMPLING_RATE 1000003           // sampling rate to estimate NFs computation cost
 #define ONVM_SPECIAL_NF 0               // special NF for flow table entry management
 #endif
 
@@ -269,6 +284,48 @@ get_sem_name(unsigned id)
         static char buffer[sizeof(MP_CLIENT_SEM_NAME) + 2];
 
         snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_SEM_NAME, id);
+        return buffer;
+}
+#endif
+#ifdef USE_CGROUPS_PER_NF_INSTANCE
+#define MP_CLIENT_CGROUP_NAME "nf_%u"
+static inline const char *
+get_cgroup_name(unsigned id)
+{
+        static char buffer[sizeof(MP_CLIENT_CGROUP_NAME) + 2];
+        snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_CGROUP_NAME, id);
+        return buffer;
+}
+#define MP_CLIENT_CGROUP_PATH "/sys/fs/cgroup/cpu/nf_%u/"
+static inline const char *
+get_cgroup_path(unsigned id)
+{
+        static char buffer[sizeof(MP_CLIENT_CGROUP_PATH) + 2];
+        snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_CGROUP_PATH, id);
+        return buffer;
+}
+#define MP_CLIENT_CGROUP_CREAT "mkdir /sys/fs/cgroup/cpu/nf_%u"
+static inline const char *
+get_cgroup_create_cgroup_cmd(unsigned id)
+{
+        static char buffer[sizeof(MP_CLIENT_CGROUP_CREAT) + 2];
+        snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_CGROUP_CREAT, id);
+        return buffer;
+}
+#define MP_CLIENT_CGROUP_ADD_TASK "echo %u > /sys/fs/cgroup/cpu/nf_%u/tasks"
+static inline const char *
+get_cgroup_add_task_cmd(unsigned id, pid_t pid)
+{
+        static char buffer[sizeof(MP_CLIENT_CGROUP_ADD_TASK) + 10];
+        snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_CGROUP_ADD_TASK, pid, id);
+        return buffer;
+}
+#define MP_CLIENT_CGROUP_SET_CPU_SHARE "echo %u > /sys/fs/cgroup/cpu/nf_%u/cpu.shares"
+static inline const char *
+get_cgroup_set_cpu_share_cmd(unsigned id, unsigned share)
+{
+        static char buffer[sizeof(MP_CLIENT_CGROUP_SET_CPU_SHARE) + 10];
+        snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_CGROUP_SET_CPU_SHARE, share, id);
         return buffer;
 }
 #endif

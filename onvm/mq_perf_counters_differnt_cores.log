@@ -1,0 +1,52 @@
+
+ Performance counter stats for 'sleep 10':
+
+            18,117      cache-references                                            
+               787      cache-misses              #    4.344 % of all cache refs    
+         1,147,742      cycles                   
+           699,031      instructions              #    0.61  insns per cycle        
+           140,261      branches                                                    
+                61      faults                                                      
+                 0      migrations                                                  
+
+      10.000842545 seconds time elapsed
+
+
+ Performance counter stats for 'sleep 10':
+
+            15,872      cache-references                                            
+               202      cache-misses              #    1.273 % of all cache refs    
+         1,032,075      cycles                   
+           688,393      instructions              #    0.67  insns per cycle        
+           137,555      branches                                                    
+                61      faults                                                      
+                 0      migrations                                                  
+
+      10.000737287 seconds time elapsed
+
+
+ Performance counter stats for 'sleep 10':
+
+            15,602      cache-references                                            
+               261      cache-misses              #    1.673 % of all cache refs    
+           966,155      cycles                   
+           668,307      instructions              #    0.69  insns per cycle        
+           133,675      branches                                                    
+                59      faults                                                      
+                 0      migrations                                                  
+
+      10.000691979 seconds time elapsed
+
+
+ Performance counter stats for 'sleep 10':
+
+            17,884      cache-references                                            
+               223      cache-misses              #    1.247 % of all cache refs    
+         1,096,997      cycles                   
+           720,975      instructions              #    0.66  insns per cycle        
+           143,709      branches                                                    
+                62      faults                                                      
+                 0      migrations                                                  
+
+      10.000828830 seconds time elapsed
+

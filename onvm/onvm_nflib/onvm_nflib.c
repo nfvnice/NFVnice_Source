@@ -53,6 +53,47 @@
 /************************************API**************************************/
 #define USE_STATIC_IDS
 
+#ifdef USE_CGROUPS_PER_NF_INSTANCE
+#include <stdlib.h>
+void init_cgroup_info(struct onvm_nf_info *nf_info);
+int set_cgroup_cpu_share(struct onvm_nf_info *nf_info, unsigned int share_val);
+int set_cgroup_cpu_share(struct onvm_nf_info *nf_info, unsigned int share_val) {
+        unsigned long shared_bw_val = (share_val== 0) ?(1024):(1024*share_val/100);
+        /* if (share_val >=100) {
+                shared_bw_val = shared_bw_val/100;
+        }*/
+        const char* cg_set_cmd = get_cgroup_set_cpu_share_cmd(nf_info->instance_id, shared_bw_val);
+        printf("\n CMD_TO_SET_CPU_SHARE: %s", cg_set_cmd);
+        int ret = system(cg_set_cmd);
+        if  (0 == ret) {
+                nf_info->cpu_share = shared_bw_val;
+        }
+        return ret;
+}
+void init_cgroup_info(struct onvm_nf_info *nf_info) {
+        int ret = 0;
+        const char* cg_name = get_cgroup_name(nf_info->instance_id);
+        const char* cg_path = get_cgroup_path(nf_info->instance_id);
+        printf("\n NF cgroup name and path: %s, %s", cg_name,cg_path);
+
+        /* Check and create the CGROUP if necessary */
+        const char* cg_crt_cmd = get_cgroup_create_cgroup_cmd(nf_info->instance_id);
+        printf("\n CMD_TO_CREATE_CGROUP_for_NF: %d, %s", nf_info->instance_id, cg_crt_cmd);
+        ret = system(cg_crt_cmd);
+
+        /* Add the pid to the CGROUP */
+        const char* cg_add_cmd = get_cgroup_add_task_cmd(nf_info->instance_id, nf_info->pid);
+        printf("\n CMD_TO_ADD_NF_TO_CGROUP: %s", cg_add_cmd);
+        ret = system(cg_add_cmd);
+
+        /* Initialize the cpu.shares to default value (100%) */
+        ret = set_cgroup_cpu_share(nf_info, 100);
+
+        printf("NF added to cgroup: %s, ret=%d", cg_name,ret);
+        return;
+}
+#endif
+
 int
 onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
         const struct rte_memzone *mz;
@@ -154,12 +195,20 @@ onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
         /* Tell the manager we're ready to recieve packets */
         nf_info->status = NF_RUNNING;
 
+        nf_info->pid = getpid();
+
         #ifdef INTERRUPT_SEM
         init_shared_cpu_info(nf_info->instance_id);
+
         #ifdef USE_SIGNAL
-        nf_info->pid = getpid();
+        //nf_info->pid = getpid();
         #endif //USE_SIGNAL
+
         #endif
+
+#ifdef USE_CGROUPS_PER_NF_INSTANCE
+        init_cgroup_info(nf_info);
+#endif
 
         RTE_LOG(INFO, APP, "Finished Process Init.\n");
         return retval_final;
@@ -283,14 +332,14 @@ uint64_t compute_total_cycles(uint64_t start_t); //__attribute__((always_inline)
 
 uint64_t compute_start_cycles(void)
 {
-
-        return rte_rdtsc();
+        return rte_rdtsc_precise();
+        //return rte_rdtsc();
         //return (uint64_t) 100;
 }
 uint64_t compute_total_cycles(uint64_t start_t)
 {
        uint64_t end_t = compute_start_cycles();
-       return end_t - start_t;
+       return (end_t - start_t);
 }
 
 #endif  //INTERRUPT_SEM
@@ -393,10 +442,17 @@ onvm_nflib_run(
                         int ret_status = -ENOBUFS;
                         do
                         {
+                                #ifdef DROP_APPROACH_3_WITH_SYNC
+                                #ifdef INTERRUPT_SEM
+                                onvm_nf_yeild(info);
+                                #endif
+                                #endif
+
                                 //j++;
                                 #ifdef DROP_APPROACH_3_WITH_YIELD
                                 sched_yield();
                                 #endif
+
                                 if (tx_batch_size <= rte_ring_free_count(tx_ring)) {
                                         ret_status = rte_ring_enqueue_bulk(tx_ring, pktsTX, tx_batch_size);
                                         if ( 0 ==  ret_status){
@@ -409,6 +465,7 @@ onvm_nflib_run(
                         //printf("Total Retry attempts [%d]:", j);
                         #endif
                         #endif
+
                         //#else
                         tx_stats->tx_drop[info->instance_id] += tx_batch_size;
                         for (j = 0; j < tx_batch_size; j++) {
