@@ -383,6 +383,11 @@ init_shm_rings(void) {
                 if (clients[i].tx_q == NULL)
                         rte_exit(EXIT_FAILURE, "Cannot create tx ring queue for client %u\n", i);
 
+                #ifdef ENABLE_RING_WATERMARK
+                rte_ring_set_water_mark(clients[i].rx_q, CLIENT_QUEUE_RING_WATER_MARK_SIZE);
+                //rte_ring_set_water_mark(clients[i].tx_q, CLIENT_QUEUE_RING_WATER_MARK_SIZE);
+                #endif
+
                 #ifdef INTERRUPT_SEM
                 sem_name = get_sem_name(i);
                 clients[i].sem_name = sem_name;        

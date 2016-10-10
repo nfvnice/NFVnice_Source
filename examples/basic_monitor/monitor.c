@@ -132,7 +132,7 @@ do_stats_display(struct rte_mbuf* pkt) {
         if (ip != NULL) {
                 onvm_pkt_print(pkt);
         } else {
-                printf("No IP4 header found\n");
+                printf("No IP4 header found [%d]\n", pkt_process);
         }
 }
 

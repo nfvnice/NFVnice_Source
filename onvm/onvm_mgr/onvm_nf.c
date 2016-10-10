@@ -54,6 +54,12 @@
 
 uint16_t next_instance_id = 0;
 
+#ifdef ENABLE_NF_BACKPRESSURE
+uint16_t downstream_nf_overflow = 0;
+uint16_t highest_downstream_nf_service_id=0;
+uint16_t lowest_upstream_to_throttle = 0;
+uint64_t throttle_count = 0;
+#endif //#define ENABLE_NF_BACKPRESSURE
 
 /********************************Interfaces***********************************/
 

@@ -211,6 +211,10 @@ onvm_stats_display_clients(unsigned difftime) {
         printf("num_wakeups=%"PRIu64", wakeup_rate=%"PRIu64"\n", num_wakeups, wakeup_rate);
         #endif
 
+#ifdef ENABLE_NF_BACKPRESSURE
+        printf("OverflowFlag=[%d], Highest_DS_SID=[%d], Lowest_DS_SID=[%d], Num Throttles=[%"PRIu64"] \n", downstream_nf_overflow, highest_downstream_nf_service_id, lowest_upstream_to_throttle, throttle_count);
+#endif
+
         printf("\nCLIENTS\n");
         printf("-------\n");
         for (i = 0; i < MAX_CLIENTS; i++) {
@@ -270,7 +274,7 @@ onvm_stats_display_clients(unsigned difftime) {
                         if(yields) yield_rate = (serv_rate)/yields;
                 }
 
-                printf("Client %2u:[%d],  comp_cost=%"PRIu64", avg_wakeups=%"PRIu64", yields=%"PRIu64", msg_flag=%d, \n"
+                printf("Client %2u:[%d],  comp_cost=%"PRIu64", avg_wakeups=%"PRIu64", yields=%"PRIu64", msg_flag(blocked)=%d, \n"
                 "avg_ppw=%"PRIu64", avg_good_ppw=%"PRIu64",  pkts_per_yield=%"PRIu64"\n"
                 "rx_rate=%"PRIu64", rx_drop_rate=%"PRIu64", rx_qlen=%"PRIu64"\n"
                 "tx_rate=%"PRIu64", tx_drop_rate=%"PRIu64", tx_qlen=%"PRIu64"\n",

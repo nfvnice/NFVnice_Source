@@ -73,7 +73,7 @@
 #define DROP_APPROACH_3
 #define DROP_APPROACH_3_WITH_YIELD
 //#define DROP_APPROACH_3_WITH_POLL
-//#define DROP_APPROACH_3_WITH_SYNC
+#define DROP_APPROACH_3_WITH_SYNC
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
 #define USE_SEMAPHORE           // Use Semaphore for IPC
@@ -98,6 +98,14 @@
 /* Enable this flag to assign a distinct CGROUP for each NF instance */
 #define USE_CGROUPS_PER_NF_INSTANCE
 
+
+/* Enable watermark level NFs Tx and Rx Rings */
+//#define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
+
+/* Enable back-pressure handling to throttle NFs upstream */
+#define ENABLE_NF_BACKPRESSURE
+#define NF_BACKPRESSURE_APPROACH_1  //place holder for different approaches
+#define NF_BACKPRESSURE_APPROACH_2  //place holder for different approaches
 
 //#ifdef USE_MQ2
 //typedef struct msgbuf { long mtype; char mtext[32];}msgbuf_t;

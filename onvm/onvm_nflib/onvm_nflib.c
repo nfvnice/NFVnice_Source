@@ -370,6 +370,14 @@ onvm_nflib_run(
                 uint32_t tx_batch_size = 0;
                 int ret_act;
 
+                /* check if signalled to block, then block */
+                #ifdef ENABLE_NF_BACKPRESSURE
+                #ifdef INTERRUPT_SEM
+                if (rte_atomic16_read(flag_p) ==1) {
+                        onvm_nf_yeild(info);
+                }
+                #endif
+                #endif
 
                 /* $$$$$: TEST only( remove later): wait for signal from NF Manager to start $$$$$ */
                 //onvm_nf_yeild(info);
@@ -437,7 +445,9 @@ onvm_nflib_run(
                 }
 
                 if (unlikely(tx_batch_size > 0 && rte_ring_enqueue_bulk(tx_ring, pktsTX, tx_batch_size) == -ENOBUFS)) {
+
                         #ifdef PRE_PROCESS_DROP_ON_RX
+
                         #ifdef DROP_APPROACH_3
                         int ret_status = -ENOBUFS;
                         do
@@ -463,10 +473,10 @@ onvm_nflib_run(
                                 }
                         }while(ret_status);
                         //printf("Total Retry attempts [%d]:", j);
-                        #endif
-                        #endif
+                        #endif  //DROP_APPROACH_3
 
-                        //#else
+                        #endif  //PRE_PROCESS_DROP_ON_RX
+
                         tx_stats->tx_drop[info->instance_id] += tx_batch_size;
                         for (j = 0; j < tx_batch_size; j++) {
                                 rte_pktmbuf_free(pktsTX[j]);

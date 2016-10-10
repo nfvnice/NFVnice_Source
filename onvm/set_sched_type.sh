@@ -24,7 +24,11 @@ elif [ $class  == "ROUNDROBIN" ] || [ $class ==  "RR" ] || [ $class == "rr" ] ||
         else
                 prio=" -p $2 "
         fi
-elif [ $class ==  "OTHER" ] || [ $class == "other" ] || [ $class == "NORMAL" ] || [ $class == "normal" ] || [  $class == "O" ] || [ $class == "o" ]; then
+elif [ $class ==  "BATCH" ] || [ $class == "batch" ] || [  $class == "B" ] || [ $class == "b" ]; then
+        class=" -b "
+        prio=" -p 0 "
+elif [ $class ==  "OTHER" ] || [ $class == "other" ] || [ $class == "NORMAL" ] || [ $class == "normal" ] || [  $class == "O" ] || [ $class == "o" ]  ||
+     [ $class == "CFS" ] || [ $class == "cfs" ] || [  $class == "C" ] || [ $class == "c" ]   ; then
         class=" -o "
         prio=" -p 0 "
 fi

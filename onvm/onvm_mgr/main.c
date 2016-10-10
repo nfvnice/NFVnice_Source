@@ -275,6 +275,23 @@ tx_thread_main(void *arg) {
                                 onvm_pkt_process_tx_batch(tx, pkts, tx_count, cl);
                                 //RTE_LOG(INFO,APP,"Core %d: processing %d TX packets for NF: %d \n", rte_lcore_id(),tx_count, i);
                         }
+
+                        #ifdef ENABLE_NF_BACKPRESSURE
+                        if (downstream_nf_overflow) {
+                                /* If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero */
+                                if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
+
+                                        if (cl->info->service_id >= lowest_upstream_to_throttle) {
+                                                lowest_upstream_to_throttle = highest_downstream_nf_service_id;
+                                        }
+                                        if (cl->info->service_id == highest_downstream_nf_service_id) {
+                                                downstream_nf_overflow = 0;
+                                                highest_downstream_nf_service_id = 0;
+                                                lowest_upstream_to_throttle = 0;
+                                        }
+                                }
+                        }
+                        #endif //ENABLE_NF_BACKPRESSURE
                 }
 
                 /* Send a burst to every port */
@@ -293,7 +310,7 @@ tx_thread_main(void *arg) {
 #ifdef INTERRUPT_SEM
 #include <signal.h>
 
-unsigned nfs_wakethr[MAX_CLIENTS] = {[0 ... MAX_CLIENTS-1] = 64};
+unsigned nfs_wakethr[MAX_CLIENTS] = {[0 ... MAX_CLIENTS-1] = 1};
 
 static void 
 register_signal_handler(void);
@@ -445,6 +462,24 @@ whether_wakeup_client(int instance_id)
         if (clients[instance_id].rx_q == NULL) {
                 return 0;
         }
+
+        #ifdef ENABLE_NF_BACKPRESSURE
+        /* Block the upstream (earlier) NFs from getting scheduled, if there is NF at downstream that is bottlenecked! */
+        if (downstream_nf_overflow) {
+               /*
+                *
+                if (highest_downstream_nf_service_id > clients[instance_id].info->service_id) {
+                        return 0;
+                }
+                */
+                //if (clients[instance_id].info != NULL && lowest_upstream_to_throttle > clients[instance_id].info->service_id) {
+                if (clients[instance_id].info != NULL && highest_downstream_nf_service_id > clients[instance_id].info->service_id) {
+                        throttle_count++;
+                        return -1;
+                }
+        }
+        #endif
+
         cur_entries = rte_ring_count(clients[instance_id].rx_q);
         if (cur_entries >= nfs_wakethr[instance_id]){
                 return 1;
@@ -522,7 +557,8 @@ notify_client(int instance_id)
 static inline void
 wakeup_client(int instance_id, struct wakeup_info *wakeup_info) 
 {
-        if (whether_wakeup_client(instance_id) == 1) {
+        int wkup_sts = whether_wakeup_client(instance_id);
+        if ( wkup_sts == 1) {
                 if (rte_atomic16_read(clients[instance_id].shm_server) ==1) {
                         wakeup_info->num_wakeups += 1;
                         clients[instance_id].stats.wakeup_count+=1;
@@ -530,6 +566,12 @@ wakeup_client(int instance_id, struct wakeup_info *wakeup_info)
                         notify_client(instance_id);
                 }
         }
+        #ifdef ENABLE_NF_BACKPRESSURE
+        else if (-1 == wkup_sts) {
+                /* Make sure to set the flag here and check for flag in nf_lib and block */
+               rte_atomic16_set(clients[instance_id].shm_server, 1);
+        }
+        #endif
 }
 
 static int

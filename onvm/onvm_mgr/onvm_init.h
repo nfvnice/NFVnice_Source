@@ -103,6 +103,10 @@
 #define RTE_MP_TX_DESC_DEFAULT 1024 //512 //1536 //2048 //1024 //512 (use 1024)
 #define CLIENT_QUEUE_RINGSIZE 4096  //128 //4096  //4096 //128   (use 4096)
 
+/* Set between 50~80 is good */
+#define CLIENT_QUEUE_RING_THRESHOLD (75) // 25(works good too) 50(almost same as 25) 75(works same as 50) 85(cfs drops, rest better), 95(cfs furhter drop, rest same), 100
+#define CLIENT_QUEUE_RING_WATER_MARK_SIZE ((uint32_t)(CLIENT_QUEUE_RINGSIZE*CLIENT_QUEUE_RING_THRESHOLD/100))
+
 #define NO_FLAGS 0
 
 #define ONVM_NUM_RX_THREADS 1
