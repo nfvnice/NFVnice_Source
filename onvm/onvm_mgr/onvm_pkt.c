@@ -257,14 +257,17 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
                                 highest_downstream_nf_service_id = cl->info->service_id;
                                 //lowest_upstream_to_throttle = cl->info->service_id;
                         }
+                        /*
                         if (0 == lowest_upstream_to_throttle || cl->info->service_id < lowest_upstream_to_throttle) {
                                 lowest_upstream_to_throttle = cl->info->service_id;
                         }
+                        */
                 }
         }
         else {
+                /*
                 if (downstream_nf_overflow) {
-                        /* If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero */
+                        // If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero
                         if (cl->info->service_id >= lowest_upstream_to_throttle) {
                                 lowest_upstream_to_throttle = highest_downstream_nf_service_id;
                         }
@@ -276,6 +279,7 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
                         //what when multiple donstream nfs keep? only one may be bottleneck, must not override the other downstream nf's flag setting
                         //alternate logic: save the SID of highest downstream component that has set the flag, reset only when that NF is ready to accept packets..
                 }
+                */
         }
         #endif
 

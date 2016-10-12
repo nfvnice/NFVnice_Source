@@ -71,7 +71,7 @@
 //#define DROP_APPROACH_1
 //#define DROP_APPROACH_2s
 #define DROP_APPROACH_3
-#define DROP_APPROACH_3_WITH_YIELD
+//#define DROP_APPROACH_3_WITH_YIELD
 //#define DROP_APPROACH_3_WITH_POLL
 #define DROP_APPROACH_3_WITH_SYNC
 
@@ -100,12 +100,18 @@
 
 
 /* Enable watermark level NFs Tx and Rx Rings */
-//#define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
+#define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
 
 /* Enable back-pressure handling to throttle NFs upstream */
 #define ENABLE_NF_BACKPRESSURE
 #define NF_BACKPRESSURE_APPROACH_1  //place holder for different approaches
 #define NF_BACKPRESSURE_APPROACH_2  //place holder for different approaches
+
+#ifdef ENABLE_NF_BACKPRESSURE
+//forward declatation either store ref of onvm_flow_entry or onvm_service_chain (latter may be sufficient)
+struct onvm_flow_entry;
+struct onvm_service_chain;
+#endif  //ENABLE_NF_BACKPRESSURE
 
 //#ifdef USE_MQ2
 //typedef struct msgbuf { long mtype; char mtext[32];}msgbuf_t;
@@ -118,6 +124,9 @@ struct onvm_pkt_meta {
         uint16_t destination; /* where to go next */
         uint16_t src; /* who processed the packet last */
 	uint8_t chain_index; /*index of the current step in the service chain*/
+#ifdef ENABLE_NF_BACKPRESSURE
+        struct onvm_service_chain *sc;
+#endif   //ENABLE_NF_BACKPRESSURE
 };
 static inline struct onvm_pkt_meta* onvm_get_pkt_meta(struct rte_mbuf* pkt) {
         return (struct onvm_pkt_meta*)&pkt->udata64;
@@ -195,6 +204,12 @@ struct onvm_service_chain {
 	struct onvm_service_chain_entry sc[ONVM_MAX_CHAIN_LENGTH];
 	uint8_t chain_length;
 	int ref_cnt;
+#ifdef ENABLE_NF_BACKPRESSURE
+	uint16_t downstream_nf_overflow;
+	uint16_t highest_downstream_nf_index_id;
+	//uint16_t lowest_upstream_to_throttle;
+	//uint64_t throttle_count;
+#endif
 };
 
 /* define common names for structures shared between server and client */

@@ -279,11 +279,13 @@ tx_thread_main(void *arg) {
                         #ifdef ENABLE_NF_BACKPRESSURE
                         if (downstream_nf_overflow) {
                                 /* If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero */
-                                if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
-
+                                //if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
+                                if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
+                                        /*
                                         if (cl->info->service_id >= lowest_upstream_to_throttle) {
                                                 lowest_upstream_to_throttle = highest_downstream_nf_service_id;
                                         }
+                                        */
                                         if (cl->info->service_id == highest_downstream_nf_service_id) {
                                                 downstream_nf_overflow = 0;
                                                 highest_downstream_nf_service_id = 0;
