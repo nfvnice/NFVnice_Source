@@ -56,7 +56,7 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
-#define ONVM_MAX_CHAIN_LENGTH 4   // the maximum chain length
+#define ONVM_MAX_CHAIN_LENGTH 5   // the maximum chain length
 #define MAX_CLIENTS 16            // total number of NFs allowed
 #define MAX_SERVICES 16           // total number of unique services allowed
 #define MAX_CLIENTS_PER_SERVICE 8 // max number of NFs per service.

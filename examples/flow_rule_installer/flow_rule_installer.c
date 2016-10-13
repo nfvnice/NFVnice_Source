@@ -329,7 +329,8 @@ setup_service_chain_for_flow_entry(struct onvm_service_chain *sc) {
         if (0 == max_service_chains) { 
                 return 0;
         }
-        for(index =0; index < max_service_chains; index++) {
+        //for(index =0; index < max_service_chains; index++) {
+        for(index =0; index < ONVM_MAX_CHAIN_LENGTH; index++) {
                 service_id = services[next_sc][index];
                 if (service_id > 0){
                         /* if(chain_len == 0){
