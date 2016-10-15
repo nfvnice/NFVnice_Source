@@ -419,7 +419,7 @@ onvm_nflib_run(
 
                         #ifdef INTERRUPT_SEM
                         counter++;
-                        meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
+                        //meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
                         if (counter % SAMPLING_RATE == 0) {
                                 start_tsc = compute_start_cycles(); //rte_rdtsc();
                         }

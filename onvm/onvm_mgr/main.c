@@ -275,21 +275,43 @@ tx_thread_main(void *arg) {
                                 onvm_pkt_process_tx_batch(tx, pkts, tx_count, cl);
                                 //RTE_LOG(INFO,APP,"Core %d: processing %d TX packets for NF: %d \n", rte_lcore_id(),tx_count, i);
                         }
+                        else continue;
 
                         #ifdef ENABLE_NF_BACKPRESSURE
-                        if (downstream_nf_overflow) {
-                                /* If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero */
-                                //if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
-                                if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
-                                        /*
-                                        if (cl->info->service_id >= lowest_upstream_to_throttle) {
-                                                lowest_upstream_to_throttle = highest_downstream_nf_service_id;
+                        //struct onvm_pkt_meta *meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)pkts[0])->udata64);
+                        struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pkts[0]);
+                        //service chain specific scenario
+                        if (meta && meta->chain_mode_backpressure) {
+                        //if (meta && meta->highest_downstream_nf_index_id >=0 ) {
+                        //if (meta && meta->sc != NULL) {
+                                if((meta->downstream_nf_overflow == 1) && (rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE)) {
+                                //if((meta->sc->downstream_nf_overflow) && (rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE)) {
+                                        if(meta->chain_index == meta->highest_downstream_nf_index_id) {
+                                        //if(meta->chain_index == meta->sc->highest_downstream_nf_index_id){
+                                                //meta->sc->downstream_nf_overflow = 0;
+                                                //meta->sc->highest_downstream_nf_index_id = 0;
+                                                meta->downstream_nf_overflow = 0;
+                                                meta->highest_downstream_nf_index_id = 0;
                                         }
-                                        */
-                                        if (cl->info->service_id == highest_downstream_nf_service_id) {
-                                                downstream_nf_overflow = 0;
-                                                highest_downstream_nf_service_id = 0;
-                                                lowest_upstream_to_throttle = 0;
+                                }
+
+                        }
+                        //global single chain scenario
+                        else {
+                                if (downstream_nf_overflow) {
+                                        /* If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero */
+                                        //if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
+                                        if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
+                                                /*
+                                                if (cl->info->service_id >= lowest_upstream_to_throttle) {
+                                                        lowest_upstream_to_throttle = highest_downstream_nf_service_id;
+                                                }
+                                                */
+                                                if (cl->info->service_id == highest_downstream_nf_service_id) {
+                                                        downstream_nf_overflow = 0;
+                                                        highest_downstream_nf_service_id = 0;
+                                                        lowest_upstream_to_throttle = 0;
+                                                }
                                         }
                                 }
                         }

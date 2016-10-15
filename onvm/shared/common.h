@@ -118,15 +118,20 @@ struct onvm_service_chain;
 //#endif
 
 //extern uint8_t rss_symmetric_key[40];
-
+//size of onvm_pkt_meta cannot exceed 8 bytes, so how to add onvm_service_chain* sc pointer?
 struct onvm_pkt_meta {
         uint8_t action; /* Action to be performed */
-        uint16_t destination; /* where to go next */
-        uint16_t src; /* who processed the packet last */
-	uint8_t chain_index; /*index of the current step in the service chain*/
-#ifdef ENABLE_NF_BACKPRESSURE
-        struct onvm_service_chain *sc;
-#endif   //ENABLE_NF_BACKPRESSURE
+        uint8_t destination; /* where to go next */
+        uint8_t src; /* who processed the packet last */
+        uint8_t chain_index; /*index of the current step in the service chain*/
+        #ifdef ENABLE_NF_BACKPRESSURE
+        uint8_t chain_mode_backpressure; // 1 indicates using chain mode of forwading, 0 indicates not a chain mode
+        int8_t downstream_nf_overflow; ///set to -1 to indicate (non-chain use case), 0 chain_case, >0 throttle scenario
+        int8_t highest_downstream_nf_index_id;   ///set to -1 to indicate (non-chain use case), 0 chain_case, > 0 throttle scenario
+#if 0
+        struct onvm_service_chain *sc; /* Reference to the service chain to which this packet belongs: would be more conveneient to store teh onvm_flow_entry  */
+#endif
+        #endif // ENABLE_NF_BACKPRESSURE
 };
 static inline struct onvm_pkt_meta* onvm_get_pkt_meta(struct rte_mbuf* pkt) {
         return (struct onvm_pkt_meta*)&pkt->udata64;

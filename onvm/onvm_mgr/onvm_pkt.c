@@ -71,12 +71,30 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
                 meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)pkts[i])->udata64);
                 meta->src = 0;
                 meta->chain_index = 0;
+
+                #ifdef ENABLE_NF_BACKPRESSURE
+#if 0
+                meta->sc = NULL;
+#endif
+                meta->downstream_nf_overflow = -1;
+                meta->highest_downstream_nf_index_id = -1;
+                meta->chain_mode_backpressure = 0;
+                #endif
                 ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
-                //printf("\n************** sc_ret = [%d] *****************\n ", ret);
+
                 if (ret >= 0) {
                         sc = flow_entry->sc;
                         meta->action = onvm_sc_next_action(sc, pkts[i]);
                         meta->destination = onvm_sc_next_destination(sc, pkts[i]);
+
+                        #ifdef ENABLE_NF_BACKPRESSURE
+                        meta->chain_mode_backpressure = 1;
+                        meta->highest_downstream_nf_index_id = (int8_t) sc->highest_downstream_nf_index_id;
+                        meta->downstream_nf_overflow = (int8_t) sc->downstream_nf_overflow;
+#if 0
+                        meta->sc = flow_entry->sc;
+#endif
+                        #endif
                 } else {
                         meta->action = onvm_sc_next_action(default_chain, pkts[i]);
                         meta->destination = onvm_sc_next_destination(default_chain, pkts[i]);
@@ -251,37 +269,49 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
         /** Note: This only works for the default chain case where service ID of chain is always in increasing order */
         //-EDQUOT or -ENOBUFS
         if ( 0 != enq_status ) {
-                if (cl->info->service_id > 1) {
-                        downstream_nf_overflow = 1;
-                        if (cl->info->service_id > highest_downstream_nf_service_id) {
-                                highest_downstream_nf_service_id = cl->info->service_id;
-                                //lowest_upstream_to_throttle = cl->info->service_id;
+                //struct onvm_pkt_meta *meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)thread->nf_rx_buf[client].buffer[0])->udata64);
+                struct onvm_pkt_meta *meta = onvm_get_pkt_meta((struct rte_mbuf*)thread->nf_rx_buf[client].buffer[0]);
+                //service chain specific scenario
+                //if (meta && meta->sc != NULL) {
+                if (meta && meta->chain_mode_backpressure) {
+                //if (meta && meta->highest_downstream_nf_index_id >=0 ) {
+                        if (meta->chain_index > 1) {
+                                //meta->sc->downstream_nf_overflow = 1;
+                                meta->downstream_nf_overflow = 1;
+                                if(meta->chain_index > meta->highest_downstream_nf_index_id) {
+                                //if(meta->chain_index > meta->sc->highest_downstream_nf_index_id) {
+                                        //meta->sc->highest_downstream_nf_index_id = meta->chain_index;
+                                        meta->highest_downstream_nf_index_id = meta->chain_index;
+                                        //approach: extend the service chain to keep track of client_nf_ids that service the chain, in-order to know which NFs to throttle in the wakeup thread..?
+                                        struct onvm_flow_entry *flow_entry = NULL;
+                                        if ((onvm_flow_dir_get_pkt((struct rte_mbuf*)thread->nf_rx_buf[client].buffer[0], &flow_entry) >= 0) && (flow_entry != NULL && flow_entry->sc != NULL)) {
+                                                flow_entry->sc->downstream_nf_overflow = 1;
+                                                if (meta->highest_downstream_nf_index_id > flow_entry->sc->highest_downstream_nf_index_id) {
+                                                        flow_entry->sc->highest_downstream_nf_index_id = meta->highest_downstream_nf_index_id;
+                                                        //Test and Set
+                                                }
+                                        }
+                                }
                         }
-                        /*
-                        if (0 == lowest_upstream_to_throttle || cl->info->service_id < lowest_upstream_to_throttle) {
-                                lowest_upstream_to_throttle = cl->info->service_id;
-                        }
-                        */
                 }
-        }
-        else {
-                /*
-                if (downstream_nf_overflow) {
-                        // If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero
-                        if (cl->info->service_id >= lowest_upstream_to_throttle) {
-                                lowest_upstream_to_throttle = highest_downstream_nf_service_id;
+                //global single chain scenario
+                else {
+                        if (cl->info->service_id > 1) {
+                                downstream_nf_overflow = 1;
+                                if (cl->info->service_id > highest_downstream_nf_service_id) {
+                                        highest_downstream_nf_service_id = cl->info->service_id;
+                                        //lowest_upstream_to_throttle = cl->info->service_id;
+                                }
+                                /*
+                                if (0 == lowest_upstream_to_throttle || cl->info->service_id < lowest_upstream_to_throttle) {
+                                        lowest_upstream_to_throttle = cl->info->service_id;
+                                }
+                                */
                         }
-                        if (cl->info->service_id == highest_downstream_nf_service_id) {
-                                downstream_nf_overflow = 0;
-                                highest_downstream_nf_service_id = 0;
-                                lowest_upstream_to_throttle = 0;
-                        }
-                        //what when multiple donstream nfs keep? only one may be bottleneck, must not override the other downstream nf's flag setting
-                        //alternate logic: save the SID of highest downstream component that has set the flag, reset only when that NF is ready to accept packets..
                 }
-                */
+
         }
-        #endif
+        #endif //ENABLE_NF_BACKPRESSURE
 
         thread->nf_rx_buf[client].count = 0;
 }
