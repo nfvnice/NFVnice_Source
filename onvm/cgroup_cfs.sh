@@ -35,6 +35,31 @@ do_test_cfs_cgroup () {
         fi
 }
 
+do_list_cfs_group_shares() {
+
+        CWD=$(pwd)
+        cd $cg_base_dir
+        for i in $(find . -maxdepth 1 -type d ); do
+                cg_name=$(basename $i)
+                #echo $(basename ${i})
+                #cd $(basename $i)
+                do_test_cfs_cgroup
+                #echo "cg_exist=$cg_exists"
+
+                if [ ! $cg_exists  -o  $cg_exists == "false" ]    
+                #if [ "$cg_exists" -eq 0 ] || [ "$cg_exists" -eq 0 ]  
+                then
+                        echo " cgroupd $cg_name doest not exist!"
+                        
+                else
+                        echo "\n cgroup $cg_name has cpu.share:"
+                        cat   $cg_base_dir/$cg_name/cpu.shares
+                fi
+        done        
+        cd $CWD
+        return 1
+}
+
 do_list_cfs_tasks() {
         do_test_cfs_cgroup
         #echo "cg_exist=$cg_exists"
@@ -127,6 +152,9 @@ do_set_cgroup_share_percent() {
 
 #Check Input args and process actions 
 if [ -z $cg_operation ] ; then
+        exit 0
+elif [ $cg_operation -eq "-1" ] ; then
+        do_list_cfs_group_shares
         exit 0
 elif [ $cg_operation -eq "0" ] ; then
         do_list_cfs_tasks

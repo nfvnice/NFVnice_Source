@@ -589,12 +589,13 @@ static int setup_rule_for_packet(struct rte_mbuf *pkt, struct onvm_pkt_meta* met
 
         /* Get the Flow Entry for this packet:: Must fail if there is no entry in flow_table */
         ret = onvm_flow_dir_get_pkt(pkt, &flow_entry);
-        if (ret >= 0) {
+        if (ret >= 0 && flow_entry != NULL) {
                 #ifdef DEBUG_0
                 printf("Exisitng_S:[%x] \n", pkt->hash.rss);
                 #endif
-                meta->action = ONVM_NF_ACTION_NEXT;
-                meta->destination = globals.destination;
+                meta->action = flow_entry->sc->sc[meta->chain_index].action;//ONVM_NF_ACTION_NEXT;
+                meta->destination = flow_entry->sc->sc[meta->chain_index].destination;  //globals.destination;
+                meta->chain_index -=1; //  (meta->chain_index)--;
                 #ifdef DEBUG_0
                 printf("Exisitng_E:\n"); //onvm_sc_print(flow_entry->sc);
                 #endif

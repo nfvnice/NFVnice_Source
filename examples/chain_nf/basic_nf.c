@@ -215,9 +215,9 @@ packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) {
         
         static uint32_t counter = 0;
 
-        if (comp_cost_level) {
+       // if (comp_cost_level) {
                 do_compute_at_cost();  
-        }       
+       // }
 
         if (++counter == print_delay) {
                 do_stats_display(pkt);

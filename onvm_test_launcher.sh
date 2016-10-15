@@ -186,14 +186,17 @@ launch_nf_clients() {
 
 
 clean_build_all() {
-if  [ $clean_make -ne 1 ] ; then
+if  [ $clean_make -gt 1 ] ; then
         return 0
 fi
 CDIR=$(pwd)
 ODIR=$(pwd)/onvm
         cd $ODIR
+        ./kill_all.sh
         make clean 
-        make
+        if  [ $clean_make -eq 1 ] ; then
+            make
+        fi
         cd $CDIR
 
 NDIR=$(pwd)/examples
@@ -205,11 +208,14 @@ for i in $(find . -maxdepth 1 -type d ); do
             echo $(basename ${i})
             cd $(basename $i)
             make clean 
-            make
+            #make
+            if  [ $clean_make -eq 1 ] ; then
+                make
+            fi
             cd $CWD
         done
 
-if  [ $clean_make -eq 1 ] ; then
+if  [ $clean_make -le 1 ] ; then
         cd $ODIR
         ./kill_all.sh
         exit 0
