@@ -76,8 +76,8 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
 #if 0
                 meta->sc = NULL;
 #endif
-                meta->downstream_nf_overflow = -1;
-                meta->highest_downstream_nf_index_id = -1;
+                meta->downstream_nf_overflow = 0;
+                meta->highest_downstream_nf_index_id = 0;
                 meta->chain_mode_backpressure = 0;
                 #endif
                 ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
@@ -89,13 +89,15 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
 
                         #ifdef ENABLE_NF_BACKPRESSURE
                         meta->chain_mode_backpressure = 1;
-                        meta->highest_downstream_nf_index_id = (int8_t) sc->highest_downstream_nf_index_id;
-                        meta->downstream_nf_overflow = (int8_t) sc->downstream_nf_overflow;
+                        //meta->highest_downstream_nf_index_id = (uint8_t) sc->highest_downstream_nf_index_id;
+                        //meta->downstream_nf_overflow = (uint8_t) sc->downstream_nf_overflow;
 #if 0
                         meta->sc = flow_entry->sc;
 #endif
+
                         #endif
                 } else {
+                        //meta->chain_mode_backpressure = 0;
                         meta->action = onvm_sc_next_action(default_chain, pkts[i]);
                         meta->destination = onvm_sc_next_destination(default_chain, pkts[i]);
                 }
@@ -127,7 +129,9 @@ onvm_pkt_process_tx_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint1
                 if (meta->action == ONVM_NF_ACTION_DROP) {
                         // if the packet is drop, then <return value> is 0
                         // and !<return value> is 1.
-                        cl->stats.act_drop += !onvm_pkt_drop(pkts[i]);
+                        //cl->stats.act_drop += !onvm_pkt_drop(pkts[i]);
+                        onvm_pkt_drop(pkts[i]);
+                        cl->stats.act_drop += 1;
                 } else if (meta->action == ONVM_NF_ACTION_NEXT) {
                         /* TODO: Here we drop the packet : there will be a flow table
                         in the future to know what to do with the packet next */
@@ -256,42 +260,48 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
 
         int enq_status = rte_ring_enqueue_bulk(cl->rx_q, (void **)thread->nf_rx_buf[client].buffer,
                                 thread->nf_rx_buf[client].count);
-        if ( -ENOBUFS == enq_status) {
-                for (i = 0; i < thread->nf_rx_buf[client].count; i++) {
-                        onvm_pkt_drop(thread->nf_rx_buf[client].buffer[i]);
-                }
-                cl->stats.rx_drop += thread->nf_rx_buf[client].count;
-        } else {
-                cl->stats.rx += thread->nf_rx_buf[client].count;
-        }
+
 
         #ifdef ENABLE_NF_BACKPRESSURE
-        /** Note: This only works for the default chain case where service ID of chain is always in increasing order */
+        /*** Detect the NF Rx Buffer overflow and signal this NF instance in the service chain as bottlenecked -- source of back-pressure -- all NFs prior to this in chain must throttle (either not scheduler or drop packets). ***/
+        /** Note: This only works for the default chain case where service ID of chain is always in increasing order **/
         //-EDQUOT or -ENOBUFS
         if ( 0 != enq_status ) {
                 //struct onvm_pkt_meta *meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)thread->nf_rx_buf[client].buffer[0])->udata64);
                 struct onvm_pkt_meta *meta = onvm_get_pkt_meta((struct rte_mbuf*)thread->nf_rx_buf[client].buffer[0]);
                 //service chain specific scenario
-                //if (meta && meta->sc != NULL) {
-                if (meta && meta->chain_mode_backpressure) {
-                //if (meta && meta->highest_downstream_nf_index_id >=0 ) {
-                        if (meta->chain_index > 1) {
-                                //meta->sc->downstream_nf_overflow = 1;
-                                meta->downstream_nf_overflow = 1;
-                                if(meta->chain_index > meta->highest_downstream_nf_index_id) {
-                                //if(meta->chain_index > meta->sc->highest_downstream_nf_index_id) {
-                                        //meta->sc->highest_downstream_nf_index_id = meta->chain_index;
-                                        meta->highest_downstream_nf_index_id = meta->chain_index;
-                                        //approach: extend the service chain to keep track of client_nf_ids that service the chain, in-order to know which NFs to throttle in the wakeup thread..?
-                                        struct onvm_flow_entry *flow_entry = NULL;
-                                        if ((onvm_flow_dir_get_pkt((struct rte_mbuf*)thread->nf_rx_buf[client].buffer[0], &flow_entry) >= 0) && (flow_entry != NULL && flow_entry->sc != NULL)) {
+                if (meta && meta->chain_mode_backpressure) {    ////if (meta && meta->sc != NULL) {
+                        // approach should be first: find all the different flow_entry items in the current burst of packets, then process each different flow_entry, instead of iterating through the each of the packets..
+                        struct onvm_flow_entry *flow_entry = NULL;
+                        for (i = 0; i < thread->nf_rx_buf[client].count; i++) {
+                                if ((onvm_flow_dir_get_pkt((struct rte_mbuf*)thread->nf_rx_buf[client].buffer[i], &flow_entry) >= 0) && (flow_entry != NULL && flow_entry->sc != NULL)) {
+                                        meta = onvm_get_pkt_meta(thread->nf_rx_buf[client].buffer[i]);
+                                        if (meta->chain_index > 1) {
+                                                meta->downstream_nf_overflow = 1; ////meta->sc->downstream_nf_overflow = 1;
                                                 flow_entry->sc->downstream_nf_overflow = 1;
-                                                if (meta->highest_downstream_nf_index_id > flow_entry->sc->highest_downstream_nf_index_id) {
-                                                        flow_entry->sc->highest_downstream_nf_index_id = meta->highest_downstream_nf_index_id;
+                                                uint8_t index = 1;
+                                                for(; index < meta->chain_index; index++ ) {
+                                                        clients[flow_entry->sc->nf_instance_id[index]].downstream_nf_overflow = 1;
+                                                        if(clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id == 0) clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id = meta->chain_index;
+                                                //        clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id = meta->highest_downstream_nf_index_id; /*(meta->highest_downstream_nf_index_id > clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id)?
+                                                //                        (meta->highest_downstream_nf_index_id):(clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id);*/
+                                                }
+
+                                                if(meta->chain_index > flow_entry->sc->highest_downstream_nf_index_id) {  ////if(meta->chain_index > meta->sc->highest_downstream_nf_index_id) {
+                                                        meta->highest_downstream_nf_index_id = meta->chain_index;   ////meta->sc->highest_downstream_nf_index_id = meta->chain_index;
+                                                        flow_entry->sc->highest_downstream_nf_index_id = meta->chain_index;
+                                                        uint8_t index = 1;
+                                                        for(; index < meta->chain_index; index++ ) {
+                                                                clients[flow_entry->sc->nf_instance_id[index]].downstream_nf_overflow = 1;
+                                                                clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id = meta->highest_downstream_nf_index_id;
+                                                        }
+                                                        //approach: extend the service chain to keep track of client_nf_ids that service the chain, in-order to know which NFs to throttle in the wakeup thread..?
                                                         //Test and Set
                                                 }
                                         }
                                 }
+                                flow_entry = NULL;
+                                meta = NULL;
                         }
                 }
                 //global single chain scenario
@@ -300,19 +310,21 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
                                 downstream_nf_overflow = 1;
                                 if (cl->info->service_id > highest_downstream_nf_service_id) {
                                         highest_downstream_nf_service_id = cl->info->service_id;
-                                        //lowest_upstream_to_throttle = cl->info->service_id;
                                 }
-                                /*
-                                if (0 == lowest_upstream_to_throttle || cl->info->service_id < lowest_upstream_to_throttle) {
-                                        lowest_upstream_to_throttle = cl->info->service_id;
-                                }
-                                */
                         }
                 }
-
         }
         #endif //ENABLE_NF_BACKPRESSURE
 
+        if ( -ENOBUFS == enq_status) {
+                for (i = 0; i < thread->nf_rx_buf[client].count; i++) {
+                        onvm_pkt_drop(thread->nf_rx_buf[client].buffer[i]);
+                }
+                cl->stats.rx_drop += thread->nf_rx_buf[client].count;
+        }
+        else {
+                cl->stats.rx += thread->nf_rx_buf[client].count;
+        }
         thread->nf_rx_buf[client].count = 0;
 }
 
@@ -353,6 +365,42 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
                 onvm_pkt_drop(pkt);
                 return;
         }
+
+        #ifdef ENABLE_NF_BACKPRESSURE
+
+        struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pkt);
+        /* Throttle NF/Drop the packets till the flag is cleared */
+        if(meta && meta->chain_mode_backpressure) {
+                struct onvm_flow_entry *flow_entry = NULL;
+                if ((onvm_flow_dir_get_pkt(pkt, &flow_entry) >= 0) && flow_entry != NULL && flow_entry->sc != NULL) {
+                        flow_entry->sc->nf_instance_id[meta->chain_index] = (uint8_t)cl->instance_id;
+                }
+#if 0
+                if(meta->chain_index <  meta->highest_downstream_nf_index_id) {
+                        if (meta->downstream_nf_overflow  ) {
+                                /* Make sure to set the flag here and check for flag in nf_lib and block */
+                                if (rte_atomic16_read(cl->shm_server) !=1) {
+                                        rte_atomic16_set(cl->shm_server, 1);
+                                        cl->downstream_nf_overflow = 1;
+                                        if (cl->highest_downstream_nf_index_id < meta->highest_downstream_nf_index_id){
+                                                cl->highest_downstream_nf_index_id = meta->highest_downstream_nf_index_id;
+                                                //Question is when, where and how to clear it??
+                                        }
+                                }
+                                onvm_pkt_drop(pkt);
+                                return;
+                        }
+                        else {
+                                if (cl->downstream_nf_overflow) {
+                                        cl->downstream_nf_overflow = 0;
+                                        cl->highest_downstream_nf_index_id = 0;
+                                }
+                        }
+                }
+#endif
+        }
+        #endif //#ifdef ENABLE_NF_BACKPRESSURE
+
 
         /* For Drop: Earlier the better, but this part is not only expensive,
          * but can lead to drop of intermittent packets and not batch of packets, and can still result in Tx drops.
@@ -410,16 +458,18 @@ onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struc
                         break;
                 case ONVM_NF_ACTION_TONF:
                         cl->stats.act_tonf++;
+                        (meta->chain_index)++;
                         onvm_pkt_enqueue_nf(tx, meta->destination, pkt);
                         break;
                 case ONVM_NF_ACTION_OUT:
                         cl->stats.act_out++;
+                        (meta->chain_index)++;
                         onvm_pkt_enqueue_port(tx, meta->destination, pkt);
                         break;
                 default:
                         break;
         }
-        (meta->chain_index)++;
+        //(meta->chain_index)++;
 }
 
 
@@ -428,6 +478,11 @@ onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struc
 
 int
 onvm_pkt_drop(struct rte_mbuf *pkt) {
+#ifdef ENABLE_NF_BACKPRESSURE
+        struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pkt);
+        meta->downstream_nf_overflow = 0;
+        meta->highest_downstream_nf_index_id = 0;
+#endif
         rte_pktmbuf_free(pkt);
         if (pkt != NULL) {
                 return 1;

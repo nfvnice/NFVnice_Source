@@ -187,8 +187,12 @@ struct client {
         //void *mutex_ctx;
         #endif
 
+        #ifdef ENABLE_NF_BACKPRESSURE
+        uint8_t highest_downstream_nf_index_id;
+        uint8_t downstream_nf_overflow;
+        #endif //ENABLE_NF_BACKPRESSURE
 
-        #endif
+        #endif //INTERRUPT_SEM
 };
 
 #if defined (INTERRUPT_SEM) && defined (USE_SOCKET)

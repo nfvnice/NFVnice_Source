@@ -105,7 +105,12 @@ void onvm_stats_display_ports(unsigned difftime);
  */
 void onvm_stats_display_clients(unsigned difftime);
 
-
+/*
+ * Function displaying statistics for all active service chains (flow_entry*)
+ *
+ * Input : time passed since last display (to compute packet rate)
+ */
+void onvm_stats_display_chains(unsigned difftime);
 /******************************Helper functions*******************************/
 
 

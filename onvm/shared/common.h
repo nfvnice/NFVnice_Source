@@ -126,8 +126,8 @@ struct onvm_pkt_meta {
         uint8_t chain_index; /*index of the current step in the service chain*/
         #ifdef ENABLE_NF_BACKPRESSURE
         uint8_t chain_mode_backpressure; // 1 indicates using chain mode of forwading, 0 indicates not a chain mode
-        int8_t downstream_nf_overflow; ///set to -1 to indicate (non-chain use case), 0 chain_case, >0 throttle scenario
-        int8_t highest_downstream_nf_index_id;   ///set to -1 to indicate (non-chain use case), 0 chain_case, > 0 throttle scenario
+        uint8_t downstream_nf_overflow; ///set to -1 to indicate (non-chain use case), 0 chain_case, >0 throttle scenario
+        uint8_t highest_downstream_nf_index_id;   ///set to -1 to indicate (non-chain use case), 0 chain_case, > 0 throttle scenario
 #if 0
         struct onvm_service_chain *sc; /* Reference to the service chain to which this packet belongs: would be more conveneient to store teh onvm_flow_entry  */
 #endif
@@ -210,10 +210,11 @@ struct onvm_service_chain {
 	uint8_t chain_length;
 	int ref_cnt;
 #ifdef ENABLE_NF_BACKPRESSURE
-	uint16_t downstream_nf_overflow;
-	uint16_t highest_downstream_nf_index_id;
+	uint8_t downstream_nf_overflow;
+	uint8_t highest_downstream_nf_index_id;
 	//uint16_t lowest_upstream_to_throttle;
 	//uint64_t throttle_count;
+	uint8_t nf_instance_id[ONVM_MAX_CHAIN_LENGTH];
 #endif
 };
 

@@ -74,4 +74,5 @@ int onvm_flow_dir_get_key(struct onvm_ft_ipv4_5tuple* key, struct onvm_flow_entr
 int onvm_flow_dir_add_key(struct onvm_ft_ipv4_5tuple* key, struct onvm_flow_entry **flow_entry);
 int onvm_flow_dir_del_key(struct onvm_ft_ipv4_5tuple* key);
 int onvm_flow_dir_del_and_free_key(struct onvm_ft_ipv4_5tuple* key);
+void onvm_flow_dir_print_stats(void);
 #endif // _ONVM_FLOW_DIR_H_

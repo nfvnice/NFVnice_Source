@@ -55,12 +55,12 @@
 
 /****************************Interfaces***************************************/
 
-
 void
 onvm_stats_display_all(unsigned difftime) {
         onvm_stats_clear_terminal();
         onvm_stats_display_ports(difftime);
         onvm_stats_display_clients(difftime);
+        onvm_stats_display_chains(difftime);
 }
 
 
@@ -291,13 +291,21 @@ onvm_stats_display_clients(unsigned difftime) {
                 clients_stats->prev_wkup_count[i] = clients_stats->wkup_count[i];
                 #endif
 
+#ifdef ENABLE_NF_BACKPRESSURE
+                printf("OverflowFlag=[%d], Highest_DS_SID=[%d], \n", clients[i].downstream_nf_overflow, clients[i].highest_downstream_nf_index_id);
+#endif
 
         }
 
         printf("\n");
 }
 
-
+void onvm_stats_display_chains(unsigned difftime) {
+        printf("\nCHAINS\n");
+        printf("-------\n");
+        (void)difftime;
+        onvm_flow_dir_print_stats();
+}
 /***************************Helper functions**********************************/
 
 
