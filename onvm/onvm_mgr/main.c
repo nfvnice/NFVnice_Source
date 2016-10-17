@@ -272,50 +272,15 @@ tx_thread_main(void *arg) {
 
                         /* Now process the Client packets read */
                         if (likely(tx_count > 0)) {
+
+                                #ifdef ENABLE_NF_BACKPRESSURE
+                                onvm_check_and_reset_back_pressure(pkts, tx_count, cl);
+                                #endif // ENABLE_NF_BACKPRESSURE
+
                                 onvm_pkt_process_tx_batch(tx, pkts, tx_count, cl);
                                 //RTE_LOG(INFO,APP,"Core %d: processing %d TX packets for NF: %d \n", rte_lcore_id(),tx_count, i);
                         }
                         else continue;
-
-                        #ifdef ENABLE_NF_BACKPRESSURE
-                        //struct onvm_pkt_meta *meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)pkts[0])->udata64);
-                        struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pkts[0]);
-                        //service chain specific scenario
-                        if (meta && meta->chain_mode_backpressure) {
-                                struct onvm_flow_entry *flow_entry = NULL;
-                                int ret = onvm_flow_dir_get_pkt(pkts[0], &flow_entry);
-                                if (ret >= 0 && flow_entry && flow_entry->sc) {  ////if (meta && meta->highest_downstream_nf_index_id >=0 ) {  //if (meta && meta->sc != NULL) {
-                                        if(flow_entry->sc->downstream_nf_overflow && (rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE)) {
-                                                if(meta->chain_index >= flow_entry->sc->highest_downstream_nf_index_id) {
-                                                        meta->downstream_nf_overflow = 0;
-                                                        meta->highest_downstream_nf_index_id = 0;
-                                                        flow_entry->sc->downstream_nf_overflow = 0;
-                                                        flow_entry->sc->highest_downstream_nf_index_id=0;
-                                                        // also reset the chain's downstream NFs cl->downstream_nf_overflow and cl->highest_downstream_nf_index_id=0. But How?? <track the nf_instance_id in the service chain.
-                                                        unsigned nf_index=0;
-                                                        for(; nf_index < meta->chain_index; nf_index++) {
-                                                                clients[flow_entry->sc->nf_instance_id[nf_index]].downstream_nf_overflow = 0;
-                                                                clients[flow_entry->sc->nf_instance_id[nf_index]].highest_downstream_nf_index_id = 0;
-                                                        }
-                                                }
-                                        }
-                                }
-                        }
-                        //global single chain scenario
-                        else {
-                                if (downstream_nf_overflow) {
-                                        /* If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero */
-                                        //if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
-                                        if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
-                                                if (cl->info->service_id == highest_downstream_nf_service_id) {
-                                                        downstream_nf_overflow = 0;
-                                                        highest_downstream_nf_service_id = 0;
-                                                        lowest_upstream_to_throttle = 0;
-                                                }
-                                        }
-                                }
-                        }
-                        #endif //ENABLE_NF_BACKPRESSURE
                 }
 
                 /* Send a burst to every port */
@@ -488,28 +453,24 @@ whether_wakeup_client(int instance_id)
         }
 
         #ifdef ENABLE_NF_BACKPRESSURE
+        #ifdef NF_BACKPRESSURE_APPROACH_2
         /* Block the upstream (earlier) NFs from getting scheduled, if there is NF at downstream that is bottlenecked! */
         if (downstream_nf_overflow) {
-               /*
-                *
-                if (highest_downstream_nf_service_id > clients[instance_id].info->service_id) {
-                        return 0;
-                }
-                */
-                //if (clients[instance_id].info != NULL && lowest_upstream_to_throttle > clients[instance_id].info->service_id) {
                 if (clients[instance_id].info != NULL && highest_downstream_nf_service_id > clients[instance_id].info->service_id) {
                         throttle_count++;
                         return -1;
                 }
         }
         //service chain case
-        else if (clients[instance_id].downstream_nf_overflow) {
+        else if (clients[instance_id].throttle_this_upstream_nf) {
+                clients[instance_id].throttle_count++;
                 return -1;
         }
-        #endif
+        #endif //NF_BACKPRESSURE_APPROACH_2
+        #endif //ENABLE_NF_BACKPRESSURE
 
         cur_entries = rte_ring_count(clients[instance_id].rx_q);
-        if (cur_entries >= nfs_wakethr[instance_id]){
+        if (cur_entries >= nfs_wakethr[instance_id]) {
                 return 1;
         }
         return 0;
@@ -583,8 +544,7 @@ notify_client(int instance_id)
         #endif
 }
 static inline void
-wakeup_client(int instance_id, struct wakeup_info *wakeup_info) 
-{
+wakeup_client(int instance_id, struct wakeup_info *wakeup_info)  {
         int wkup_sts = whether_wakeup_client(instance_id);
         if ( wkup_sts == 1) {
                 if (rte_atomic16_read(clients[instance_id].shm_server) ==1) {
@@ -595,16 +555,17 @@ wakeup_client(int instance_id, struct wakeup_info *wakeup_info)
                 }
         }
         #ifdef ENABLE_NF_BACKPRESSURE
+        #ifdef NF_BACKPRESSURE_APPROACH_2
         else if (-1 == wkup_sts) {
                 /* Make sure to set the flag here and check for flag in nf_lib and block */
-               rte_atomic16_set(clients[instance_id].shm_server, 1);
+                rte_atomic16_set(clients[instance_id].shm_server, 1);
         }
-        #endif
+        #endif //NF_BACKPRESSURE_APPROACH_2
+        #endif //ENABLE_NF_BACKPRESSURE
 }
 
 static int
-wakeup_nfs(void *arg)
-{
+wakeup_nfs(void *arg) {
         struct wakeup_info *wakeup_info = (struct wakeup_info *)arg;
         unsigned i;
 

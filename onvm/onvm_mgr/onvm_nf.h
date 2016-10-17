@@ -56,11 +56,12 @@ extern uint16_t next_instance_id;
 extern struct wakeup_info *wakeup_infos;
 
 #ifdef ENABLE_NF_BACKPRESSURE
+// Global mode variables (default service chain without flow_Table entry: can support only 1 flow (i.e all flows have same NFs)
 extern uint16_t downstream_nf_overflow;
 extern uint16_t highest_downstream_nf_service_id;
 extern uint16_t lowest_upstream_to_throttle;
 extern uint64_t throttle_count;
-#endif
+#endif //ENABLE_NF_BACKPRESSURE
 
 /********************************Interfaces***********************************/
 

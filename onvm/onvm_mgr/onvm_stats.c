@@ -213,7 +213,7 @@ onvm_stats_display_clients(unsigned difftime) {
 
 #ifdef ENABLE_NF_BACKPRESSURE
         printf("OverflowFlag=[%d], Highest_DS_SID=[%d], Lowest_DS_SID=[%d], Num Throttles=[%"PRIu64"] \n", downstream_nf_overflow, highest_downstream_nf_service_id, lowest_upstream_to_throttle, throttle_count);
-#endif
+#endif  //ENABLE_NF_BACKPRESSURE
 
         printf("\nCLIENTS\n");
         printf("-------\n");
@@ -292,8 +292,8 @@ onvm_stats_display_clients(unsigned difftime) {
                 #endif
 
 #ifdef ENABLE_NF_BACKPRESSURE
-                printf("OverflowFlag=[%d], Highest_DS_SID=[%d], \n", clients[i].downstream_nf_overflow, clients[i].highest_downstream_nf_index_id);
-#endif
+                printf("rx_overflow=[%d], ThrottleNF_Flag=[%d], Highest_DS_SID=[%d] NF_Throttle_count=[%"PRIu64"], \n", clients[i].rx_buffer_overflow, clients[i].throttle_this_upstream_nf, clients[i].highest_downstream_nf_index_id, clients[i].throttle_count);
+#endif  //ENABLE_NF_BACKPRESSURE
 
         }
 

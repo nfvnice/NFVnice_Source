@@ -104,8 +104,8 @@
 
 /* Enable back-pressure handling to throttle NFs upstream */
 #define ENABLE_NF_BACKPRESSURE
-#define NF_BACKPRESSURE_APPROACH_1  //place holder for different approaches
-#define NF_BACKPRESSURE_APPROACH_2  //place holder for different approaches
+//#define NF_BACKPRESSURE_APPROACH_1  //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
+#define NF_BACKPRESSURE_APPROACH_2  //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
 
 #ifdef ENABLE_NF_BACKPRESSURE
 //forward declatation either store ref of onvm_flow_entry or onvm_service_chain (latter may be sufficient)
@@ -124,14 +124,6 @@ struct onvm_pkt_meta {
         uint8_t destination; /* where to go next */
         uint8_t src; /* who processed the packet last */
         uint8_t chain_index; /*index of the current step in the service chain*/
-        #ifdef ENABLE_NF_BACKPRESSURE
-        uint8_t chain_mode_backpressure; // 1 indicates using chain mode of forwading, 0 indicates not a chain mode
-        uint8_t downstream_nf_overflow; ///set to -1 to indicate (non-chain use case), 0 chain_case, >0 throttle scenario
-        uint8_t highest_downstream_nf_index_id;   ///set to -1 to indicate (non-chain use case), 0 chain_case, > 0 throttle scenario
-#if 0
-        struct onvm_service_chain *sc; /* Reference to the service chain to which this packet belongs: would be more conveneient to store teh onvm_flow_entry  */
-#endif
-        #endif // ENABLE_NF_BACKPRESSURE
 };
 static inline struct onvm_pkt_meta* onvm_get_pkt_meta(struct rte_mbuf* pkt) {
         return (struct onvm_pkt_meta*)&pkt->udata64;
@@ -215,7 +207,7 @@ struct onvm_service_chain {
 	//uint16_t lowest_upstream_to_throttle;
 	//uint64_t throttle_count;
 	uint8_t nf_instance_id[ONVM_MAX_CHAIN_LENGTH];
-#endif
+#endif  //ENABLE_NF_BACKPRESSURE
 };
 
 /* define common names for structures shared between server and client */

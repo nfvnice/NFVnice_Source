@@ -189,7 +189,9 @@ struct client {
 
         #ifdef ENABLE_NF_BACKPRESSURE
         uint8_t highest_downstream_nf_index_id;
-        uint8_t downstream_nf_overflow;
+        uint8_t throttle_this_upstream_nf; // rename downstream_nf_overflow to throttle_this_upstream_nf;
+        uint8_t rx_buffer_overflow;
+        uint64_t throttle_count;
         #endif //ENABLE_NF_BACKPRESSURE
 
         #endif //INTERRUPT_SEM

@@ -197,6 +197,11 @@ onvm_flow_dir_print_stats(void) {
                         //if (flow_entry && flow_entry->ref_cnt && flow_entry->sc) {
                         if (flow_entry && flow_entry->sc && flow_entry->sc->downstream_nf_overflow == 1) {
                                 printf ("\n FT_Key[%d], OverflowStatus [%d], overflow_svc_chain_index [%d] \n", (int)flow_entry->key->src_addr, (int)flow_entry->sc->downstream_nf_overflow, (int)flow_entry->sc->highest_downstream_nf_index_id);
+                                uint8_t nf_idx = 0;
+                                for (; nf_idx < ONVM_MAX_CHAIN_LENGTH; nf_idx++) {
+                                        printf("[%d: %d] \t", nf_idx, flow_entry->sc->nf_instance_id[nf_idx]);
+                                }
+                                printf("\n");
                         }
                 }
         }

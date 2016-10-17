@@ -113,6 +113,27 @@ void
 onvm_pkt_drop_batch(struct rte_mbuf **pkts, uint16_t size);
 
 
+/* Interface to check and set back-pressure status after enqueue of packets to RX queue.
+ *
+ * Inputs :
+ *          an array of packets
+ *          the size/count of buffers in the array
+ *          a pointer to the client possessing the RX queue.
+ *
+ */
+void
+onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struct client *cl);
+
+/* Interface to check and reset back-pressure status after dequeue of packets from a TX queue.
+ *
+ * Inputs :
+ *          an array of packets
+ *          the size/count of buffers in the array
+ *          a pointer to the client possessing the TX queue.
+ *
+ */
+void
+onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struct client *cl);
 /*****************************Internal functions******************************/
 
 
