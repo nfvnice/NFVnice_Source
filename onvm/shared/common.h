@@ -206,6 +206,7 @@ struct onvm_service_chain {
 	uint8_t highest_downstream_nf_index_id;
 	//uint16_t lowest_upstream_to_throttle;
 	//uint64_t throttle_count;
+	uint8_t nf_instances_mapped; //set when all nf_instances are populated in the below array
 	uint8_t nf_instance_id[ONVM_MAX_CHAIN_LENGTH];
 #endif  //ENABLE_NF_BACKPRESSURE
 };

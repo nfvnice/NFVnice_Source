@@ -372,12 +372,14 @@ onvm_nflib_run(
 
                 /* check if signalled to block, then block */
                 #ifdef ENABLE_NF_BACKPRESSURE
+                #ifdef NF_BACKPRESSURE_APPROACH_2
                 #ifdef INTERRUPT_SEM
                 if (rte_atomic16_read(flag_p) ==1) {
                         onvm_nf_yeild(info);
                 }
-                #endif
-                #endif
+                #endif  // INTERRUPT_SEM
+                #endif  // NF_BACKPRESSURE_APPROACH_2
+                #endif  // ENABLE_NF_BACKPRESSURE
 
                 /* $$$$$: TEST only( remove later): wait for signal from NF Manager to start $$$$$ */
                 //onvm_nf_yeild(info);

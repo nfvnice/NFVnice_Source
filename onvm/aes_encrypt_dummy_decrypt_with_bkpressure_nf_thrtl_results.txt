@@ -1,0 +1,476 @@
+****************************************************
+<START> For Scheduler type = c   <START> 
+class= -o 
+prio= -p 0 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m monitor
+                     root      ....m aesdecrypt
+                     root      ....m basic_nf
+                     root      ....m aesencrypt
+Skip Kernel Process: kernel
+Changing Process:  -o   -p 0  22432
+Changing Process:  -o   -p 0  22445
+Changing Process:  -o   -p 0  22456
+Changing Process:  -o   -p 0  22465
+Changing Process:  -o   -p 0  22471
+Linux 3.19.0-39-lowlatency (flashstack-3) 	10/17/2016 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752853     0     22445    7.27    0.91    0.00    8.18    12      0.00      0.00 2120340   3672   0.00     136      32  13109.09      6.36  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752853     0     22456   43.64    2.73    0.00   46.36     8      1.82      0.00 2120360   3676   0.00     136      36   6716.36    378.18  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752853     0     22465    3.64    1.82    0.00    5.45     8      0.00      0.00 2120344   3672   0.00     136      32  13108.18      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752853     0     22471   47.27    0.00    0.00   47.27     8      1.82      0.00 2120360   3676   0.00     136      36      0.00  13659.09  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752853     0     22622    1.82    6.36    0.00    8.18    54   1826.36      0.00    7308   3276   0.00     136      16      0.91     86.36  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752853     0     22623    0.00    0.00    0.00    0.00    42     16.36      0.00   38016   4272   0.00     136      12      1.82      0.91  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752854     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13150.00     29.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752854     0     22456   45.00    2.00    0.00   47.00     8      6.00      0.00 2120360   3676   0.00     136      36   6809.00    406.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752854     0     22465    3.00    3.00    0.00    6.00     8      0.00      0.00 2120344   3672   0.00     136      32  13151.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752854     0     22471   46.00    0.00    0.00   46.00     8      6.00      0.00 2120360   3676   0.00     136      36      0.00  13927.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752854     0     22622    2.00    8.00    0.00   10.00    54   2018.00      0.00    7336   3444   0.00     136      20      1.00     96.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752854     0     22623    0.00    0.00    0.00    0.00    42     14.00      0.00   38016   4272   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752855     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13141.00     34.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752855     0     22456   46.00    2.00    0.00   48.00     8      0.00      0.00 2120360   3676   0.00     136      36   7350.00    394.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752855     0     22465    4.00    2.00    0.00    6.00     8      0.00      0.00 2120344   3672   0.00     136      32  13142.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752855     0     22471   46.00    2.00    0.00   48.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00  14936.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752855     0     22622    2.00    8.00    0.00   10.00    19   2012.00      0.00    7336   3444   0.00     136      20      1.00     96.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752855     0     22623    0.00    0.00    0.00    0.00    42     14.00      0.00   38016   4272   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752856     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13178.00     27.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752856     0     22456   44.00    2.00    0.00   46.00     8      0.00      0.00 2120360   3676   0.00     136      36   6761.00    394.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752856     0     22465    3.00    3.00    0.00    6.00     8      0.00      0.00 2120344   3672   0.00     136      32  13178.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752856     0     22471   47.00    0.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00  13769.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752856     0     22622    2.00    7.00    0.00    9.00    19   2012.00      0.00    7336   3444   0.00     136      20      1.00     98.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752856     0     22623    0.00    0.00    0.00    0.00    42     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752857     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13179.00      8.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752857     0     22456   45.00    2.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36   6767.00    376.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752857     0     22465    2.00    3.00    0.00    5.00     8      0.00      0.00 2120344   3672   0.00     136      32  13179.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752857     0     22471   47.00    0.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00  13758.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752857     0     22622    3.00    8.00    0.00   11.00    54   2012.00      0.00    7336   3444   0.00     136      20      1.00     95.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752857     0     22623    0.00    0.00    0.00    0.00    42     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752858     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13169.00      9.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752858     0     22456   45.00    2.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36   6884.00    385.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752858     0     22465    3.00    3.00    0.00    6.00     8      0.00      0.00 2120344   3672   0.00     136      32  13168.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752858     0     22471   47.00    0.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00  14057.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752858     0     22622    2.00    7.00    0.00    9.00    54   2012.00      0.00    7336   3444   0.00     136      20      1.00     97.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752858     0     22623    0.00    0.00    0.00    0.00    42     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752859     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13154.00     61.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752859     0     22456   45.00    3.00    0.00   48.00     8      0.00      0.00 2120360   3676   0.00     136      36   7247.00    429.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752859     0     22465    3.00    3.00    0.00    6.00     8      0.00      0.00 2120344   3672   0.00     136      32  13153.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752859     0     22471   45.00    2.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00  14821.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752859     0     22622    3.00    6.00    0.00    9.00    54   2012.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752859     0     22623    0.00    0.00    0.00    0.00    42     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752860     0     22445    6.00    1.00    0.00    7.00    12      0.00      0.00 2120340   3672   0.00     136      32  13132.00     51.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752860     0     22456   44.00    2.00    0.00   46.00     8      0.00      0.00 2120360   3676   0.00     136      36   7411.00    417.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752860     0     22465    3.00    2.00    0.00    5.00     8      0.00      0.00 2120344   3672   0.00     136      32  13134.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752860     0     22471   46.00    1.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00  15056.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752860     0     22622    3.00    7.00    0.00   10.00    54   2012.00      0.00    7336   3444   0.00     136      20      1.00     97.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752860     0     22623    0.00    0.00    0.00    0.00    42     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752861     0     22445    7.00    2.00    0.00    9.00    12      0.00      0.00 2120340   3672   0.00     136      32  13164.00     41.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752861     0     22456   45.00    2.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36   6955.00    415.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752861     0     22465    3.00    3.00    0.00    6.00     8      0.00      0.00 2120344   3672   0.00     136      32  13163.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752861     0     22471   47.00    0.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00  14183.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752861     0     22622    2.00    7.00    0.00    9.00    54   2012.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752861     0     22623    0.00    0.00    0.00    0.00    42     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.335030      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+            35,790      context-switches          #    0.036 M/sec                    ( +-  0.64% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 2      page-faults               #    0.002 K/sec                    ( +- 76.38% )
+     3,099,805,427      cycles                    #    3.099 GHz                      ( +-  0.00% ) [100.00%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     8,321,786,808      instructions              #    2.68  insns per cycle          ( +-  0.03% ) [100.00%]
+       196,259,196      branches                  #  196.193 M/sec                    ( +-  0.03% ) [100.00%]
+           350,380      branch-misses             #    0.18% of all branches          ( +-  0.71% )
+
+       1.000780430 seconds time elapsed                                          ( +-  0.00% )
+
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752862     0     22445    7.00    0.00    0.00    7.00    12      0.00      0.00 2120340   3672   0.00     136      32  13219.00      8.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752862     0     22456   45.00    3.00    0.00   48.00     8      0.00      0.00 2120360   3676   0.00     136      36   6853.00    378.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752862     0     22465    4.00    2.00    0.00    6.00     8      0.00      0.00 2120344   3672   0.00     136      32  13219.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752862     0     22471   47.00    1.00    0.00   48.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00  14026.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752862     0     22622    3.00    7.00    0.00   10.00    54   2012.00      0.00    7336   3444   0.00     136      20      1.00     98.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ <END> For Scheduler type = c  <END>
+****************************************************
+****************************************************
+<START> For Scheduler type = b   <START> 
+class= -b 
+prio= -p 0 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m monitor
+                     root      ....m aesdecrypt
+                     root      ....m basic_nf
+                     root      ....m aesencrypt
+Skip Kernel Process: kernel
+Changing Process:  -b   -p 0  22432
+Changing Process:  -b   -p 0  22445
+Changing Process:  -b   -p 0  22456
+Changing Process:  -b   -p 0  22465
+Changing Process:  -b   -p 0  22471
+Linux 3.19.0-39-lowlatency (flashstack-3) 	10/17/2016 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752868     0     22445    8.26    0.92    0.00    9.17    12      0.00      0.00 2120340   3672   0.00     136      32  14032.11     24.77  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752868     0     22456   45.87    2.75    0.00   48.62     8      0.00      0.00 2120360   3676   0.00     136      36    801.83     88.07  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752868     0     22465    1.83    0.00    0.00    1.83     8      0.00      0.00 2120344   3672   0.00     136      32    871.56      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752868     0     22471   50.46    0.00    0.00   50.46     8      0.00      0.00 2120360   3676   0.00     136      36      0.00    905.50  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752868     0     22648    1.83    6.42    0.00    8.26    43   1843.12      0.00    7308   3276   0.00     136      16      0.92     86.24  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752868     0     22649    0.00    0.00    0.00    0.00    17     16.51      0.00   38016   4272   0.00     136      12      1.83      0.92  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752869     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13963.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752869     0     22456   46.00    3.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    854.00      1.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752869     0     22465    1.00    1.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    862.00      1.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752869     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00    872.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752869     0     22648    2.00    7.00    0.00    9.00    43   2018.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752869     0     22649    0.00    0.00    0.00    0.00    17     14.00      0.00   38016   4272   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752870     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13972.00     25.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752870     0     22456   45.00    2.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36    895.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752870     0     22465    2.00    1.00    0.00    3.00     8      0.00      0.00 2120344   3672   0.00     136      32    899.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752870     0     22471   51.00    0.00    0.00   51.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00    930.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752870     0     22648    2.00    7.00    0.00    9.00    43   2012.00      0.00    7336   3444   0.00     136      20      1.00     96.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752870     0     22649    0.00    0.00    0.00    0.00    17     14.00      0.00   38016   4272   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752871     0     22445    8.00    1.00    0.00    9.00    12      0.00      0.00 2120340   3672   0.00     136      32  13979.00      1.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752871     0     22456   46.00    3.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    858.00      2.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752871     0     22465    1.00    1.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    866.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752871     0     22471   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00    879.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752871     0     22648    3.00    7.00    0.00   10.00    15   2012.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752871     0     22649    0.00    0.00    0.00    0.00    17     14.00      0.00   38016   4352   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752872     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13946.00      1.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752872     0     22456   46.00    3.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    910.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752872     0     22465    2.00    0.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    910.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752872     0     22471   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00    919.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752872     0     22648    2.00    7.00    0.00    9.00    15   2012.00      0.00    7336   3444   0.00     136      20      1.00     97.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752872     0     22649    0.00    0.00    0.00    0.00    17     14.00      0.00   38016   4352   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752873     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13981.00     27.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752873     0     22456   45.00    3.00    0.00   48.00     8      0.00      0.00 2120360   3676   0.00     136      36    889.00      2.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752873     0     22465    1.00    1.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    905.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752873     0     22471   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00    939.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752873     0     22648    2.00    8.00    0.00   10.00    43   2012.00      0.00    7336   3444   0.00     136      20      1.00     92.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752873     0     22649    0.00    0.00    0.00    0.00    17     14.00      0.00   38016   4352   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752874     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13985.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752874     0     22456   47.00    2.00    0.00   49.00     8      3.00      0.00 2120360   3676   0.00     136      36    798.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752874     0     22465    2.00    1.00    0.00    3.00     8      0.00      0.00 2120344   3672   0.00     136      32    804.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752874     0     22471   49.00    0.00    0.00   49.00     8      3.00      0.00 2120360   3676   0.00     136      36      0.00    824.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752874     0     22648    2.00    7.00    0.00    9.00    43   2012.00      0.00    7336   3444   0.00     136      20      1.00     96.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752874     0     22649    0.00    0.00    0.00    0.00    17     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752875     0     22445    8.00    1.00    0.00    9.00    12      0.00      0.00 2120340   3672   0.00     136      32  13984.00     25.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752875     0     22456   46.00    2.00    0.00   48.00     8      1.00      0.00 2120360   3676   0.00     136      36    783.00      1.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752875     0     22465    1.00    0.00    0.00    1.00     8      0.00      0.00 2120344   3672   0.00     136      32    795.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752875     0     22471   50.00    0.00    0.00   50.00     8      1.00      0.00 2120360   3676   0.00     136      36      0.00    841.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752875     0     22648    2.00    8.00    0.00   10.00    15   2012.00      0.00    7336   3444   0.00     136      20      1.00     93.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752875     0     22649    0.00    0.00    0.00    0.00    17     14.00      0.00   38016   4352   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752876     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13981.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752876     0     22456   47.00    2.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    826.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752876     0     22465    1.00    1.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    831.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752876     0     22471   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00    849.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752876     0     22648    2.00    7.00    0.00    9.00    43   2012.00      0.00    7336   3444   0.00     136      20      1.00     96.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752876     0     22649    0.00    0.00    0.00    0.00    17     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.277760      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+             3,637      context-switches          #    0.004 M/sec                    ( +-  1.24% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 1      page-faults               #    0.001 K/sec                    ( +- 76.38% )
+     3,099,559,430      cycles                    #    3.099 GHz                      ( +-  0.00% ) [100.00%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     8,749,790,420      instructions              #    2.82  insns per cycle          ( +-  0.01% ) [100.00%]
+       193,015,973      branches                  #  192.962 M/sec                    ( +-  0.02% ) [100.00%]
+           111,525      branch-misses             #    0.06% of all branches          ( +-  0.38% )
+
+       1.000739441 seconds time elapsed                                          ( +-  0.00% )
+
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752877     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  13972.00     25.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752877     0     22456   45.00    2.00    0.00   47.00     8      0.00      0.00 2120360   3676   0.00     136      36    898.00      2.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752877     0     22465    2.00    1.00    0.00    3.00     8      0.00      0.00 2120344   3672   0.00     136      32    904.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752877     0     22471   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36      0.00    932.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752877     0     22648    2.00    8.00    0.00   10.00    18   2012.00      0.00    7336   3444   0.00     136      20      1.00     93.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ <END> For Scheduler type = b  <END>
+****************************************************
+****************************************************
+<START> For Scheduler type = r   <START> 
+class= -r 
+prio= -p 50 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m monitor
+                     root      ....m aesdecrypt
+                     root      ....m basic_nf
+                     root      ....m aesencrypt
+Skip Kernel Process: kernel
+Changing Process:  -r   -p 50  22432
+Changing Process:  -r   -p 50  22445
+Changing Process:  -r   -p 50  22456
+Changing Process:  -r   -p 50  22465
+Changing Process:  -r   -p 50  22471
+Linux 3.19.0-39-lowlatency (flashstack-3) 	10/17/2016 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752883     0     22445    7.34    0.00    0.00    7.34    12      0.00      0.00 2120340   3672   0.00     136      32  14203.67      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752883     0     22456   50.46    0.00    0.00   50.46     8      0.00      0.00 2120360   3676   0.00     136      36    139.45      4.59  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752883     0     22465    0.92    0.00    0.00    0.92     8      0.00      0.00 2120344   3672   0.00     136      32    139.45      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752883     0     22471   54.13    0.00    0.00   54.13     8      0.00      0.00 2120360   3676   0.00     136      36    134.86      4.59  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752883     0     22675    1.83    7.34    0.00    9.17    50   1843.12      0.00    7308   3276   0.00     136      16      0.92     85.32  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752883     0     22676    0.00    0.00    0.00    0.00    52     16.51      0.00   38016   4272   0.00     136      12      1.83      0.92  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752884     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14111.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752884     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    139.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752884     0     22465    1.00    0.00    0.00    1.00     8      0.00      0.00 2120344   3672   0.00     136      32    139.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752884     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    133.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752884     0     22675    3.00    6.00    0.00    9.00    50   2018.00      0.00    7336   3444   0.00     136      20      1.00     95.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752884     0     22676    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4272   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752885     0     22445    7.00    2.00    0.00    9.00    12      0.00      0.00 2120340   3672   0.00     136      32  14153.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752885     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    138.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752885     0     22465    2.00    0.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    138.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752885     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    134.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752885     0     22675    2.00    7.00    0.00    9.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     93.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752885     0     22676    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4272   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752886     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14183.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752886     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    138.00      6.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752886     0     22465    1.00    0.00    0.00    1.00     8      0.00      0.00 2120344   3672   0.00     136      32    137.00      1.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752886     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    134.00      4.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752886     0     22675    2.00    7.00    0.00    9.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752886     0     22676    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752887     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14139.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752887     0     22456   51.00    0.00    0.00   51.00     8      0.00      0.00 2120360   3676   0.00     136      36    139.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752887     0     22465    2.00    0.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    139.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752887     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    133.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752887     0     22675    4.00    6.00    0.00   10.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752887     0     22676    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752888     0     22445    7.00    0.00    0.00    7.00    12      0.00      0.00 2120340   3672   0.00     136      32  14159.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752888     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    138.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752888     0     22465    1.00    0.00    0.00    1.00     8      0.00      0.00 2120344   3672   0.00     136      32    138.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752888     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    134.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752888     0     22675    2.00    7.00    0.00    9.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     92.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752888     0     22676    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752889     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14139.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752889     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    139.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752889     0     22465    1.00    0.00    0.00    1.00     8      0.00      0.00 2120344   3672   0.00     136      32    139.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752889     0     22471   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    134.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752889     0     22675    2.00    7.00    0.00    9.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752889     0     22676    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752890     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14159.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752890     0     22456   51.00    0.00    0.00   51.00     8      0.00      0.00 2120360   3676   0.00     136      36    139.00      6.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752890     0     22465    2.00    0.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    139.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752890     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    133.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752890     0     22675    2.00    8.00    0.00   10.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     93.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752890     0     22676    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752891     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14126.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752891     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    139.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752891     0     22465    1.00    0.00    0.00    1.00     8      0.00      0.00 2120344   3672   0.00     136      32    139.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752891     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    134.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752891     0     22675    2.00    7.00    0.00    9.00    17   2012.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752891     0     22676    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.338080      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+               423      context-switches          #    0.423 K/sec                    ( +-  0.30% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 0      page-faults               #    0.000 K/sec                  
+     3,099,706,511      cycles                    #    3.099 GHz                      ( +-  0.00% ) [100.00%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     8,849,195,643      instructions              #    2.85  insns per cycle          ( +-  0.00% ) [100.00%]
+       193,585,246      branches                  #  193.520 M/sec                    ( +-  0.02% ) [100.00%]
+            91,182      branch-misses             #    0.05% of all branches          ( +-  0.23% )
+
+       1.000799858 seconds time elapsed                                          ( +-  0.00% )
+
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752892     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14170.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752892     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    137.00      5.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752892     0     22465    2.00    0.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    137.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752892     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    133.00      4.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752892     0     22675    3.00    6.00    0.00    9.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     93.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ <END> For Scheduler type = r  <END>
+****************************************************
+****************************************************
+<START> For Scheduler type = f   <START> 
+class= -f 
+prio= -p 50 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m monitor
+                     root      ....m aesdecrypt
+                     root      ....m basic_nf
+                     root      ....m aesencrypt
+Skip Kernel Process: kernel
+Changing Process:  -f   -p 50  22432
+Changing Process:  -f   -p 50  22445
+Changing Process:  -f   -p 50  22456
+Changing Process:  -f   -p 50  22465
+Changing Process:  -f   -p 50  22471
+Linux 3.19.0-39-lowlatency (flashstack-3) 	10/17/2016 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752898     0     22445    6.42    0.92    0.00    7.34    12      0.00      0.00 2120340   3672   0.00     136      32  14216.51      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752898     0     22456   54.13    0.00    0.00   54.13     8      0.00      0.00 2120360   3676   0.00     136      36    136.70      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752898     0     22465    1.83    0.00    0.00    1.83     8      0.00      0.00 2120344   3672   0.00     136      32    136.70      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752898     0     22471   53.21    0.00    0.00   53.21     8      0.00      0.00 2120360   3676   0.00     136      36    136.70      0.92  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752898     0     22701    1.83    6.42    0.00    8.26    22   1843.12      0.00    7308   3276   0.00     136      16      0.92     85.32  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752898     0     22702    0.00    0.00    0.00    0.00    52     16.51      0.00   38016   4272   0.00     136      12      1.83      0.92  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752899     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14132.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752899     0     22456   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752899     0     22465    1.00    0.00    0.00    1.00     8      0.00      0.00 2120344   3672   0.00     136      32    136.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752899     0     22471   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752899     0     22701    2.00    8.00    0.00   10.00    22   2018.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752899     0     22702    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4272   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752900     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14141.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752900     0     22456   51.00    0.00    0.00   51.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752900     0     22465    2.00    0.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    136.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752900     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752900     0     22701    2.00    7.00    0.00    9.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     93.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752900     0     22702    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4272   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752901     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14159.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752901     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752901     0     22465    1.00    0.00    0.00    1.00     8      0.00      0.00 2120344   3672   0.00     136      32    136.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752901     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752901     0     22701    3.00    6.00    0.00    9.00    22   2012.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752901     0     22702    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752902     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14144.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752902     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752902     0     22465    2.00    0.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    136.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752902     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      1.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752902     0     22701    2.00    7.00    0.00    9.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     93.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752902     0     22702    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752903     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14144.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752903     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752903     0     22465    2.00    0.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    136.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752903     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752903     0     22701    2.00    8.00    0.00   10.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752903     0     22702    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752904     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14144.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752904     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752904     0     22465    1.00    0.00    0.00    1.00     8      0.00      0.00 2120344   3672   0.00     136      32    136.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752904     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752904     0     22701    2.00    7.00    0.00    9.00    22   2012.00      0.00    7336   3444   0.00     136      20      1.00     93.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752904     0     22702    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752905     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14144.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752905     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752905     0     22465    2.00    0.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    136.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752905     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752905     0     22701    3.00    7.00    0.00   10.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     93.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752905     0     22702    0.00    0.00    0.00    0.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752906     0     22445    8.00    0.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14144.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752906     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752906     0     22465    1.00    0.00    0.00    1.00     8      0.00      0.00 2120344   3672   0.00     136      32    136.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752906     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      1.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752906     0     22701    2.00    7.00    0.00    9.00    22   2012.00      0.00    7336   3444   0.00     136      20      1.00     93.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ 1476752906     0     22702    0.00    1.00    0.00    1.00    52     14.00      0.00   38016   4352   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -r 10 sleep 1 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.324788      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+               411      context-switches          #    0.411 K/sec                    ( +-  0.18% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 0      page-faults               #    0.000 K/sec                  
+     3,099,802,489      cycles                    #    3.099 GHz                      ( +-  0.00% ) [100.00%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     8,848,727,054      instructions              #    2.85  insns per cycle          ( +-  0.00% ) [100.00%]
+       193,589,090      branches                  #  193.526 M/sec                    ( +-  0.02% ) [100.00%]
+            91,152      branch-misses             #    0.05% of all branches          ( +-  0.14% )
+
+       1.000790503 seconds time elapsed                                          ( +-  0.00% )
+
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1476752907     0     22445    7.00    1.00    0.00    8.00    12      0.00      0.00 2120340   3672   0.00     136      32  14143.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 4 -n 14 
+ 1476752907     0     22456   50.00    0.00    0.00   50.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_decrypt/build/aesdecrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752907     0     22465    2.00    0.00    0.00    2.00     8      0.00      0.00 2120344   3672   0.00     136      32    136.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 7 -- -d 3 -c 0 
+ 1476752907     0     22471   49.00    0.00    0.00   49.00     8      0.00      0.00 2120360   3676   0.00     136      36    136.00      0.00  /home/skulk901/dev/my_fork/tx_openNetVM-dev-sameer/examples/aes_encrypt/build/aesencrypt -l 8 -n 3 --proc-type=secondary -- -r 
+ 1476752907     0     22701    2.00    7.00    0.00    9.00    50   2012.00      0.00    7336   3444   0.00     136      20      1.00     94.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 10 
+ <END> For Scheduler type = f  <END>
+****************************************************
+reset to CFS Scheduler
+class= -o 
+prio= -p 0 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m monitor
+                     root      ....m aesdecrypt
+                     root      ....m basic_nf
+                     root      ....m aesencrypt
+Skip Kernel Process: kernel
+Changing Process:  -o   -p 0  22432
+Changing Process:  -o   -p 0  22445
+Changing Process:  -o   -p 0  22456
+Changing Process:  -o   -p 0  22465
+Changing Process:  -o   -p 0  22471
