@@ -23,6 +23,7 @@ inst_id=7
 fi
 instance=$inst_id
 
+dummy_func() {
 shift 3
 
 if [ -z $dst ]
@@ -38,5 +39,6 @@ while getopts ":p:n:" opt; do
     ;;
   esac
 done
-
-exec sudo $SCRIPTPATH/build/aesencrypt -l $cpu -n 3 --proc-type=secondary -- -r $service $instance -- -d $dst $print
+}
+echo "cpu: $cpu service: $service Instance: $instance Dst: $dst"
+exec sudo $SCRIPTPATH/build/aesencrypt -l $cpu -n 3 --proc-type=secondary -- -r $service -n $instance -- -d $dst $print

@@ -270,7 +270,8 @@ onvm_pkt_enqueue_port(struct thread_info *tx, uint16_t port, struct rte_mbuf *bu
 
         if (tx == NULL || buf == NULL)
                 return;
-
+        if(unlikely(port>= RTE_MAX_ETHPORTS))
+                return;
 
         tx->port_tx_buf[port].buffer[tx->port_tx_buf[port].count++] = buf;
         if (tx->port_tx_buf[port].count == PACKET_READ_SIZE) {
@@ -318,17 +319,33 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         // First regardless of the approach, fill in the NF MAP of service chain if not already done
         // second: if approach is throttle by buffer drop, check if this chain needs upstreams to drop and if this one such upstream NF, then drop packet and return.
 #if 1
-        if (flow_entry){
+        if (flow_entry && flow_entry->sc){
                 flow_entry->sc->nf_instance_id[meta->chain_index] = (uint8_t)cl->instance_id;
+
+                #ifdef NF_BACKPRESSURE_APPROACH_1
+                // We want to throttle the packets at the upstream only iff (a) the packet belongs to the service chain whose Downstream NF indicates overflow, (b) this NF is upstream component for the service chain, and not a downstream NF (c) this NF is marked for throttle
+                if ((flow_entry->sc->downstream_nf_overflow) && (cl->throttle_this_upstream_nf)) {
+                //if ((flow_entry->sc->downstream_nf_overflow) && (flow_entry->sc->highest_downstream_nf_index_id < meta->chain_index)) {
+                //if (cl->throttle_this_upstream_nf) {     //This check works better than the above check; have to test the below check for the impact now..
+                //if(flow_entry) {
+                //if ((flow_entry->sc->downstream_nf_overflow) && (flow_entry->sc->highest_downstream_nf_index_id < meta->chain_index) && (cl->throttle_this_upstream_nf)) {
+                        onvm_pkt_drop(pkt);
+                        cl->stats.rx_drop+=1;
+                        cl->throttle_count++;
+                        return;
+                }
+                #endif //NF_BACKPRESSURE_APPROACH_1
         }
-        #ifdef NF_BACKPRESSURE_APPROACH_1
-        //if ((flow_entry->sc->downstream_nf_overflow) && (flow_entry->sc->highest_downstream_nf_index_id < meta->chain_index)) {
-        if(cl->throttle_this_upstream_nf) {
-                onvm_pkt_drop(pkt);
-                cl->stats.rx_drop+=1;
-                return;
+        //global chain case (using def_chain and no flow_entry)
+        else if (downstream_nf_overflow) {
+                if (cl->info != NULL && highest_downstream_nf_service_id > cl->info->service_id) {
+                        onvm_pkt_drop(pkt);
+                        cl->stats.rx_drop+=1;
+                        throttle_count++;
+                        cl->throttle_count++;
+                        return;
+                }
         }
-        #endif //NF_BACKPRESSURE_APPROACH_1
 #else
         if(flow_entry->sc->nf_instances_mapped) {
                 /* Option: Throttle NF/Drop the packets till the flag is cleared */
@@ -518,23 +535,23 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
                                 if ((flow_entry->sc->downstream_nf_overflow == 0)) {
                                         flow_entry->sc->downstream_nf_overflow = 1;
                                         flow_entry->sc->highest_downstream_nf_index_id = meta->chain_index;
-                                        uint8_t index = 1;
+                                        uint8_t index = 0;
                                         for(; index < meta->chain_index; index++ ) {
                                                 clients[flow_entry->sc->nf_instance_id[index]].throttle_this_upstream_nf = 1;
-                                                if (meta->chain_index > clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id) { //if(clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id == 0) {
-                                                        clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id = meta->chain_index;
-                                                }
+                                               // if (meta->chain_index > clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id) { //if(clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id == 0) {
+                                               //         clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id = meta->chain_index;
+                                               // }
                                         }
                                 }
                                 //case where sc overflow is detected in further downstream components
                                 else if ((flow_entry->sc->downstream_nf_overflow) && (flow_entry->sc->highest_downstream_nf_index_id < meta->chain_index)) {
                                         flow_entry->sc->highest_downstream_nf_index_id = meta->chain_index;
-                                        uint8_t index = 1;
+                                        uint8_t index = 0;
                                         for(; index < meta->chain_index; index++ ) {
                                                 clients[flow_entry->sc->nf_instance_id[index]].throttle_this_upstream_nf = 1;
-                                                if (meta->chain_index > clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id) {
-                                                        clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id = meta->chain_index;
-                                                }
+                                                //if (meta->chain_index > clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id) {
+                                                //        clients[flow_entry->sc->nf_instance_id[index]].highest_downstream_nf_index_id = meta->chain_index;
+                                                //}
                                         }
                                 }
                                 //approach: extend the service chain to keep track of client_nf_ids that service the chain, in-order to know which NFs to throttle in the wakeup thread..?
@@ -563,9 +580,9 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
 
         #ifdef ENABLE_NF_BACKPRESSURE
         struct onvm_pkt_meta *meta = NULL;
+        struct onvm_flow_entry *flow_entry = NULL;
         uint16_t i;
         unsigned rx_q_count = rte_ring_count(cl->rx_q);
-        struct onvm_flow_entry *flow_entry = NULL;
         // check if rx_q_size has decreased to acceptable level
         if (rx_q_count >= CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
                 return;
@@ -575,36 +592,36 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
         for(i = 0; i < count; i++) {
                 int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
                 if (ret >= 0 && flow_entry && flow_entry->sc) {
-                                if(flow_entry->sc->downstream_nf_overflow ) {
-                                        meta = onvm_get_pkt_meta(pkts[i]);
-                                        if(meta->chain_index == flow_entry->sc->highest_downstream_nf_index_id) { //if(meta->chain_index >= flow_entry->sc->highest_downstream_nf_index_id) {
-                                                // also reset the chain's downstream NFs cl->downstream_nf_overflow and cl->highest_downstream_nf_index_id=0. But How?? <track the nf_instance_id in the service chain.
-                                                unsigned nf_index=0;
-                                                for(; nf_index < meta->chain_index; nf_index++) {
-                                                        clients[flow_entry->sc->nf_instance_id[nf_index]].throttle_this_upstream_nf = 0;
-                                                        clients[flow_entry->sc->nf_instance_id[nf_index]].highest_downstream_nf_index_id = 0;
-                                                }
-                                                flow_entry->sc->downstream_nf_overflow = 0;
-                                                flow_entry->sc->highest_downstream_nf_index_id=0;
+                        if(flow_entry->sc->downstream_nf_overflow ) {
+                                meta = onvm_get_pkt_meta(pkts[i]);
+                                if(meta->chain_index == flow_entry->sc->highest_downstream_nf_index_id) { //if(meta->chain_index >= flow_entry->sc->highest_downstream_nf_index_id) {
+                                        // also reset the chain's downstream NFs cl->downstream_nf_overflow and cl->highest_downstream_nf_index_id=0. But How?? <track the nf_instance_id in the service chain.
+                                        unsigned nf_index=0;
+                                        for(; nf_index < meta->chain_index; nf_index++) {
+                                                clients[flow_entry->sc->nf_instance_id[nf_index]].throttle_this_upstream_nf = 0;
+                                                //clients[flow_entry->sc->nf_instance_id[nf_index]].highest_downstream_nf_index_id = 0;
+                                        }
+                                        flow_entry->sc->downstream_nf_overflow = 0;
+                                        flow_entry->sc->highest_downstream_nf_index_id=0;
+                                }
+                        }
+                }
+                //global single chain scenario
+                /** Note: This only works for the default chain case where service ID of chain is always in increasing order **/
+                else {
+                        if (downstream_nf_overflow) {
+                                // If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero
+                                //  if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
+                                if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
+                                        if (cl->info->service_id == highest_downstream_nf_service_id) {
+                                                downstream_nf_overflow = 0;
+                                                highest_downstream_nf_service_id = 0;
+                                                lowest_upstream_to_throttle = 0;
                                         }
                                 }
                         }
-                        //global single chain scenario
-                        /** Note: This only works for the default chain case where service ID of chain is always in increasing order **/
-                        else {
-                                if (downstream_nf_overflow) {
-                                        // If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero
-                                        //  if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
-                                        if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
-                                                if (cl->info->service_id == highest_downstream_nf_service_id) {
-                                                        downstream_nf_overflow = 0;
-                                                        highest_downstream_nf_service_id = 0;
-                                                        lowest_upstream_to_throttle = 0;
-                                                }
-                                        }
-                                }
-                                break; // just do once
-                        }
+                        break; // just do once
+                }
         }
         #endif //ENABLE_NF_BACKPRESSURE
 }

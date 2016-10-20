@@ -14,6 +14,7 @@ cpu=$1
 service=$2
 dst=$3
 
+dummy_func () {
 shift 3
 
 if [ -z $dst ]
@@ -29,5 +30,5 @@ while getopts ":p:n:" opt; do
     ;;
   esac
 done
-
+}
 exec sudo $SCRIPTPATH/build/aesdecrypt -l $cpu -n 3 --proc-type=secondary -- -r $service $instance -- -d $dst $print

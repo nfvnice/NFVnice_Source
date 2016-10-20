@@ -95,17 +95,35 @@
 #include <zmq.h>
 #endif
 
+#define SET_BIT(x,bitNum) (x|=(1<<bitNum-1))
+static inline void set_bit(long *x, unsigned bitNum) {
+    *x |= (1L << (bitNum-1));
+}
+
+#define CLEAR_BIT(x,bitNum) (x&=(~(1<<bitNum-1)))
+static inline void clear_bit(long *x, unsigned bitNum) {
+    *x &= (~(1L << (bitNum-1)));
+}
+
+#define TOGGLE_BIT(x,bitNum) (x ^ (1<<bitNum-1))
+static inline void toggle_bit(long *x, unsigned bitNum) {
+    *x ^= (1L << (bitNum-1));
+}
+#define TEST_BIT((x,bitNum) (x & (1<<bitNum-1))
+static inline long test_bit(long x, unsigned bitNum) {
+    return (x & (1L << (bitNum-1)));
+}
+
 /* Enable this flag to assign a distinct CGROUP for each NF instance */
 #define USE_CGROUPS_PER_NF_INSTANCE
-
 
 /* Enable watermark level NFs Tx and Rx Rings */
 #define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
 
 /* Enable back-pressure handling to throttle NFs upstream */
 #define ENABLE_NF_BACKPRESSURE
-//#define NF_BACKPRESSURE_APPROACH_1  //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
-#define NF_BACKPRESSURE_APPROACH_2  //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
+#define NF_BACKPRESSURE_APPROACH_1  //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
+//#define NF_BACKPRESSURE_APPROACH_2  //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
 
 #ifdef ENABLE_NF_BACKPRESSURE
 //forward declatation either store ref of onvm_flow_entry or onvm_service_chain (latter may be sufficient)

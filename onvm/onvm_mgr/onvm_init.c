@@ -371,10 +371,12 @@ init_shm_rings(void) {
                 clients[i].instance_id = i;
                 clients[i].rx_q = rte_ring_create(rq_name,
                                 ringsize, socket_id,
-                                RING_F_SC_DEQ);                 /* multi prod, single cons */
+                                RING_F_SP_ENQ|RING_F_SC_DEQ);     /* single prod, single cons */
+                                //RING_F_SC_DEQ);                 /* multi prod, single cons */
                 clients[i].tx_q = rte_ring_create(tq_name,
                                 ringsize, socket_id,
-                                RING_F_SC_DEQ);                 /* multi prod, single cons */
+                                RING_F_SP_ENQ|RING_F_SC_DEQ);      /* single prod, single cons */
+                                // RING_F_SC_DEQ);                 /* multi prod, single cons */
                                 //but it should be RING_F_SP_ENQ
 
                 if (clients[i].rx_q == NULL)
