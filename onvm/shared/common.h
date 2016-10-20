@@ -109,7 +109,7 @@ static inline void clear_bit(long *x, unsigned bitNum) {
 static inline void toggle_bit(long *x, unsigned bitNum) {
     *x ^= (1L << (bitNum-1));
 }
-#define TEST_BIT((x,bitNum) (x & (1<<bitNum-1))
+#define TEST_BIT(x,bitNum) (x & (1<<bitNum-1))
 static inline long test_bit(long x, unsigned bitNum) {
     return (x & (1L << (bitNum-1)));
 }
