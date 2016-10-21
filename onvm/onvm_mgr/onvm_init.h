@@ -103,6 +103,7 @@
 #define RTE_MP_TX_DESC_DEFAULT 1024 //512 //1536 //2048 //1024 //512 (use 1024)
 #define CLIENT_QUEUE_RINGSIZE 4096  //128 //4096  //4096 //128   (use 4096)
 
+// Note: Based on the approach the tuned values change. For NF Throttling (80/75,20/25) works better, for Packet Throttling (70,50) seems better -- must be tuned and set accordingly.
 #define CLIENT_QUEUE_RING_THRESHOLD (80)
 #define CLIENT_QUEUE_RING_WATER_MARK_SIZE ((uint32_t)((CLIENT_QUEUE_RINGSIZE*CLIENT_QUEUE_RING_THRESHOLD)/100))
 #define CLIENT_QUEUE_RING_THRESHOLD_GAP (20)

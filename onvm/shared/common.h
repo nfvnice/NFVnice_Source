@@ -95,25 +95,41 @@
 #include <zmq.h>
 #endif
 
-#define SET_BIT(x,bitNum) (x|=(1<<bitNum-1))
+#define SET_BIT(x,bitNum) (x|=(1<<(bitNum-1)))
 static inline void set_bit(long *x, unsigned bitNum) {
     *x |= (1L << (bitNum-1));
 }
 
-#define CLEAR_BIT(x,bitNum) (x&=(~(1<<bitNum-1)))
+#define CLEAR_BIT(x,bitNum) (x&=(~(1<<(bitNum-1))))
 static inline void clear_bit(long *x, unsigned bitNum) {
     *x &= (~(1L << (bitNum-1)));
 }
 
-#define TOGGLE_BIT(x,bitNum) (x ^ (1<<bitNum-1))
+#define TOGGLE_BIT(x,bitNum) (x ^= (1<<(bitNum-1)))
 static inline void toggle_bit(long *x, unsigned bitNum) {
     *x ^= (1L << (bitNum-1));
 }
-#define TEST_BIT(x,bitNum) (x & (1<<bitNum-1))
+#define TEST_BIT(x,bitNum) (x & (1<<(bitNum-1)))
 static inline long test_bit(long x, unsigned bitNum) {
     return (x & (1L << (bitNum-1)));
 }
 
+static inline long is_upstream_NF(long chain_throttle_value, long chain_index) {
+        long chain_index_value = 0;
+        SET_BIT(chain_index_value, chain_index);
+        CLEAR_BIT(chain_throttle_value, chain_index);
+        return ((chain_throttle_value > chain_index_value)? (1):(0) );
+        //1 => NF component at chain_index is an upstream component w.r.t where the bottleneck is seen in the chain (do not drop/throttle)
+        //0 => NF component at chain_index is an downstream component w.r.t where the bottleneck is seen in the chain (so drop/throttle)
+}
+static inline long get_index_of_highest_set_bit(long x) {
+        long next_set_index = 0;
+        //SET_BIT(chain_index_value, chain_index);
+        //while ((1<<(next_set_index++)) < x);
+        //for(; (x > (1<<next_set_index));next_set_index++)
+        for(; (x >= (1<<next_set_index));next_set_index++);
+        return next_set_index;
+}
 /* Enable this flag to assign a distinct CGROUP for each NF instance */
 #define USE_CGROUPS_PER_NF_INSTANCE
 
@@ -221,7 +237,7 @@ struct onvm_service_chain {
 	int ref_cnt;
 #ifdef ENABLE_NF_BACKPRESSURE
 	uint8_t downstream_nf_overflow;
-	uint8_t highest_downstream_nf_index_id;
+	uint8_t highest_downstream_nf_index_id;  // better to store bit index of each NF in the chain that is overflowing
 	//uint16_t lowest_upstream_to_throttle;
 	//uint64_t throttle_count;
 	uint8_t nf_instances_mapped; //set when all nf_instances are populated in the below array

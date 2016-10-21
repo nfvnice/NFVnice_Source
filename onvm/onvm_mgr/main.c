@@ -456,7 +456,7 @@ whether_wakeup_client(int instance_id)
         #ifdef NF_BACKPRESSURE_APPROACH_2
         /* Block the upstream (earlier) NFs from getting scheduled, if there is NF at downstream that is bottlenecked! */
         if (downstream_nf_overflow) {
-                if (clients[instance_id].info != NULL && highest_downstream_nf_service_id > clients[instance_id].info->service_id) {
+                if (clients[instance_id].info != NULL && is_upstream_NF(highest_downstream_nf_service_id,clients[instance_id].info->service_id)) {
                         throttle_count++;
                         return -1;
                 }
