@@ -188,23 +188,36 @@ onvm_flow_dir_del_and_free_key(struct onvm_ft_ipv4_5tuple *key){
 }
 void
 onvm_flow_dir_print_stats(void) {
-        #ifdef ENABLE_NF_BACKPRESSURE
+
         if(sdn_ft) {
                 int32_t tbl_index = 0;
+                uint32_t active_chains = 0;
+                uint32_t mapped_chains = 0;
                 for (; tbl_index < SDN_FT_ENTRIES; tbl_index++)
                 {
                         struct onvm_flow_entry *flow_entry = (struct onvm_flow_entry *)&sdn_ft->data[tbl_index*sdn_ft->entry_size];
-                        //if (flow_entry && flow_entry->ref_cnt && flow_entry->sc) {
-                        if (flow_entry && flow_entry->sc && flow_entry->sc->downstream_nf_overflow == 1) {
-                                printf ("\n FT_Key[%d], OverflowStatus [%d], overflow_svc_chain_index [%d] \n", (int)flow_entry->key->src_addr, (int)flow_entry->sc->downstream_nf_overflow, (int)flow_entry->sc->highest_downstream_nf_index_id);
+                        if (flow_entry && flow_entry->sc && flow_entry->sc->chain_length) {
+                                active_chains+=1;
+#ifdef ENABLE_NF_BACKPRESSURE
+                                if(flow_entry->sc->nf_instance_id[1]) {
+                                        mapped_chains+=1;
+                                }
+#endif
+                        }
+                        else continue;
+#ifdef ENABLE_NF_BACKPRESSURE
+                        if (flow_entry->sc->downstream_nf_overflow == 1) {
+                                printf ("FT_Key[%d], OverflowStatus [%d], overflow_svc_chain_index [%d] \t", (int)flow_entry->key->src_addr, (int)flow_entry->sc->downstream_nf_overflow, (int)flow_entry->sc->highest_downstream_nf_index_id);
                                 uint8_t nf_idx = 0;
                                 for (; nf_idx < ONVM_MAX_CHAIN_LENGTH; nf_idx++) {
                                         printf("[%d: %d] \t", nf_idx, flow_entry->sc->nf_instance_id[nf_idx]);
                                 }
                                 printf("\n");
                         }
+#endif
                 }
+                printf("Total chains: [%d], mapped chains: [%d]  \n", active_chains, mapped_chains);
         }
-        #endif
+
         return ;
 }

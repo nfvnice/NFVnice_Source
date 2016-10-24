@@ -320,10 +320,10 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         // second: if approach is throttle by buffer drop, check if this chain needs upstreams to drop and if this one such upstream NF, then drop packet and return.
         if (flow_entry && flow_entry->sc){
 
-                #ifdef NF_BACKPRESSURE_APPROACH_2
+                //#ifdef NF_BACKPRESSURE_APPROACH_2
                 // this information is needed only for NF based throttling apporach; packet drop approach is more in-line.
                 flow_entry->sc->nf_instance_id[meta->chain_index] = (uint8_t)cl->instance_id;
-                #endif  //NF_BACKPRESSURE_APPROACH_2
+                //#endif  //NF_BACKPRESSURE_APPROACH_2
 
                 #ifdef NF_BACKPRESSURE_APPROACH_1
                 // We want to throttle the packets at the upstream only iff (a) the packet belongs to the service chain whose Downstream NF indicates overflow, (b) this NF is upstream component for the service chain, and not a downstream NF (c) this NF is marked for throttle
