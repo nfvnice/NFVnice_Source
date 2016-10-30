@@ -61,7 +61,6 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
         uint16_t i;
         struct onvm_pkt_meta *meta = NULL;
         struct onvm_flow_entry *flow_entry = NULL;
-        struct onvm_service_chain *sc;
         int ret;
 
         if (rx == NULL || pkts == NULL)
@@ -75,9 +74,8 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
                 ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
 
                 if (ret >= 0) {
-                        sc = flow_entry->sc;
-                        meta->action = onvm_sc_next_action(sc, pkts[i]);
-                        meta->destination = onvm_sc_next_destination(sc, pkts[i]);
+                        meta->action = onvm_sc_next_action(flow_entry->sc, pkts[i]);
+                        meta->destination = onvm_sc_next_destination(flow_entry->sc, pkts[i]);
                 } else {
                         meta->action = onvm_sc_next_action(default_chain, pkts[i]);
                         meta->destination = onvm_sc_next_destination(default_chain, pkts[i]);
@@ -109,16 +107,18 @@ onvm_pkt_process_tx_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint1
                 meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)pkts[i])->udata64);
                 meta->src = cl->instance_id;
                 if (meta->action == ONVM_NF_ACTION_DROP) {
-                        // if the packet is drop, then <return value> is 0
-                        // and !<return value> is 1.
+                        // if the packet is drop, then <return value> is 0 and !<return value> is 1.
                         //cl->stats.act_drop += !onvm_pkt_drop(pkts[i]);
                         onvm_pkt_drop(pkts[i]);
                         cl->stats.act_drop += 1;
                 } else if (meta->action == ONVM_NF_ACTION_NEXT) {
-                        /* TODO: Here we drop the packet : there will be a flow table
-                        in the future to know what to do with the packet next */
                         cl->stats.act_next++;
+#ifndef ENABLE_NF_BACKPRESSURE
                         onvm_pkt_process_next_action(tx, pkts[i], cl);
+#else
+                        onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
+                        onvm_pkt_process_next_action(tx, pkts[i], meta, flow_entry, cl);
+#endif //ENABLE_NF_BACKPRESSURE
                 } else if (meta->action == ONVM_NF_ACTION_TONF) {
                         cl->stats.act_tonf++;
                         (meta->chain_index)++;
@@ -320,17 +320,17 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         // second: if approach is throttle by buffer drop, check if this chain needs upstreams to drop and if this one such upstream NF, then drop packet and return.
         if (flow_entry && flow_entry->sc){
 
-                //#ifdef NF_BACKPRESSURE_APPROACH_2
+                #ifdef NF_BACKPRESSURE_APPROACH_2
                 // this information is needed only for NF based throttling apporach; packet drop approach is more in-line.
                 flow_entry->sc->nf_instance_id[meta->chain_index] = (uint8_t)cl->instance_id;
-                //#endif  //NF_BACKPRESSURE_APPROACH_2
+                #endif  //NF_BACKPRESSURE_APPROACH_2
 
                 #ifdef NF_BACKPRESSURE_APPROACH_1
                 // We want to throttle the packets at the upstream only iff (a) the packet belongs to the service chain whose Downstream NF indicates overflow, (b) this NF is upstream component for the service chain, and not a downstream NF (c) this NF is marked for throttle
                 if ((flow_entry->sc->downstream_nf_overflow) && (is_upstream_NF(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
                         onvm_pkt_drop(pkt);
                         cl->stats.rx_drop+=1;
-                        cl->throttle_count++;
+                        //cl->throttle_count++;
                         return;
                 }
                 #endif //NF_BACKPRESSURE_APPROACH_1
@@ -342,7 +342,7 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
                         onvm_pkt_drop(pkt);
                         cl->stats.rx_drop+=1;
                         throttle_count++;
-                        cl->throttle_count++;
+                        //cl->throttle_count++;
                         return;
                 }
         }
@@ -374,8 +374,8 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         }
 }
 
-
 inline void
+#ifndef ENABLE_NF_BACKPRESSURE
 onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl) {
 
         if (tx == NULL || pkt == NULL || cl == NULL)
@@ -419,7 +419,51 @@ onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struc
         }
         //(meta->chain_index)++;
 }
+#else
+onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struct onvm_pkt_meta *meta, struct onvm_flow_entry *flow_entry, struct client *cl) {
 
+        if (tx == NULL || pkt == NULL || meta == NULL || cl == NULL)
+                        return;
+
+        if (flow_entry == NULL) {
+                #ifdef ENABLE_NF_BACKPRESSURE
+                if (flow_entry == NULL) {
+                        int ret = onvm_flow_dir_get_pkt(pkt, &flow_entry);
+                        if (ret < 0) flow_entry = NULL;
+                }
+                #endif
+        }
+
+        if (flow_entry) {
+                meta->action = onvm_sc_next_action(flow_entry->sc, pkt);
+                meta->destination = onvm_sc_next_destination(flow_entry->sc, pkt);
+        } else {
+                meta->action = onvm_sc_next_action(default_chain, pkt);
+                meta->destination = onvm_sc_next_destination(default_chain, pkt);
+        }
+
+        switch (meta->action) {
+                case ONVM_NF_ACTION_DROP:
+                        onvm_pkt_drop(pkt);
+                        cl->stats.act_drop++;
+                        // if the packet is drop, then <return value> is 0 and !<return value> is 1.
+                        //cl->stats.act_drop += !onvm_pkt_drop(pkt);
+                        break;
+                case ONVM_NF_ACTION_TONF:
+                        cl->stats.act_tonf++;
+                        (meta->chain_index)++;
+                        onvm_pkt_enqueue_nf(tx, meta->destination, pkt, meta, flow_entry);
+                        break;
+                case ONVM_NF_ACTION_OUT:
+                        cl->stats.act_out++;
+                        (meta->chain_index)++;
+                        onvm_pkt_enqueue_port(tx, meta->destination, pkt);
+                        break;
+                default:
+                        break;
+        }
+}
+#endif //ENABLE_NF_BACKPRESSURE
 
 /*******************************Helper function*******************************/
 
@@ -445,7 +489,7 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
         //unsigned rx_q_count = rte_ring_count(cl->rx_q);
         struct onvm_flow_entry *flow_entry = NULL;
 
-        cl->rx_buffer_overflow = 1;
+        //cl->rx_buffer_overflow = 1;
 
         for(i = 0; i < count; i++) {
                 int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
@@ -488,7 +532,9 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
         if (rx_q_count >= CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
                 return;
         }
-        cl->rx_buffer_overflow = 0;
+
+        //cl->rx_buffer_overflow = 0;
+
         //  if acceptable range then for all service chains, if marked to be overflow, then reset the overflow status
         for(i = 0; i < count; i++) {
                 int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);

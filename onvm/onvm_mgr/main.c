@@ -58,6 +58,8 @@ struct wakeup_info *wakeup_infos;
 #endif //INTERRUPT_SEM
 
 #ifdef INTERRUPT_SEM
+#define ENABLE_PERFORMANCE_LOG
+#ifdef ENABLE_PERFORMANCE_LOG
 #ifdef USE_MQ
 const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_MQ.csv";
 const char *cmd2 = "perf stat --cpu=0-14  -r 30 -o perf_log_MQ.csv sleep 1"; //-I 2000
@@ -168,7 +170,8 @@ performance_log_thread(void *pdata) {
         }
         return 0;
 }
-#endif
+#endif // ENABLE_PERFORMANCE_LOG
+#endif // INTERRUPT_SEM
 
 /*******************************Worker threads********************************/
 
@@ -423,10 +426,13 @@ main(int argc, char *argv[]) {
                 printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
         }
         
+        #ifdef INTERRUPT_SEM
+        #ifdef ENABLE_PERFORMANCE_LOG
         cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
         printf("performance_record_lcore=%u\n", cur_lcore);
         rte_eal_remote_launch(performance_log_thread,NULL, cur_lcore);
-        //performance_log_thread(NULL);
+        #endif  // ENABLE_PERFORMANCE_LOG
+        #endif  // INTERRUPT_SEM
 
         /* this change is Not needed anymore
         cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);

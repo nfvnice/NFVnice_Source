@@ -90,7 +90,7 @@
 
 
 #define MBUFS_PER_CLIENT 1536 //65536 //10240 //1536
-#define MBUFS_PER_PORT 10240 //65536 //10240 //1536
+#define MBUFS_PER_PORT (10240) //2048 //10240 //65536 //10240 //1536
 #define MBUF_CACHE_SIZE 512
 #define MBUF_OVERHEAD (sizeof(struct rte_mbuf) + RTE_PKTMBUF_HEADROOM)
 #define RX_MBUF_DATA_SIZE 2048
@@ -101,7 +101,7 @@
 
 #define RTE_MP_RX_DESC_DEFAULT 1024 //512 //1536 //2048 //1024 //512 (use 1024)
 #define RTE_MP_TX_DESC_DEFAULT 1024 //512 //1536 //2048 //1024 //512 (use 1024)
-#define CLIENT_QUEUE_RINGSIZE 4096  //128 //4096  //4096 //128   (use 4096)
+#define CLIENT_QUEUE_RINGSIZE (4096)  //128 //4096  //4096 //128   (use 4096)
 
 // Note: Based on the approach the tuned values change. For NF Throttling (80/75,20/25) works better, for Packet Throttling (70,50) seems better -- must be tuned and set accordingly.
 #define CLIENT_QUEUE_RING_THRESHOLD (80)
@@ -189,10 +189,12 @@ struct client {
         #endif
 
         #ifdef ENABLE_NF_BACKPRESSURE
-        uint8_t highest_downstream_nf_index_id;   // can get rid of this field
+        //uint8_t highest_downstream_nf_index_id;   // can get rid of this field
+        //uint8_t rx_buffer_overflow;     // can get_rid of this field
+        #ifdef NF_BACKPRESSURE_APPROACH_2
         uint8_t throttle_this_upstream_nf; // rename downstream_nf_overflow to throttle_this_upstream_nf;
-        uint8_t rx_buffer_overflow;     // can get_rid of this field
         uint64_t throttle_count;
+        #endif // NF_BACKPRESSURE_APPROACH_2
         #endif //ENABLE_NF_BACKPRESSURE
 
         #endif //INTERRUPT_SEM

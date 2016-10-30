@@ -192,8 +192,11 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
  *
  */
 inline void
+#ifndef ENABLE_NF_BACKPRESSURE
 onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struct client *cl);
-
+#else
+onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struct onvm_pkt_meta *meta, struct onvm_flow_entry *flow_entry, struct client *cl);
+#endif // ENABLE_NF_BACKPRESSURE
 
 /******************************Helper functions*******************************/
 
