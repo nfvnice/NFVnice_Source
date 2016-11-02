@@ -439,6 +439,18 @@ onvm_nflib_run(
 
                         /* NF returns 0 to return packets or 1 to buffer */
                         if(likely(ret_act == 0)) {
+
+#if 0
+                                #ifdef ENABLE_NF_BACKPRESSURE
+                                #ifdef NF_BACKPRESSURE_APPROACH_3
+                                struct onvm_flow_entry *flow_entry = NULL;
+                                int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
+                                if (ret >= 0 && flow_entry->sc && flow_entry->sc->downstream_nf_overflow) {
+                                }
+                                #endif  //NF_BACKPRESSURE_APPROACH_3
+                                #endif  //ENABLE_NF_BACKPRESSURE
+#endif // if 0
+
                                 pktsTX[tx_batch_size++] = pkts[i];
                         }
                         else {
@@ -761,6 +773,14 @@ init_shared_cpu_info(uint16_t instance_id) {
         flag_p = (rte_atomic16_t *)shm;
 
         set_cpu_sched_policy_and_mode();
+
+#if 0
+        #ifdef ENABLE_NF_BACKPRESSURE
+        #ifdef NF_BACKPRESSURE_APPROACH_3
+        onvm_flow_dir_nf_init();
+        #endif //NF_BACKPRESSURE_APPROACH_3
+        #endif //ENABLE_NF_BACKPRESSURE
+#endif //if 0
 }
 #endif
 

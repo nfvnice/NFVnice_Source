@@ -122,6 +122,17 @@ static inline long is_upstream_NF(long chain_throttle_value, long chain_index) {
         //1 => NF component at chain_index is an upstream component w.r.t where the bottleneck is seen in the chain (do not drop/throttle)
         //0 => NF component at chain_index is an downstream component w.r.t where the bottleneck is seen in the chain (so drop/throttle)
 }
+static inline long is_immediate_upstream_NF(long chain_throttle_value, long chain_index) {
+#if 1
+        return is_upstream_NF(chain_throttle_value,chain_index);
+#else
+        long chain_index_value = 0;
+        SET_BIT(chain_index_value, (chain_index+1));
+        return ((chain_throttle_value & chain_index_value));
+#endif
+        //1 => NF component at chain_index is an immediate upstream component w.r.t where the bottleneck is seen in the chain (do not drop/throttle)
+        //0 => NF component at chain_index is an downstream component w.r.t where the bottleneck is seen in the chain (so drop/throttle)
+}
 static inline long get_index_of_highest_set_bit(long x) {
         long next_set_index = 0;
         //SET_BIT(chain_index_value, chain_index);
@@ -140,6 +151,7 @@ static inline long get_index_of_highest_set_bit(long x) {
 #define ENABLE_NF_BACKPRESSURE
 #define NF_BACKPRESSURE_APPROACH_1  //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
 //#define NF_BACKPRESSURE_APPROACH_2  //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
+//#define NF_BACKPRESSURE_APPROACH_3  //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with pre-buffering)
 
 #ifdef ENABLE_NF_BACKPRESSURE
 //forward declatation either store ref of onvm_flow_entry or onvm_service_chain (latter may be sufficient)
@@ -232,17 +244,16 @@ struct onvm_service_chain_entry {
 };
 
 struct onvm_service_chain {
-	struct onvm_service_chain_entry sc[ONVM_MAX_CHAIN_LENGTH];
+	struct onvm_service_chain_entry sc[ONVM_MAX_CHAIN_LENGTH+1];
 	uint8_t chain_length;
-	int ref_cnt;
+	uint8_t ref_cnt;
 #ifdef ENABLE_NF_BACKPRESSURE
-	uint8_t downstream_nf_overflow;
-	uint8_t highest_downstream_nf_index_id;  // better to store bit index of each NF in the chain that is overflowing
-	//uint16_t lowest_upstream_to_throttle;
-	//uint64_t throttle_count;
+	uint8_t highest_downstream_nf_index_id;     // bit index of each NF in the chain that is overflowing
+#ifdef NF_BACKPRESSURE_APPROACH_2
 	uint8_t nf_instances_mapped; //set when all nf_instances are populated in the below array
-	uint8_t nf_instance_id[ONVM_MAX_CHAIN_LENGTH];
-#endif  //ENABLE_NF_BACKPRESSURE
+	uint8_t nf_instance_id[ONVM_MAX_CHAIN_LENGTH+1];
+#endif //NF_BACKPRESSURE_APPROACH_2
+#endif //ENABLE_NF_BACKPRESSURE
 };
 
 /* define common names for structures shared between server and client */

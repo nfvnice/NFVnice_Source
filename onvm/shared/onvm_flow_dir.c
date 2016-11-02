@@ -199,22 +199,26 @@ onvm_flow_dir_print_stats(void) {
                         if (flow_entry && flow_entry->sc && flow_entry->sc->chain_length) {
                                 active_chains+=1;
 #ifdef ENABLE_NF_BACKPRESSURE
+#ifdef NF_BACKPRESSURE_APPROACH_2
                                 if(flow_entry->sc->nf_instance_id[1]) {
                                         mapped_chains+=1;
                                 }
 #endif
+#endif
                         }
                         else continue;
 #ifdef ENABLE_NF_BACKPRESSURE
-                        if (flow_entry->sc->downstream_nf_overflow == 1) {
-                                printf ("FT_Key[%d], OverflowStatus [%d], overflow_svc_chain_index [%d] \t", (int)flow_entry->key->src_addr, (int)flow_entry->sc->downstream_nf_overflow, (int)flow_entry->sc->highest_downstream_nf_index_id);
+                        if (flow_entry->sc->highest_downstream_nf_index_id) {
+                                printf ("FT_Key[%d], OverflowStatus [%d], \t", (int)flow_entry->key->src_addr, (int)flow_entry->sc->highest_downstream_nf_index_id);
+#ifdef NF_BACKPRESSURE_APPROACH_2
                                 uint8_t nf_idx = 0;
                                 for (; nf_idx < ONVM_MAX_CHAIN_LENGTH; nf_idx++) {
                                         printf("[%d: %d] \t", nf_idx, flow_entry->sc->nf_instance_id[nf_idx]);
                                 }
+#endif //NF_BACKPRESSURE_APPROACH_2
                                 printf("\n");
                         }
-#endif
+#endif  //ENABLE_NF_BACKPRESSURE
                 }
                 printf("Total chains: [%d], mapped chains: [%d]  \n", active_chains, mapped_chains);
         }

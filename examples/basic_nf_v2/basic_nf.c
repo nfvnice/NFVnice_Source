@@ -65,6 +65,7 @@ static uint32_t destination = 0;
 static uint16_t dst_flag = 0;
 static uint32_t comp_cost_level = 0; // 0=No overhead, 1=Min, 2=Med, 3=Max
 static uint64_t comp_cost_cycles =0;
+static uint64_t avg_comp_cost=0;
 /*
  * Print a usage message
  */
@@ -133,7 +134,7 @@ do_additional_stat_display(void) {
         printf("Total packets: %9"PRIu64" \n", cur_pkts);
         printf("TX pkts per second: %9"PRIu64" \n", cur_rate);
         printf("TX pkts Max rate: %9"PRIu64" and  Min rate: %9"PRIu64" \n", peak_rate, min_rate);
-        printf("Computation Level: %9"PRIu64" and  Computation Cost: %9"PRIu64" \n", (uint64_t)comp_cost_level, comp_cost_cycles);
+        printf("Computation Level: %9"PRIu64" and  Computation Cost: %9"PRIu64" Avg. Compt Cost: %9"PRIu64"\n", (uint64_t)comp_cost_level, comp_cost_cycles, avg_comp_cost);
 
         last_pkts = cur_pkts;
         last_cycles = cur_cycles;
@@ -204,8 +205,9 @@ do_compute_at_cost( void ) {
                 factorial(j);
         }
         if (0 == comp_cost_cycles) {
-                //comp_cost_cycles = rte_get_tsc_cycles() - start_cycles;
+                ////comp_cost_cycles = rte_get_tsc_cycles() - start_cycles;
                 comp_cost_cycles =  rte_rdtsc_precise() - start_cycles;
+                avg_comp_cost = (avg_comp_cost==0)?(comp_cost_cycles):((avg_comp_cost+comp_cost_cycles) >> 1);
         }
         return 0;
 }
@@ -215,9 +217,9 @@ packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) {
         
         static uint32_t counter = 0;
 
-        if (comp_cost_level) {
+        //if (comp_cost_level) {
                 do_compute_at_cost();  
-        }       
+        //}       
 
         if (++counter == print_delay) {
                 do_stats_display(pkt);

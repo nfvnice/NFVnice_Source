@@ -327,10 +327,10 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
 
                 #ifdef NF_BACKPRESSURE_APPROACH_1
                 // We want to throttle the packets at the upstream only iff (a) the packet belongs to the service chain whose Downstream NF indicates overflow, (b) this NF is upstream component for the service chain, and not a downstream NF (c) this NF is marked for throttle
-                if ((flow_entry->sc->downstream_nf_overflow) && (is_upstream_NF(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
+                //if ((flow_entry->sc->highest_downstream_nf_index_id) && (meta->chain_index == 1)) {
+                if ((flow_entry->sc->highest_downstream_nf_index_id) && (is_immediate_upstream_NF(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
                         onvm_pkt_drop(pkt);
                         cl->stats.rx_drop+=1;
-                        //cl->throttle_count++;
                         return;
                 }
                 #endif //NF_BACKPRESSURE_APPROACH_1
@@ -338,11 +338,10 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         //global chain case (using def_chain and no flow_entry): action only for approach#1 to drop packets.
         #ifdef NF_BACKPRESSURE_APPROACH_1
         else if (downstream_nf_overflow) {
-                if (cl->info != NULL && is_upstream_NF(highest_downstream_nf_service_id,cl->info->service_id)) {
+                if (cl->info != NULL && is_immediate_upstream_NF(highest_downstream_nf_service_id,cl->info->service_id)) {
                         onvm_pkt_drop(pkt);
                         cl->stats.rx_drop+=1;
                         throttle_count++;
-                        //cl->throttle_count++;
                         return;
                 }
         }
@@ -489,13 +488,12 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
         //unsigned rx_q_count = rte_ring_count(cl->rx_q);
         struct onvm_flow_entry *flow_entry = NULL;
 
-        //cl->rx_buffer_overflow = 1;
+        //Inside this function indicates NFs Rx buffer has exceeded water-mark
 
         for(i = 0; i < count; i++) {
                 int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
                 if (ret >= 0 && flow_entry && flow_entry->sc) {
                         meta = onvm_get_pkt_meta(pkts[i]);
-                        flow_entry->sc->downstream_nf_overflow = 1;
                         SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
                         #ifdef NF_BACKPRESSURE_APPROACH_2
                         uint8_t index = 1;
@@ -533,13 +531,13 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
                 return;
         }
 
-        //cl->rx_buffer_overflow = 0;
+        //Inside here indicates NFs Rx buffer has resumed to acceptable level (watermark - hysterisis)
 
         //  if acceptable range then for all service chains, if marked to be overflow, then reset the overflow status
         for(i = 0; i < count; i++) {
                 int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
                 if (ret >= 0 && flow_entry && flow_entry->sc) {
-                        if(flow_entry->sc->downstream_nf_overflow ) {
+                        if(flow_entry->sc->highest_downstream_nf_index_id ) {
                                 meta = onvm_get_pkt_meta(pkts[i]);
                                 if(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index )) {
                                         // also reset the chain's downstream NFs cl->downstream_nf_overflow and cl->highest_downstream_nf_index_id=0. But How?? <track the nf_instance_id in the service chain.
@@ -551,9 +549,6 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
                                                 clients[flow_entry->sc->nf_instance_id[nf_index]].throttle_this_upstream_nf=0;
                                         }
                                         #endif //NF_BACKPRESSURE_APPROACH_2
-                                        if (flow_entry->sc->highest_downstream_nf_index_id == 0) {
-                                                flow_entry->sc->downstream_nf_overflow = 0;
-                                        }
                                 }
                         }
                 }

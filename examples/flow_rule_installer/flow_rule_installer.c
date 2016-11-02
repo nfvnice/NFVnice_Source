@@ -71,7 +71,7 @@
 struct onvm_nf_info *nf_info;
 
 /* Service Chain Related entries */
-#define MAX_SERVICE_CHAINS 4
+#define MAX_SERVICE_CHAINS 32
 int services[MAX_SERVICE_CHAINS][ONVM_MAX_CHAIN_LENGTH];
 int max_service_chains=0;
 
