@@ -196,10 +196,40 @@ do_compute_at_cost( void ) {
                 case 3:
                         j=FACT_VALUE*2;
                         k=3;
-                break;   
+                break;
+                case 4:
+                        j=FACT_VALUE*2*10;
+                        k=1;
+                break;
+                case 5:
+                        j=FACT_VALUE*2*10;
+                        k=2;
+                break;
+                case 6:
+                        j=FACT_VALUE*2*10;
+                        k=3;
+                break;
+                case 7:
+                        j=FACT_VALUE*2*10;
+                        k=10;
+                break;
+                case 8:
+                        j=FACT_VALUE*2*10;
+                        k=50;
+                break;
+                case 9:
+                        j=FACT_VALUE*2*10;
+                        k=100;
+                break;
                 }
         }
-
+        /* (Basic NF_V2)
+         * Level=1                      Level=2                     Level=3                     Level=4                     Level=5                     Level=6
+         * J=FACT_VALUE(30);            J=FACT_VALUE*3/2;           J=FACT_VALUE*2;             J=FACT_VALUE*2*10;          J=FACT_VALUE*2*10;          J=FACT_VALUE*2*10;
+         * k=1                          k=2                         k=3                         k=1                         k=2                         k=3
+         * PktRate=14.6Mpps             PktRate=9.48Mpps            PktRate=4.80Mpps            PktRate=1.18Mpps            PktRate=0.60Mpps            PktRate=0.41Mpps
+         * BitRate=xxxxMbps             BitRate=4850Mbps            BitRate=2455Mbps            BitRate=0603Mbps            BitRate=0310Mbps            BitRate=0208Mbps
+         */
         for (i = 0; i < k; i++) {
                 factorial(j);
         }

@@ -328,7 +328,7 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
                 #ifdef NF_BACKPRESSURE_APPROACH_1
                 // We want to throttle the packets at the upstream only iff (a) the packet belongs to the service chain whose Downstream NF indicates overflow, (b) this NF is upstream component for the service chain, and not a downstream NF (c) this NF is marked for throttle
                 //if ((flow_entry->sc->highest_downstream_nf_index_id) && (meta->chain_index == 1)) {
-                if ((flow_entry->sc->highest_downstream_nf_index_id) && (is_immediate_upstream_NF(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
+                if ((flow_entry->sc->highest_downstream_nf_index_id) && (is_upstream_NF(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
                         onvm_pkt_drop(pkt);
                         cl->stats.rx_drop+=1;
                         return;
@@ -338,7 +338,7 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         //global chain case (using def_chain and no flow_entry): action only for approach#1 to drop packets.
         #ifdef NF_BACKPRESSURE_APPROACH_1
         else if (downstream_nf_overflow) {
-                if (cl->info != NULL && is_immediate_upstream_NF(highest_downstream_nf_service_id,cl->info->service_id)) {
+                if (cl->info != NULL && is_upstream_NF(highest_downstream_nf_service_id,cl->info->service_id)) {
                         onvm_pkt_drop(pkt);
                         cl->stats.rx_drop+=1;
                         throttle_count++;
@@ -497,9 +497,12 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
                         SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
                         #ifdef NF_BACKPRESSURE_APPROACH_2
                         uint8_t index = 1;
-                        for(; index < meta->chain_index; index++ ) {
+                        //for(; index < meta->chain_index; index++ ) {
+                        for(index=(meta->chain_index -1); index >=1 ; index-- ) {
                                 clients[flow_entry->sc->nf_instance_id[index]].throttle_this_upstream_nf=1;
-
+                                #ifdef HOP_BY_HOP_BACKPRESSURE
+                                break;
+                                #endif //HOP_BY_HOP_BACKPRESSURE
                         }
                         #endif  //NF_BACKPRESSURE_APPROACH_2
                         //approach: extend the service chain to keep track of client_nf_ids that service the chain, in-order to know which NFs to throttle in the wakeup thread..?

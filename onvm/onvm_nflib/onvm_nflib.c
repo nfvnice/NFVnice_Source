@@ -371,18 +371,13 @@ onvm_nflib_run(
                 int ret_act;
 
                 /* check if signalled to block, then block */
-                #ifdef ENABLE_NF_BACKPRESSURE
-                #ifdef NF_BACKPRESSURE_APPROACH_2
+                #if defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_2)
                 #ifdef INTERRUPT_SEM
                 if (rte_atomic16_read(flag_p) ==1) {
                         onvm_nf_yeild(info);
                 }
                 #endif  // INTERRUPT_SEM
-                #endif  // NF_BACKPRESSURE_APPROACH_2
-                #endif  // ENABLE_NF_BACKPRESSURE
-
-                /* $$$$$: TEST only( remove later): wait for signal from NF Manager to start $$$$$ */
-                //onvm_nf_yeild(info);
+                #endif  // defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_2)
 
                 /* try dequeuing max possible packets first, if that fails, get the
                  * most we can. Loop body should only execute once, maximum */
@@ -419,6 +414,25 @@ onvm_nflib_run(
                 for (i = 0; i < nb_pkts; i++) {
                         meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
 
+
+
+//#if 0
+                        #if (defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_3)) || defined(DUMMY_FT_LOAD_ONLY) //#if defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_3)
+                        struct onvm_flow_entry *flow_entry = NULL;
+                        int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
+                        //if (likely(ret >= 0 && flow_entry->sc) && unlikely (flow_entry->sc->highest_downstream_nf_index_id && (is_upstream_NF(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index)))) { //if (ret >= 0 && flow_entry->sc) {
+                        if (likely(ret >= 0 && flow_entry->sc)) {
+                                #ifndef DUMMY_FT_LOAD_ONLY
+                                #ifdef INTERRUPT_SEM
+                                while (unlikely (flow_entry->sc->highest_downstream_nf_index_id && (is_upstream_NF(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index)))) {
+                                        onvm_nf_yeild(info);
+                                }
+                                #endif  // INTERRUPT_SEM
+                                #endif  // DUMMY_FT_LOAD_ONLY
+                        }
+                        #endif  //defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_3)
+//#endif // if 0
+
                         #ifdef INTERRUPT_SEM
                         counter++;
                         //meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
@@ -439,18 +453,6 @@ onvm_nflib_run(
 
                         /* NF returns 0 to return packets or 1 to buffer */
                         if(likely(ret_act == 0)) {
-
-#if 0
-                                #ifdef ENABLE_NF_BACKPRESSURE
-                                #ifdef NF_BACKPRESSURE_APPROACH_3
-                                struct onvm_flow_entry *flow_entry = NULL;
-                                int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
-                                if (ret >= 0 && flow_entry->sc && flow_entry->sc->downstream_nf_overflow) {
-                                }
-                                #endif  //NF_BACKPRESSURE_APPROACH_3
-                                #endif  //ENABLE_NF_BACKPRESSURE
-#endif // if 0
-
                                 pktsTX[tx_batch_size++] = pkts[i];
                         }
                         else {
@@ -774,13 +776,12 @@ init_shared_cpu_info(uint16_t instance_id) {
 
         set_cpu_sched_policy_and_mode();
 
-#if 0
-        #ifdef ENABLE_NF_BACKPRESSURE
-        #ifdef NF_BACKPRESSURE_APPROACH_3
+//#if 0
+        // Get the FlowTable Entries Exported to the NF.
+        #if (defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_3)) || defined(DUMMY_FT_LOAD_ONLY)
         onvm_flow_dir_nf_init();
-        #endif //NF_BACKPRESSURE_APPROACH_3
-        #endif //ENABLE_NF_BACKPRESSURE
-#endif //if 0
+        #endif //# defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_3)
+//#endif //if 0
 }
 #endif
 

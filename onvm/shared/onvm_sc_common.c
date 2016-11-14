@@ -82,6 +82,6 @@ onvm_sc_print(struct onvm_service_chain *chain) {
 		printf("cur_index:%d, action:%"PRIu8", destination:%"PRIu16"\n",
 			i, chain->sc[i].action, chain->sc[i].destination);
 	}
-	printf("refcnt:%"PRIu8", downstream:%"PRIu16"\n",chain->ref_cnt, chain->highest_downstream_nf_index_id);
+	//printf("refcnt:%"PRIu8", downstream:%"PRIu16"\n",chain->ref_cnt, chain->highest_downstream_nf_index_id);
 	printf("\n");
 }

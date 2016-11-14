@@ -95,6 +95,28 @@
 #include <zmq.h>
 #endif
 
+/* Enable this flag to assign a distinct CGROUP for each NF instance */
+#define USE_CGROUPS_PER_NF_INSTANCE
+
+/* Enable watermark level NFs Tx and Rx Rings */
+#define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
+
+/* Enable back-pressure handling to throttle NFs upstream */
+#define ENABLE_NF_BACKPRESSURE
+#define NF_BACKPRESSURE_APPROACH_1  //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
+//#define NF_BACKPRESSURE_APPROACH_2  //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
+//#define NF_BACKPRESSURE_APPROACH_3  //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
+//#define HOP_BY_HOP_BACKPRESSURE     //Option to enable [ON] = HOP by HOP propagation of back-pressure vs [OFF] = direct First NF to N-1 Discard(Drop)/block.
+//#define ENABLE_NF_BKLOG_BUFFERING   //Extension to Approach 3 wherein each NF can pre-buffer internally the  packets for bottlenecked service chains.
+//#define DUMMY_FT_LOAD_ONLY //Load Only onvm_ft and Bypass ENABLE_NF_BACKPRESSURE/NF_BACKPRESSURE_APPROACH_3
+
+#ifdef ENABLE_NF_BACKPRESSURE
+//forward declaration either store reference of onvm_flow_entry or onvm_service_chain (latter may be sufficient)
+struct onvm_flow_entry;
+struct onvm_service_chain;
+#endif  //ENABLE_NF_BACKPRESSURE
+
+
 #define SET_BIT(x,bitNum) (x|=(1<<(bitNum-1)))
 static inline void set_bit(long *x, unsigned bitNum) {
     *x |= (1L << (bitNum-1));
@@ -115,24 +137,32 @@ static inline long test_bit(long x, unsigned bitNum) {
 }
 
 static inline long is_upstream_NF(long chain_throttle_value, long chain_index) {
+#ifndef HOP_BY_HOP_BACKPRESSURE
         long chain_index_value = 0;
         SET_BIT(chain_index_value, chain_index);
         CLEAR_BIT(chain_throttle_value, chain_index);
         return ((chain_throttle_value > chain_index_value)? (1):(0) );
-        //1 => NF component at chain_index is an upstream component w.r.t where the bottleneck is seen in the chain (do not drop/throttle)
-        //0 => NF component at chain_index is an downstream component w.r.t where the bottleneck is seen in the chain (so drop/throttle)
-}
-static inline long is_immediate_upstream_NF(long chain_throttle_value, long chain_index) {
-#if 1
-        return is_upstream_NF(chain_throttle_value,chain_index);
 #else
         long chain_index_value = 0;
         SET_BIT(chain_index_value, (chain_index+1));
         return ((chain_throttle_value & chain_index_value));
-#endif
+        //return is_immediate_upstream_NF(chain_throttle_value,chain_index);
+#endif //HOP_BY_HOP_BACKPRESSURE
+        //1 => NF component at chain_index is an upstream component w.r.t where the bottleneck is seen in the chain (do not drop/throttle)
+        //0 => NF component at chain_index is an downstream component w.r.t where the bottleneck is seen in the chain (so drop/throttle)
+}
+static inline long is_immediate_upstream_NF(long chain_throttle_value, long chain_index) {
+#ifdef HOP_BY_HOP_BACKPRESSURE
+        long chain_index_value = 0;
+        SET_BIT(chain_index_value, (chain_index+1));
+        return ((chain_throttle_value & chain_index_value));
+#else
+        return is_upstream_NF(chain_throttle_value,chain_index);
+#endif  //HOP_BY_HOP_BACKPRESSURE
         //1 => NF component at chain_index is an immediate upstream component w.r.t where the bottleneck is seen in the chain (do not drop/throttle)
         //0 => NF component at chain_index is an downstream component w.r.t where the bottleneck is seen in the chain (so drop/throttle)
 }
+
 static inline long get_index_of_highest_set_bit(long x) {
         long next_set_index = 0;
         //SET_BIT(chain_index_value, chain_index);
@@ -141,23 +171,6 @@ static inline long get_index_of_highest_set_bit(long x) {
         for(; (x >= (1<<next_set_index));next_set_index++);
         return next_set_index;
 }
-/* Enable this flag to assign a distinct CGROUP for each NF instance */
-#define USE_CGROUPS_PER_NF_INSTANCE
-
-/* Enable watermark level NFs Tx and Rx Rings */
-#define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
-
-/* Enable back-pressure handling to throttle NFs upstream */
-#define ENABLE_NF_BACKPRESSURE
-#define NF_BACKPRESSURE_APPROACH_1  //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
-//#define NF_BACKPRESSURE_APPROACH_2  //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
-//#define NF_BACKPRESSURE_APPROACH_3  //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with pre-buffering)
-
-#ifdef ENABLE_NF_BACKPRESSURE
-//forward declatation either store ref of onvm_flow_entry or onvm_service_chain (latter may be sufficient)
-struct onvm_flow_entry;
-struct onvm_service_chain;
-#endif  //ENABLE_NF_BACKPRESSURE
 
 //#ifdef USE_MQ2
 //typedef struct msgbuf { long mtype; char mtext[32];}msgbuf_t;

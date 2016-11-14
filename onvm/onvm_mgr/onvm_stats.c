@@ -274,13 +274,13 @@ onvm_stats_display_clients(unsigned difftime) {
                         if(yields) yield_rate = (serv_rate)/yields;
                 }
 
-                printf("Client %2u:[%d],  comp_cost=%"PRIu64", avg_wakeups=%"PRIu64", yields=%"PRIu64", msg_flag(blocked)=%d, \n"
+                printf("Client %2u:[%d, %d],  comp_cost=%"PRIu64", avg_wakeups=%"PRIu64", yields=%"PRIu64", msg_flag(blocked)=%d, \n"
                 "avg_ppw=%"PRIu64", avg_good_ppw=%"PRIu64",  pkts_per_yield=%"PRIu64"\n"
-                "rx_rate=%"PRIu64", rx_drop_rate=%"PRIu64", rx_qlen=%"PRIu64"\n"
-                "tx_rate=%"PRIu64", tx_drop_rate=%"PRIu64", tx_qlen=%"PRIu64"\n",
-                clients[i].info->instance_id, i, comp_cost, avg_wakeups, yields, rte_atomic16_read(clients[i].shm_server),
+                "rx_rate=%"PRIu64", rx_drop=%"PRIu64", rx_drop_rate=%"PRIu64", rx_qlen=%"PRIu64"\n"
+                "tx_rate=%"PRIu64", tx_drop=%"PRIu64", tx_drop_rate=%"PRIu64", tx_qlen=%"PRIu64"\n",
+                clients[i].info->instance_id, i, clients[i].info->service_id, comp_cost, avg_wakeups, yields, rte_atomic16_read(clients[i].shm_server),
                 avg_pkts_per_wakeup, good_pkts_per_wakeup, yield_rate,
-                vol_rate, rx_drop_rate, rx_qlen, serv_rate, serv_drop_rate, tx_qlen);
+                vol_rate, rx_drop, rx_drop_rate, rx_qlen, serv_rate, tx_drop, serv_drop_rate, tx_qlen);
 
                 clients[i].stats.prev_rx = rx; //clients[i].stats.rx;
                 clients[i].stats.prev_rx_drop = rx_drop; //clients[i].stats.rx_drop;
