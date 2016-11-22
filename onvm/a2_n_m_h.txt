@@ -1,0 +1,368 @@
+****************************************************
+<START> For Scheduler type = c   <START> 
+class= -o 
+prio= -p 0 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m monitor
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+Skip Kernel Process: kernel
+Changing Process:  -o   -p 0  10699
+Changing Process:  -o   -p 0  10711
+Changing Process:  -o   -p 0  10729
+Changing Process:  -o   -p 0  10734
+Changing Process:  -o   -p 0  10743
+Linux 3.19.0-39-lowlatency (flashstack-3) 	11/04/2016 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298653     0     10711   41.23    7.02    0.00   48.25    12      0.00      0.00 8412844   3676   0.00     136      32  49166.67    332.46  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298653     0     10729    8.77    0.88    0.00    9.65     8      4.39      0.00 8412844   3676   0.00     136      32   1999.12     35.96  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298653     0     10734   28.07    0.88    0.00   28.95     8      7.02      0.00 8412844   3676   0.00     136      32   1927.19      0.88  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298653     0     10743   60.53    0.00    0.00   60.53     8      0.00      0.00 8412844   3676   0.00     136      32      0.00   2487.72  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298653     0     10766    2.63    9.65    0.00   12.28    20   1792.11      0.00    7320   3292   0.00     136      16      0.88    123.68  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298653     0     10767    0.00    0.00    0.00    0.00    50     23.68      0.00   38016   4276   0.00     136      12      1.75      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298654     0     10711   38.00    9.00    0.00   47.00    12      0.00      0.00 8412844   3676   0.00     136      32  49164.00    333.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298654     0     10729    9.00    1.00    0.00   10.00     8      0.00      0.00 8412844   3676   0.00     136      32   1996.00     45.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298654     0     10734   28.00    1.00    0.00   29.00     8      3.00      0.00 8412844   3676   0.00     136      32   1925.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298654     0     10743   60.00    0.00    0.00   60.00     8      0.00      0.00 8412844   3676   0.00     136      32      0.00   2446.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298654     0     10766    3.00   12.00    0.00   15.00    20   2051.00      0.00    7348   3456   0.00     136      20      1.00    144.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298654     0     10767    0.00    0.00    0.00    0.00    25     19.00      0.00   38016   4276   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298655     0     10711   40.00    8.00    0.00   48.00    12      8.00      0.00 8412844   3676   0.00     136      32  49293.00    321.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298655     0     10729   10.00    0.00    0.00   10.00     8      0.00      0.00 8412844   3676   0.00     136      32   1982.00     51.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298655     0     10734   28.00    1.00    0.00   29.00     8      2.00      0.00 8412844   3676   0.00     136      32   1914.00      1.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298655     0     10743   61.00    0.00    0.00   61.00     8      0.00      0.00 8412844   3676   0.00     136      32      0.00   2471.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298655     0     10766    3.00   11.00    0.00   14.00    20   2046.00      0.00    7348   3456   0.00     136      20      1.00    143.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298655     0     10767    0.00    0.00    0.00    0.00    25     19.00      0.00   38016   4372   0.00     136      12      2.00      1.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298656     0     10711   42.00    6.00    0.00   48.00    12      5.00      0.00 8412844   3676   0.00     136      32  49185.00    333.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298656     0     10729    9.00    2.00    0.00   11.00     8      8.00      0.00 8412844   3676   0.00     136      32   1988.00     32.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298656     0     10734   29.00    1.00    0.00   30.00     8      0.00      0.00 8412844   3676   0.00     136      32   1915.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298656     0     10743   61.00    0.00    0.00   61.00     8      0.00      0.00 8412844   3676   0.00     136      32      0.00   2474.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298656     0     10766    3.00   11.00    0.00   14.00    20   2046.00      0.00    7348   3456   0.00     136      20      1.00    143.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298656     0     10767    0.00    0.00    0.00    0.00    14     19.00      0.00   38016   4372   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298657     0     10711   39.00    8.00    0.00   47.00    12      0.00      0.00 8412844   3676   0.00     136      32  49262.00    308.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298657     0     10729   10.00    0.00    0.00   10.00     8      0.00      0.00 8412844   3676   0.00     136      32   2000.00     33.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298657     0     10734   28.00    1.00    0.00   29.00     8      0.00      0.00 8412844   3676   0.00     136      32   1898.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298657     0     10743   61.00    0.00    0.00   61.00     8      0.00      0.00 8412844   3676   0.00     136      32      0.00   2425.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298657     0     10766    3.00   11.00    0.00   14.00    20   2046.00      0.00    7348   3456   0.00     136      20      1.00    143.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298657     0     10767    0.00    1.00    0.00    1.00    14     19.00      0.00   38016   4372   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.803154      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+             7,466      context-switches          #    0.007 M/sec                    ( +-  0.24% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 4      page-faults               #    0.004 K/sec                    ( +- 34.42% )
+     3,088,836,457      cycles                    #    3.086 GHz                      ( +-  0.00% ) [28.46%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     5,976,775,144      instructions              #    1.93  insns per cycle          ( +-  0.03% ) [35.65%]
+     1,028,131,814      branches                  # 1027.307 M/sec                    ( +-  0.05% ) [35.74%]
+           372,568      branch-misses             #    0.04% of all branches          ( +-  0.24% ) [35.84%]
+     1,006,451,536      L1-dcache-loads           # 1005.644 M/sec                    ( +-  0.05% ) [35.94%]
+        22,649,738      L1-dcache-load-misses     #    2.25% of all L1-dcache hits    ( +-  0.10% ) [35.94%]
+        11,178,656      LLC-loads                 #   11.170 M/sec                    ( +-  0.24% ) [28.76%]
+            10,659      LLC-load-misses           #    0.10% of all LL-cache hits     ( +- 36.61% ) [28.71%]
+                 0      L1-icache-loads           #    0.000 K/sec                  
+           452,732      L1-icache-load-misses     #    0.452 M/sec                    ( +-  0.91% ) [28.61%]
+     1,005,784,131      dTLB-loads                # 1004.977 M/sec                    ( +-  0.05% ) [28.51%]
+            64,628      dTLB-load-misses          #    0.01% of all dTLB cache hits   ( +-  0.59% ) [28.42%]
+         2,210,692      iTLB-loads                #    2.209 M/sec                    ( +-  0.51% ) [28.36%]
+            29,968      iTLB-load-misses          #    1.36% of all iTLB cache hits   ( +-  0.80% ) [28.36%]
+                 0      L1-dcache-prefetches      #    0.000 K/sec                  
+                 0      L1-dcache-prefetch-misses #    0.000 K/sec                   [28.36%]
+
+       1.000799969 seconds time elapsed                                          ( +-  0.00% )
+
+ <END> For Scheduler type = c  <END>
+****************************************************
+****************************************************
+<START> For Scheduler type = b   <START> 
+class= -b 
+prio= -p 0 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m monitor
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+Skip Kernel Process: kernel
+Changing Process:  -b   -p 0  10699
+Changing Process:  -b   -p 0  10711
+Changing Process:  -b   -p 0  10729
+Changing Process:  -b   -p 0  10734
+Changing Process:  -b   -p 0  10743
+Linux 3.19.0-39-lowlatency (flashstack-3) 	11/04/2016 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298668     0     10711   36.84   10.53    0.00   47.37    12      0.88      0.00 8412844   3676   0.00     136      32  49230.70    364.91  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298668     0     10729    9.65    0.88    0.00   10.53     8      2.63      0.00 8412844   3676   0.00     136      32   1776.32     37.72  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298668     0     10734   28.07    0.88    0.00   28.95     8      0.00      0.00 8412844   3676   0.00     136      32   1454.39      0.88  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298668     0     10743   60.53    0.00    0.00   60.53     8      0.00      0.00 8412844   3676   0.00     136      32    200.88    828.07  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298668     0     10792    1.75   10.53    0.00   12.28    23   1792.11      0.00    7320   3292   0.00     136      16      0.88    124.56  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298668     0     10793    0.00    0.00    0.00    0.00    25     23.68      0.00   38016   4276   0.00     136      12      1.75      1.75  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298669     0     10711   37.00   10.00    0.00   47.00    12      0.00      0.00 8412844   3676   0.00     136      32  48908.00    375.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298669     0     10729    9.00    2.00    0.00   11.00     8      2.00      0.00 8412844   3676   0.00     136      32   1770.00     42.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298669     0     10734   29.00    1.00    0.00   30.00     8      2.00      0.00 8412844   3676   0.00     136      32   1443.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298669     0     10743   59.00    0.00    0.00   59.00     8      0.00      0.00 8412844   3676   0.00     136      32    204.00    795.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298669     0     10792    3.00   10.00    0.00   13.00    23   2051.00      0.00    7348   3456   0.00     136      20      1.00    143.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298669     0     10793    0.00    0.00    0.00    0.00    25     19.00      0.00   38016   4276   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298670     0     10711   40.00    7.00    0.00   47.00    12      0.00      0.00 8412844   3676   0.00     136      32  49132.00    363.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298670     0     10729   10.00    0.00    0.00   10.00     8      0.00      0.00 8412844   3676   0.00     136      32   1748.00     41.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298670     0     10734   28.00    0.00    0.00   28.00     8      9.00      0.00 8412844   3676   0.00     136      32   1424.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298670     0     10743   61.00    0.00    0.00   61.00     8      0.00      0.00 8412844   3676   0.00     136      32    216.00    816.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298670     0     10792    4.00   11.00    0.00   15.00    23   2046.00      0.00    7348   3456   0.00     136      20      1.00    142.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298670     0     10793    0.00    0.00    0.00    0.00    25     19.00      0.00   38016   4372   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298671     0     10711   36.00   11.00    0.00   47.00    12      0.00      0.00 8412844   3676   0.00     136      32  49016.00    364.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298671     0     10729    9.00    1.00    0.00   10.00     8      0.00      0.00 8412844   3676   0.00     136      32   1845.00     43.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298671     0     10734   28.00    1.00    0.00   29.00     8      1.00      0.00 8412844   3676   0.00     136      32   1482.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298671     0     10743   60.00    0.00    0.00   60.00     8      0.00      0.00 8412844   3676   0.00     136      32    207.00    793.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298671     0     10792    4.00   10.00    0.00   14.00    23   2046.00      0.00    7348   3456   0.00     136      20      1.00    143.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298671     0     10793    0.00    0.00    0.00    0.00    25     19.00      0.00   38016   4372   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298672     0     10711   36.00   11.00    0.00   47.00    12      0.00      0.00 8412844   3676   0.00     136      32  48780.00    408.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298672     0     10729   10.00    1.00    0.00   11.00     8      0.00      0.00 8412844   3676   0.00     136      32   1746.00     49.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298672     0     10734   28.00    2.00    0.00   30.00     8      1.00      0.00 8412844   3676   0.00     136      32   1413.00      1.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298672     0     10743   60.00    0.00    0.00   60.00     8      2.00      0.00 8412844   3676   0.00     136      32    204.00    825.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298672     0     10792    3.00   12.00    0.00   15.00    23   2046.00      0.00    7348   3456   0.00     136      20      1.00    143.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298672     0     10793    0.00    1.00    0.00    1.00    25     19.00      0.00   38016   4372   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.760710      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+             5,295      context-switches          #    0.005 M/sec                    ( +-  0.53% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 5      page-faults               #    0.005 K/sec                    ( +- 35.08% )
+     3,088,811,936      cycles                    #    3.086 GHz                      ( +-  0.00% ) [28.46%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     5,848,333,817      instructions              #    1.89  insns per cycle          ( +-  0.08% ) [35.65%]
+     1,004,647,311      branches                  # 1003.884 M/sec                    ( +-  0.10% ) [35.74%]
+           340,667      branch-misses             #    0.03% of all branches          ( +-  0.36% ) [35.84%]
+       985,206,259      L1-dcache-loads           #  984.457 M/sec                    ( +-  0.09% ) [35.94%]
+        21,778,334      L1-dcache-load-misses     #    2.21% of all L1-dcache hits    ( +-  0.14% ) [35.94%]
+        10,703,732      LLC-loads                 #   10.696 M/sec                    ( +-  0.24% ) [28.76%]
+            11,867      LLC-load-misses           #    0.11% of all LL-cache hits     ( +- 29.66% ) [28.71%]
+                 0      L1-icache-loads           #    0.000 K/sec                  
+           381,773      L1-icache-load-misses     #    0.381 M/sec                    ( +-  1.08% ) [28.61%]
+       984,656,646      dTLB-loads                #  983.908 M/sec                    ( +-  0.06% ) [28.51%]
+            49,224      dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +-  0.98% ) [28.42%]
+         2,152,681      iTLB-loads                #    2.151 M/sec                    ( +-  2.89% ) [28.36%]
+            48,949      iTLB-load-misses          #    2.27% of all iTLB cache hits   ( +-  7.92% ) [28.36%]
+                 0      L1-dcache-prefetches      #    0.000 K/sec                  
+                 0      L1-dcache-prefetch-misses #    0.000 K/sec                   [28.36%]
+
+       1.000764134 seconds time elapsed                                          ( +-  0.00% )
+
+ <END> For Scheduler type = b  <END>
+****************************************************
+****************************************************
+<START> For Scheduler type = r   <START> 
+class= -r 
+prio= -p 50 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m monitor
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+Skip Kernel Process: kernel
+Changing Process:  -r   -p 50  10699
+Changing Process:  -r   -p 50  10711
+Changing Process:  -r   -p 50  10729
+Changing Process:  -r   -p 50  10734
+Changing Process:  -r   -p 50  10743
+Linux 3.19.0-39-lowlatency (flashstack-3) 	11/04/2016 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298683     0     10711   42.11    7.89    0.00   50.00    12      0.00      0.00 8412844   3676   0.00     136      32  58400.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298683     0     10729    8.77    0.00    0.00    8.77     8      1.75      0.00 8412844   3676   0.00     136      32    725.44      0.88  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298683     0     10734   28.95    0.00    0.00   28.95     8      0.00      0.00 8412844   3676   0.00     136      32    720.18      2.63  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298683     0     10743   61.40    0.00    0.00   61.40     8      5.26      0.00 8412844   3676   0.00     136      32    716.67      7.02  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298683     0     10818    2.63   10.53    0.00   13.16    51   1792.11      0.00    7320   3292   0.00     136      16      0.88    123.68  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298683     0     10819    0.00    0.00    0.00    0.00    25     23.68      0.00   38016   4276   0.00     136      12      1.75      1.75  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298684     0     10711   39.00   10.00    0.00   49.00    12      0.00      0.00 8412844   3676   0.00     136      32  57998.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298684     0     10729    9.00    0.00    0.00    9.00     8      0.00      0.00 8412844   3676   0.00     136      32    728.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298684     0     10734   30.00    0.00    0.00   30.00     8      0.00      0.00 8412844   3676   0.00     136      32    722.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298684     0     10743   62.00    0.00    0.00   62.00     8      0.00      0.00 8412844   3676   0.00     136      32    719.00      6.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298684     0     10818    3.00   11.00    0.00   14.00    51   2051.00      0.00    7348   3456   0.00     136      20      1.00    145.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298684     0     10819    0.00    0.00    0.00    0.00    25     19.00      0.00   38016   4276   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298685     0     10711   36.00   12.00    0.00   48.00    12      0.00      0.00 8412844   3676   0.00     136      32  57988.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298685     0     10729    8.00    0.00    0.00    8.00     8      0.00      0.00 8412844   3676   0.00     136      32    725.00      1.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298685     0     10734   29.00    0.00    0.00   29.00     8      0.00      0.00 8412844   3676   0.00     136      32    721.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298685     0     10743   62.00    0.00    0.00   62.00     8      0.00      0.00 8412844   3676   0.00     136      32    719.00      7.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298685     0     10818    3.00   11.00    0.00   14.00    51   2046.00      0.00    7348   3456   0.00     136      20      1.00    144.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298685     0     10819    0.00    0.00    0.00    0.00    25     19.00      0.00   38016   4372   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298686     0     10711   37.00   12.00    0.00   49.00    12      0.00      0.00 8412844   3676   0.00     136      32  58124.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298686     0     10729    8.00    1.00    0.00    9.00     8      0.00      0.00 8412844   3676   0.00     136      32    727.00      1.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298686     0     10734   29.00    0.00    0.00   29.00     8      0.00      0.00 8412844   3676   0.00     136      32    719.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298686     0     10743   61.00    1.00    0.00   62.00     8      0.00      0.00 8412844   3676   0.00     136      32    715.00      6.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298686     0     10818    3.00   12.00    0.00   15.00    51   2046.00      0.00    7348   3456   0.00     136      20      1.00    142.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298686     0     10819    0.00    1.00    0.00    1.00    25     19.00      0.00   38016   4372   0.00     136      12      2.00      0.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298687     0     10711   40.00    8.00    0.00   48.00    12      0.00      0.00 8412844   3676   0.00     136      32  58174.00      1.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298687     0     10729    9.00    0.00    0.00    9.00     8      0.00      0.00 8412844   3676   0.00     136      32    725.00      1.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298687     0     10734   30.00    0.00    0.00   30.00     8      0.00      0.00 8412844   3676   0.00     136      32    720.00      4.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298687     0     10743   61.00    0.00    0.00   61.00     8      0.00      0.00 8412844   3676   0.00     136      32    716.00      6.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298687     0     10818    3.00   11.00    0.00   14.00    51   2046.00      0.00    7348   3456   0.00     136      20      1.00    144.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298687     0     10819    0.00    0.00    0.00    0.00    14     19.00      0.00   38016   4372   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.810165      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+             2,177      context-switches          #    0.002 M/sec                    ( +-  0.10% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 1      page-faults               #    0.001 K/sec                    ( +-100.00% )
+     3,089,103,598      cycles                    #    3.087 GHz                      ( +-  0.00% ) [28.46%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     5,914,722,410      instructions              #    1.91  insns per cycle          ( +-  0.04% ) [35.64%]
+     1,015,359,368      branches                  # 1014.537 M/sec                    ( +-  0.07% ) [35.74%]
+           312,560      branch-misses             #    0.03% of all branches          ( +-  0.43% ) [35.84%]
+       992,500,556      L1-dcache-loads           #  991.697 M/sec                    ( +-  0.05% ) [35.94%]
+        21,229,733      L1-dcache-load-misses     #    2.14% of all L1-dcache hits    ( +-  0.39% ) [35.94%]
+        10,462,452      LLC-loads                 #   10.454 M/sec                    ( +-  0.31% ) [28.76%]
+             2,079      LLC-load-misses           #    0.02% of all LL-cache hits     ( +-  7.27% ) [28.71%]
+                 0      L1-icache-loads           #    0.000 K/sec                  
+           207,676      L1-icache-load-misses     #    0.208 M/sec                    ( +-  1.88% ) [28.61%]
+       992,415,105      dTLB-loads                #  991.612 M/sec                    ( +-  0.04% ) [28.52%]
+            26,947      dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +-  0.96% ) [28.42%]
+         1,290,875      iTLB-loads                #    1.290 M/sec                    ( +-  2.20% ) [28.36%]
+            16,049      iTLB-load-misses          #    1.24% of all iTLB cache hits   ( +- 10.69% ) [28.36%]
+                 0      L1-dcache-prefetches      #    0.000 K/sec                  
+                 0      L1-dcache-prefetch-misses #    0.000 K/sec                   [28.36%]
+
+       1.000806744 seconds time elapsed                                          ( +-  0.00% )
+
+ <END> For Scheduler type = r  <END>
+****************************************************
+****************************************************
+<START> For Scheduler type = f   <START> 
+class= -f 
+prio= -p 50 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m monitor
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+Skip Kernel Process: kernel
+Changing Process:  -f   -p 50  10699
+Changing Process:  -f   -p 50  10711
+Changing Process:  -f   -p 50  10729
+Changing Process:  -f   -p 50  10734
+Changing Process:  -f   -p 50  10743
+Linux 3.19.0-39-lowlatency (flashstack-3) 	11/04/2016 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298698     0     10711   38.05   10.62    0.00   48.67    12      0.00      0.00 8412844   3676   0.00     136      32  58802.65      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298698     0     10729    8.85    0.00    0.00    8.85     8      0.00      0.00 8412844   3676   0.00     136      32    723.89      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298698     0     10734   29.20    0.00    0.00   29.20     8      0.00      0.00 8412844   3676   0.00     136      32    723.89      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298698     0     10743   61.95    0.88    0.00   62.83     8      0.00      0.00 8412844   3676   0.00     136      32    723.89      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298698     0     10844    2.65    9.73    0.00   12.39    51   1807.96      0.00    7320   3292   0.00     136      16      0.88    126.55  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298698     0     10845    0.00    0.00    0.00    0.00    53     23.89      0.00   38016   4276   0.00     136      12      1.77      0.88  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298699     0     10711   40.00    9.00    0.00   49.00    12      0.00      0.00 8412844   3676   0.00     136      32  57909.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298699     0     10729    7.00    1.00    0.00    8.00     8      0.00      0.00 8412844   3676   0.00     136      32    717.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298699     0     10734   29.00    0.00    0.00   29.00     8      0.00      0.00 8412844   3676   0.00     136      32    717.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298699     0     10743   62.00    0.00    0.00   62.00     8      0.00      0.00 8412844   3676   0.00     136      32    717.00      1.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298699     0     10844    3.00   11.00    0.00   14.00    51   2051.00      0.00    7348   3456   0.00     136      20      1.00    144.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298699     0     10845    0.00    0.00    0.00    0.00    53     19.00      0.00   38016   4276   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298700     0     10711   42.00    7.00    0.00   49.00    12      0.00      0.00 8412844   3676   0.00     136      32  58107.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298700     0     10729    9.00    0.00    0.00    9.00     8      0.00      0.00 8412844   3676   0.00     136      32    718.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298700     0     10734   30.00    0.00    0.00   30.00     8      0.00      0.00 8412844   3676   0.00     136      32    717.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298700     0     10743   62.00    0.00    0.00   62.00     8      0.00      0.00 8412844   3676   0.00     136      32    717.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298700     0     10844    4.00   11.00    0.00   15.00    51   2046.00      0.00    7348   3456   0.00     136      20      1.00    144.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298700     0     10845    0.00    0.00    0.00    0.00    53     19.00      0.00   38016   4372   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298701     0     10711   40.00    8.00    0.00   48.00    12      0.00      0.00 8412844   3676   0.00     136      32  58137.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298701     0     10729    8.00    1.00    0.00    9.00     8      0.00      0.00 8412844   3676   0.00     136      32    716.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298701     0     10734   29.00    0.00    0.00   29.00     8      0.00      0.00 8412844   3676   0.00     136      32    716.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298701     0     10743   62.00    0.00    0.00   62.00     8      0.00      0.00 8412844   3676   0.00     136      32    716.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298701     0     10844    4.00   11.00    0.00   15.00    51   2046.00      0.00    7348   3456   0.00     136      20      1.00    143.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298701     0     10845    0.00    0.00    0.00    0.00    53     19.00      0.00   38016   4372   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1478298702     0     10711   41.00    8.00    0.00   49.00    12      0.00      0.00 8412844   3676   0.00     136      32  58089.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ 1478298702     0     10729    8.00    0.00    0.00    8.00     8      0.00      0.00 8412844   3676   0.00     136      32    716.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -- -d 3 -c 0 
+ 1478298702     0     10734   29.00    0.00    0.00   29.00     8      0.00      0.00 8412844   3676   0.00     136      32    716.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 7 -- -d 4 -c 2 
+ 1478298702     0     10743   61.00    0.00    0.00   61.00     8      0.00      0.00 8412844   3676   0.00     136      32    716.00      0.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 9 -- -d 5 -c 3 
+ 1478298702     0     10844    3.00   11.00    0.00   14.00    51   2046.00      0.00    7348   3456   0.00     136      20      3.00    144.00  pidstat -C aes|bridge|forward|monitor|basic|speed|perf|pidstat -lrsuwh 1 5 
+ 1478298702     0     10845    0.00    0.00    0.00    0.00    53     19.00      0.00   38016   4372   0.00     136      12      2.00      2.00  /usr/lib/linux-tools/3.19.0-39-lowlatency/perf stat --cpu=8 -d -d -d -r 10 sleep 1 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.784824      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+             2,150      context-switches          #    0.002 M/sec                    ( +-  0.22% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 0      page-faults               #    0.000 K/sec                  
+     3,088,871,173      cycles                    #    3.086 GHz                      ( +-  0.01% ) [28.46%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     5,897,466,075      instructions              #    1.91  insns per cycle          ( +-  0.44% ) [35.65%]
+     1,013,146,090      branches                  # 1012.352 M/sec                    ( +-  0.41% ) [35.74%]
+           312,446      branch-misses             #    0.03% of all branches          ( +-  0.54% ) [35.84%]
+       989,385,481      L1-dcache-loads           #  988.610 M/sec                    ( +-  0.44% ) [35.94%]
+        21,030,266      L1-dcache-load-misses     #    2.13% of all L1-dcache hits    ( +-  0.54% ) [35.94%]
+        10,474,807      LLC-loads                 #   10.467 M/sec                    ( +-  0.47% ) [28.76%]
+             2,481      LLC-load-misses           #    0.02% of all LL-cache hits     ( +- 10.27% ) [28.71%]
+                 0      L1-icache-loads           #    0.000 K/sec                  
+           208,245      L1-icache-load-misses     #    0.208 M/sec                    ( +-  1.76% ) [28.61%]
+       988,568,897      dTLB-loads                #  987.794 M/sec                    ( +-  0.43% ) [28.52%]
+            26,708      dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +-  1.14% ) [28.41%]
+         1,259,400      iTLB-loads                #    1.258 M/sec                    ( +-  2.00% ) [28.36%]
+            14,356      iTLB-load-misses          #    1.14% of all iTLB cache hits   ( +- 10.83% ) [28.36%]
+                 0      L1-dcache-prefetches      #    0.000 K/sec                  
+                 0      L1-dcache-prefetch-misses #    0.000 K/sec                   [28.36%]
+
+       1.000792510 seconds time elapsed                                          ( +-  0.00% )
+
+ <END> For Scheduler type = f  <END>
+****************************************************
+reset to CFS Scheduler
+class= -o 
+prio= -p 0 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m monitor
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+Skip Kernel Process: kernel
+Changing Process:  -o   -p 0  10699
+Changing Process:  -o   -p 0  10711
+Changing Process:  -o   -p 0  10729
+Changing Process:  -o   -p 0  10734
+Changing Process:  -o   -p 0  10743

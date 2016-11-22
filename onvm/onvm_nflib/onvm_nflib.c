@@ -55,13 +55,22 @@
 
 #ifdef USE_CGROUPS_PER_NF_INSTANCE
 #include <stdlib.h>
+uint32_t get_nf_core_id(void);
 void init_cgroup_info(struct onvm_nf_info *nf_info);
 int set_cgroup_cpu_share(struct onvm_nf_info *nf_info, unsigned int share_val);
+
+uint32_t get_nf_core_id(void) {
+        return rte_lcore_id();
+}
+
 int set_cgroup_cpu_share(struct onvm_nf_info *nf_info, unsigned int share_val) {
-        unsigned long shared_bw_val = (share_val== 0) ?(1024):(1024*share_val/100);
-        /* if (share_val >=100) {
+        /*
+        unsigned long shared_bw_val = (share_val== 0) ?(1024):(1024*share_val/100); //when share_val is relative(%)
+        if (share_val >=100) {
                 shared_bw_val = shared_bw_val/100;
         }*/
+
+        unsigned long shared_bw_val = (share_val== 0) ?(1024):(share_val);  //when share_val is absolute bandwidth
         const char* cg_set_cmd = get_cgroup_set_cpu_share_cmd(nf_info->instance_id, shared_bw_val);
         printf("\n CMD_TO_SET_CPU_SHARE: %s", cg_set_cmd);
         int ret = system(cg_set_cmd);
@@ -86,10 +95,13 @@ void init_cgroup_info(struct onvm_nf_info *nf_info) {
         printf("\n CMD_TO_ADD_NF_TO_CGROUP: %s", cg_add_cmd);
         ret = system(cg_add_cmd);
 
-        /* Initialize the cpu.shares to default value (100%) */
-        ret = set_cgroup_cpu_share(nf_info, 100);
+        /* Retrieve the mapped core-id */
+        nf_info->core_id = get_nf_core_id();
 
-        printf("NF added to cgroup: %s, ret=%d", cg_name,ret);
+        /* Initialize the cpu.shares to default value (100%) */
+        ret = set_cgroup_cpu_share(nf_info, 0);
+
+        printf("NF on core=%u added to cgroup: %s, ret=%d", nf_info->core_id, cg_name,ret);
         return;
 }
 #endif
@@ -434,7 +446,6 @@ onvm_nflib_run(
 //#endif // if 0
 
                         #ifdef INTERRUPT_SEM
-                        counter++;
                         //meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
                         if (counter % SAMPLING_RATE == 0) {
                                 start_tsc = compute_start_cycles(); //rte_rdtsc();
@@ -448,7 +459,15 @@ onvm_nflib_run(
                                 //end_tsc = rte_rdtsc();
                                 //tx_stats->comp_cost[info->instance_id] = end_tsc - start_tsc;
                                 tx_stats->comp_cost[info->instance_id] = compute_total_cycles(start_tsc);
+                                #ifdef USE_CGROUPS_PER_NF_INSTANCE
+                                #define RTDSC_CYCLE_COST    (20*2) // profiled  approx. 18~27cycles per call
+                                nf_info->comp_cost  = (nf_info->comp_cost == 0)? (tx_stats->comp_cost[info->instance_id]): ((nf_info->comp_cost+ tx_stats->comp_cost[info->instance_id])/2);
+                                if (nf_info->comp_cost > RTDSC_CYCLE_COST) {
+                                        nf_info->comp_cost -= RTDSC_CYCLE_COST;
+                                }
+                                #endif //USE_CGROUPS_PER_NF_INSTANCE
                         }
+                        counter++;  //computing for first packet makes also account reasonable cycles for cache-warming.
                         #endif
 
                         /* NF returns 0 to return packets or 1 to buffer */

@@ -253,13 +253,15 @@ packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) {
                 do_compute_at_cost();  
         //}       
 
-        /* 
+
+        /*
         // Hack to generate a crash
         if( 0 == counter) {
                 int *p = NULL;
                 *p = 0;
         }
         */
+
         if (++counter == print_delay) {
                 do_stats_display(pkt);
                 counter = 0;

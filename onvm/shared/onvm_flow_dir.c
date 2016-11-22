@@ -179,9 +179,11 @@ onvm_flow_dir_del_and_free_key(struct onvm_ft_ipv4_5tuple *key){
 
         ret = onvm_flow_dir_get_key(key, &flow_entry);
         if (ret >= 0) {
+                //ret = onvm_ft_remove_key(sdn_ft, key); // This function keeps crashing
                 rte_free(flow_entry->sc);
+                flow_entry->sc=NULL;
                 rte_free(flow_entry->key);
-                ret = onvm_ft_remove_key(sdn_ft, key);
+                flow_entry->key=NULL;
         }
 
         return ret;
@@ -209,7 +211,8 @@ onvm_flow_dir_print_stats(void) {
                         else continue;
 #ifdef ENABLE_NF_BACKPRESSURE
                         if (flow_entry->sc->highest_downstream_nf_index_id) {
-                                printf ("FT_Key[%d], OverflowStatus [%d], \t", (int)flow_entry->key->src_addr, (int)flow_entry->sc->highest_downstream_nf_index_id);
+                                //printf ("FT_Key[%d], OverflowStatus [%d], \t", (int)flow_entry->key->src_addr, (int)flow_entry->sc->highest_downstream_nf_index_id);
+                                printf ("OverflowStatus [%d], \t", flow_entry->sc->highest_downstream_nf_index_id);
 #ifdef NF_BACKPRESSURE_APPROACH_2
                                 uint8_t nf_idx = 0;
                                 for (; nf_idx < ONVM_MAX_CHAIN_LENGTH; nf_idx++) {
@@ -224,4 +227,24 @@ onvm_flow_dir_print_stats(void) {
         }
 
         return ;
+}
+
+int
+onvm_flow_dir_clear_all_entries(void) {
+        if(sdn_ft) {
+                int32_t tbl_index = 0;
+                uint32_t active_chains = 0;
+                uint32_t cleared_chains = 0;
+                for (; tbl_index < SDN_FT_ENTRIES; tbl_index++) {
+                        struct onvm_flow_entry *flow_entry = (struct onvm_flow_entry *)&sdn_ft->data[tbl_index*sdn_ft->entry_size];
+                        if (flow_entry && flow_entry->key) { //flow_entry->sc && flow_entry->sc->chain_length) {
+                                active_chains+=1;
+                                if (onvm_flow_dir_del_key(flow_entry->key) >=0) cleared_chains++;
+                        }
+                        //else continue;
+                }
+                printf("Total chains: [%d], cleared chains: [%d]  \n", active_chains, cleared_chains);
+                return (int)(active_chains-cleared_chains);
+        }
+        return 0;
 }

@@ -291,14 +291,21 @@ onvm_stats_display_clients(unsigned difftime) {
                 clients_stats->prev_wkup_count[i] = clients_stats->wkup_count[i];
                 #endif
 
-#ifdef ENABLE_NF_BACKPRESSURE
+        #ifdef ENABLE_NF_BACKPRESSURE
                 //printf("rx_overflow=[%d], ThrottleNF_Flag=[%d], Highest_DS_SID=[%d] NF_Throttle_count=[%"PRIu64"], \n", clients[i].rx_buffer_overflow, clients[i].throttle_this_upstream_nf, clients[i].highest_downstream_nf_index_id, clients[i].throttle_count);
-        #ifdef NF_BACKPRESSURE_APPROACH_2
+                #ifdef NF_BACKPRESSURE_APPROACH_1
+                printf("bkpr_drop=%"PRIu64", bkpr_drop_rate=%"PRIu64"\n",clients[i].stats.bkpr_drop,(clients[i].stats.bkpr_drop - clients[i].stats.prev_bkpr_drop)/ difftime);
+                clients[i].stats.prev_bkpr_drop = clients[i].stats.bkpr_drop;
+                #endif //NF_BACKPRESSURE_APPROACH_1
+
+                #ifdef NF_BACKPRESSURE_APPROACH_2
                 printf("ThrottleNF_Flag=[%d], NF_Throttle_count=[%"PRIu64"], \n", clients[i].throttle_this_upstream_nf, clients[i].throttle_count);
-        #else
-                //printf("ThrottleNF_Flag=[%d] \n", clients[i].throttle_this_upstream_nf);
-        #endif //NF_BACKPRESSURE_APPROACH_2
-#endif  //ENABLE_NF_BACKPRESSURE
+                #endif //NF_BACKPRESSURE_APPROACH_2
+        #endif  //ENABLE_NF_BACKPRESSURE
+
+        #ifdef USE_CGROUPS_PER_NF_INSTANCE
+                printf("NF_Core_Id [%d], NF_comp cost=[%d], NF_CPU_SHARE=[%d]\n", clients[i].info->core_id, clients[i].info->comp_cost, clients[i].info->cpu_share);
+        #endif //USE_CGROUPS_PER_NF_INSTANCE
                 printf("\n");
 
         }

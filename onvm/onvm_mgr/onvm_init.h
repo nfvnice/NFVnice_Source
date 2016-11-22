@@ -99,14 +99,20 @@
 #define NF_INFO_SIZE sizeof(struct onvm_nf_info)
 #define NF_INFO_CACHE 8
 
-#define RTE_MP_RX_DESC_DEFAULT 1024 //512 //1536 //2048 //1024 //512 (use 1024)
-#define RTE_MP_TX_DESC_DEFAULT 1024 //512 //1536 //2048 //1024 //512 (use 1024)
-#define CLIENT_QUEUE_RINGSIZE (4096)  //128 //4096  //4096 //128   (use 4096)
+#define RTE_MP_RX_DESC_DEFAULT 512 //512 //1536 //2048 //1024 //512 (use 1024)
+#define RTE_MP_TX_DESC_DEFAULT 512 //512 //1536 //2048 //1024 //512 (use 1024)
+#define CLIENT_QUEUE_RINGSIZE (128)  //128 //4096  //4096 //128   (use 4096)
 
 // Note: Based on the approach the tuned values change. For NF Throttling (80/75,20/25) works better, for Packet Throttling (70,50 or 70,40 or 80,40) seems better -- must be tuned and set accordingly.
+#ifdef NF_BACKPRESSURE_APPROACH_1
 #define CLIENT_QUEUE_RING_THRESHOLD (70)
+#define CLIENT_QUEUE_RING_THRESHOLD_GAP (25)
+#else  // defined NF_BACKPRESSURE_APPROACH_2 or other
+#define CLIENT_QUEUE_RING_THRESHOLD (80)
+#define CLIENT_QUEUE_RING_THRESHOLD_GAP (20)
+#endif //NF_BACKPRESSURE_APPROACH_1
+
 #define CLIENT_QUEUE_RING_WATER_MARK_SIZE ((uint32_t)((CLIENT_QUEUE_RINGSIZE*CLIENT_QUEUE_RING_THRESHOLD)/100))
-#define CLIENT_QUEUE_RING_THRESHOLD_GAP (50)
 #define CLIENT_QUEUE_RING_LOW_THRESHOLD ((CLIENT_QUEUE_RING_THRESHOLD > CLIENT_QUEUE_RING_THRESHOLD_GAP) ? (CLIENT_QUEUE_RING_THRESHOLD-CLIENT_QUEUE_RING_THRESHOLD_GAP):(CLIENT_QUEUE_RING_THRESHOLD))
 #define CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE ((uint32_t)((CLIENT_QUEUE_RINGSIZE*CLIENT_QUEUE_RING_LOW_THRESHOLD)/100))
 #define NO_FLAGS 0
@@ -148,6 +154,10 @@ struct client {
                 volatile uint64_t prev_rx_drop;
                 volatile uint64_t prev_wakeup_count;
                 #endif
+#if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
+                volatile uint64_t bkpr_drop;
+                volatile uint64_t prev_bkpr_drop;
+#endif //defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
         } stats;
         
         /* mutex and semaphore name for NFs to wait on */ 
@@ -247,6 +257,7 @@ struct port_info {
 extern struct client *clients;
 
 extern struct rte_ring *nf_info_queue;
+extern struct rte_mempool *nf_info_pool;
 
 /* the shared port information: port numbers, rx and tx stats etc. */
 extern struct port_info *ports;

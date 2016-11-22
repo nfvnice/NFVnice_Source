@@ -1,0 +1,9 @@
+ struct rte_mbuf *buf = rte_pktmbuf_alloc(p);
+>     struct ether_hdr *ehdr = rte_pktmbuf_mtod(buf, struct ether_hdr *);
+> /* set ether_hdr fields here e.g. */
+>     ehdr->ether_type = rte_bswap16(ETHER_TYPE_IPv4);
+>     struct ipv4_hdr *iphdr = (struct ipv4_hdr *)(&ehdr[1]);
+> /* set ipv4 header fields here */
+>     struct udp_hdr *uhdr = (struct udp_hdr *)(&iphdr[1]);
+> /* set udp header fields here, e.g. */
+>     uhdr->src_port = rte_bswap16(0x5000);

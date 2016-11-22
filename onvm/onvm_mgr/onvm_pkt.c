@@ -327,10 +327,13 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
 
                 #ifdef NF_BACKPRESSURE_APPROACH_1
                 // We want to throttle the packets at the upstream only iff (a) the packet belongs to the service chain whose Downstream NF indicates overflow, (b) this NF is upstream component for the service chain, and not a downstream NF (c) this NF is marked for throttle
-                //if ((flow_entry->sc->highest_downstream_nf_index_id) && (meta->chain_index == 1)) {
+#ifdef DROP_PKTS_ONLY_AT_BEGGINING
+                if ((flow_entry->sc->highest_downstream_nf_index_id) && (meta->chain_index == 1)) {
+#else
                 if ((flow_entry->sc->highest_downstream_nf_index_id) && (is_upstream_NF(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
+#endif //DROP_PKTS_ONLY_AT_BEGGINING
                         onvm_pkt_drop(pkt);
-                        cl->stats.rx_drop+=1;
+                        cl->stats.bkpr_drop+=1;
                         return;
                 }
                 #endif //NF_BACKPRESSURE_APPROACH_1
@@ -338,9 +341,13 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         //global chain case (using def_chain and no flow_entry): action only for approach#1 to drop packets.
         #ifdef NF_BACKPRESSURE_APPROACH_1
         else if (downstream_nf_overflow) {
+#ifdef DROP_PKTS_ONLY_AT_BEGGINING
+                if (cl->info != NULL && (meta->chain_index == 1)) {
+#else
                 if (cl->info != NULL && is_upstream_NF(highest_downstream_nf_service_id,cl->info->service_id)) {
+#endif //#ifdef DROP_PKTS_ONLY_AT_BEGGINING
                         onvm_pkt_drop(pkt);
-                        cl->stats.rx_drop+=1;
+                        cl->stats.bkpr_drop+=1;
                         throttle_count++;
                         return;
                 }

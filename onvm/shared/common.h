@@ -96,7 +96,8 @@
 #endif
 
 /* Enable this flag to assign a distinct CGROUP for each NF instance */
-#define USE_CGROUPS_PER_NF_INSTANCE
+#define USE_CGROUPS_PER_NF_INSTANCE                 // To create CGroup per NF instance
+#define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT    // To dynamically evaluate and periodically adjust weight on NFs cpu share
 
 /* Enable watermark level NFs Tx and Rx Rings */
 #define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
@@ -107,6 +108,7 @@
 //#define NF_BACKPRESSURE_APPROACH_2  //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
 //#define NF_BACKPRESSURE_APPROACH_3  //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
 //#define HOP_BY_HOP_BACKPRESSURE     //Option to enable [ON] = HOP by HOP propagation of back-pressure vs [OFF] = direct First NF to N-1 Discard(Drop)/block.
+//#define DROP_PKTS_ONLY_AT_BEGGINING // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF).
 //#define ENABLE_NF_BKLOG_BUFFERING   //Extension to Approach 3 wherein each NF can pre-buffer internally the  packets for bottlenecked service chains.
 //#define DUMMY_FT_LOAD_ONLY //Load Only onvm_ft and Bypass ENABLE_NF_BACKPRESSURE/NF_BACKPRESSURE_APPROACH_3
 
@@ -240,7 +242,9 @@ struct onvm_nf_info {
 
 #if defined (USE_CGROUPS_PER_NF_INSTANCE)
         //char cgroup_name[256];
-        uint32_t cpu_share;
+        uint32_t cpu_share;     //indicates current share of NFs cpu
+        uint32_t core_id;       //indicates the core ID the NF is running on
+        uint32_t comp_cost;     //indicates the computation cost of NF
 #endif
 
         #if defined (INTERRUPT_SEM) && defined (USE_SIGNAL)
@@ -404,11 +408,52 @@ get_cgroup_add_task_cmd(unsigned id, pid_t pid)
 static inline const char *
 get_cgroup_set_cpu_share_cmd(unsigned id, unsigned share)
 {
-        static char buffer[sizeof(MP_CLIENT_CGROUP_SET_CPU_SHARE) + 10];
+        static char buffer[sizeof(MP_CLIENT_CGROUP_SET_CPU_SHARE) + 20];
         snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_CGROUP_SET_CPU_SHARE, share, id);
         return buffer;
 }
+#define MP_CLIENT_CGROUP_SET_CPU_SHARE_ONVM_MGR "/sys/fs/cgroup/cpu/nf_%u/cpu.shares"
+static inline const char *
+get_cgroup_set_cpu_share_cmd_onvm_mgr(unsigned id)
+{
+        static char buffer[sizeof(MP_CLIENT_CGROUP_SET_CPU_SHARE) + 20];
+        snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_CGROUP_SET_CPU_SHARE_ONVM_MGR, id);
+        return buffer;
+}
+#include <stdlib.h>
+static inline int
+set_cgroup_nf_cpu_share(uint16_t instance_id, uint32_t share_val) {
+        /*
+        unsigned long shared_bw_val = (share_val== 0) ?(1024):(1024*share_val/100); //when share_val is relative(%)
+        if (share_val >=100) {
+                shared_bw_val = shared_bw_val/100;
+        }*/
+
+        uint32_t shared_bw_val = (share_val== 0) ?(1024):(share_val);  //when share_val is absolute bandwidth
+        const char* cg_set_cmd = get_cgroup_set_cpu_share_cmd(instance_id, shared_bw_val);
+        //printf("\n CMD_TO_SET_CPU_SHARE: %s \n", cg_set_cmd);
+
+        int ret = system(cg_set_cmd);
+        return ret;
+}
+static inline int
+set_cgroup_nf_cpu_share_from_onvm_mgr(uint16_t instance_id, uint32_t share_val) {
+#ifdef SET_CPU_SHARE_FROM_NF
+#else
+        FILE *fp = NULL;
+        uint32_t shared_bw_val = (share_val== 0) ?(1024):(share_val);  //when share_val is absolute bandwidth
+        const char* cg_set_cmd = get_cgroup_set_cpu_share_cmd_onvm_mgr(instance_id);
+
+        //printf("\n CMD_TO_SET_CPU_SHARE: %s \n", cg_set_cmd);
+        fp = fopen(cg_set_cmd, "w");            //optimize with mmap if that is allowed!!
+        if (fp){
+                fprintf(fp,"%d",shared_bw_val);
+                fclose(fp);
+        }
+        return 0;
 #endif
+}
+#endif //USE_CGROUPS_PER_NF_INSTANCE
 
 #define RTE_LOGTYPE_APP RTE_LOGTYPE_USER1
 
