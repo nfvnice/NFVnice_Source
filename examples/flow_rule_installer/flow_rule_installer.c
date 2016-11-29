@@ -340,13 +340,19 @@ setup_service_chain_for_flow_entry(struct onvm_service_chain *sc, int sc_index, 
         else {
                 sc_index =  (int)next_sc;
         }
-        /* Setup the chain in reverse order makes sense only when use_input_sc_index=1 */
+        /* Setup the chain in reverse order makes sense only when use_input_sc_index=1:: ideally it should be reverse only for n-1 */
         if (1 == use_input_sc_index && 1 == rev_order) {
                 int last_index = 0;
-                while(services[sc_index][last_index++] != -1 || last_index < ONVM_MAX_CHAIN_LENGTH);
-                printf("\n Adding Flip Service chain of Length [%d]: ", last_index-1);
+                int last_valid_nf=0;
+                while(((last_index++) < ONVM_MAX_CHAIN_LENGTH) && (services[sc_index][last_index] != -1));
+                last_valid_nf = ((last_index -1) >= 1)?(1):(0);
+                printf("\n Adding Flip Service chain of Length [%d],  last_valid_nf_index [%d]: ", (last_index-1), last_valid_nf);
+                //for(index =last_valid_nf; index >=0; index--) {
                 for(index =last_index-1; index >=0; index--) {
-                        service_id = services[sc_index][index]; //service_id = services[next_sc][index];
+                        service_id = services[sc_index][(index-last_valid_nf)]; //service_id = services[next_sc][index];
+                        if(index == 0){
+                                service_id = services[sc_index][last_index-1];
+                        }
                         if (service_id > 0){
                                 /* if(chain_len == 0){
                                         onvm_sc_set_entry(sc, 0, ONVM_NF_ACTION_TONF, service_id);

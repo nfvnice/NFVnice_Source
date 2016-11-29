@@ -79,8 +79,8 @@ void compute_and_assign_nf_cgroup_weight(void) {
         }
         update_rate = 0;
 
-        //nf_core_and_cc_info_t nf_pool_per_core[rte_lcore_count()+1]; // = {{0,0},};
-        nf_core_and_cc_info_t nf_pool_per_core[256]; // = {{0,0},};
+        nf_core_and_cc_info_t nf_pool_per_core[rte_lcore_count()+1]; // = {{0,0},};
+        //nf_core_and_cc_info_t nf_pool_per_core[256]; // = {{0,0},};
         //uint16_t nf_pool_per_core[rte_lcore_count()+1] = {0,};
 
         uint16_t nf_id = 0;

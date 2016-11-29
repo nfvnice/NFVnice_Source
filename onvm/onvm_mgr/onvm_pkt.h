@@ -113,6 +113,18 @@ void
 onvm_pkt_drop_batch(struct rte_mbuf **pkts, uint16_t size);
 
 
+
+/* Interface to check and set ECN CE FLAG status after enqueue of packets to RX queue.
+ *
+ * Inputs :
+ *          an array of packets
+ *          the size/count of buffers in the array
+ *          a pointer to the client possessing the RX queue.
+ *
+ */
+void
+onvm_detect_and_set_ecn_ce(struct rte_mbuf *pkts[], uint16_t count, struct client *cl);
+
 /* Interface to check and set back-pressure status after enqueue of packets to RX queue.
  *
  * Inputs :

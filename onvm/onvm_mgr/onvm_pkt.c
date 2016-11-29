@@ -246,11 +246,18 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
                                 thread->nf_rx_buf[client].count);
 
 
-#ifdef ENABLE_NF_BACKPRESSURE
+#if defined(ENABLE_NF_BACKPRESSURE) || defined (ENABLE_ECN_CE)
         if ( 0 != enq_status) {
+#ifdef ENABLE_ECN_CE
+                if (-EDQUOT == enq_status) {
+                        onvm_detect_and_set_ecn_ce(thread->nf_rx_buf[client].buffer, thread->nf_rx_buf[client].count, cl);
+                }
+#endif //ENABLE_ECN_CE
+#ifdef ENABLE_NF_BACKPRESSURE
                 onvm_detect_and_set_back_pressure(thread->nf_rx_buf[client].buffer, thread->nf_rx_buf[client].count, cl);
+#endif //ENABLE_NF_BACKPRESSURE
         }
-#endif  //ENABLE_NF_BACKPRESSURE
+#endif  //defined(ENABLE_NF_BACKPRESSURE) || defined (ENABLE_ECN_CE)
 
         if ( -ENOBUFS == enq_status) {
                 for (i = 0; i < thread->nf_rx_buf[client].count; i++) {
@@ -483,6 +490,25 @@ onvm_pkt_drop(struct rte_mbuf *pkt) {
         return 0;
 }
 
+
+void
+onvm_detect_and_set_ecn_ce(struct rte_mbuf *pkts[], uint16_t count, struct client *cl) {
+        uint16_t i;
+#define CE_BITS ((uint8_t)0x03)
+        struct ipv4_hdr* ip = NULL;
+        for(i = 0; i < count; i++) {
+                ip = onvm_pkt_ipv4_hdr(pkts[i]);
+                if (ip != NULL) {
+                        //printf("Before: [%d], After: [%d] After1: [%d]", ip->type_of_service, ip->type_of_service|CE_BITS, ip->type_of_service|(CE_BITS << 6));
+                        ip->type_of_service |= (CE_BITS);   //verified this works
+                        //ip->type_of_service |= (CE_BITS << 6)); //rte_cpu_to_be_8(CE_BITS)
+                }
+        }
+        if(cl) {
+                //set this clients CE FLAG ON;
+        }
+}
+
 #ifdef ENABLE_NF_BACKPRESSURE
 void
 onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struct client *cl) {
@@ -522,7 +548,7 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
                 else {
                         downstream_nf_overflow = 1;
                         SET_BIT(highest_downstream_nf_service_id, cl->info->service_id);//highest_downstream_nf_service_id = cl->info->service_id;
-                        break; // just do once
+                        //break; // just do once
                 }
         }
         #endif //ENABLE_NF_BACKPRESSURE
@@ -561,6 +587,8 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
                                         #endif //NF_BACKPRESSURE_APPROACH_2
                                 }
                         }
+                        flow_entry = NULL;
+                        meta = NULL;
                 }
                 //global single chain scenario
                 /** Note: This only works for the default chain case where service ID of chain is always in increasing order **/
@@ -577,7 +605,7 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
                                         }
                                 }
                         }
-                        break; // just do once
+                        //break; // just do once
                 }
         }
         #endif //ENABLE_NF_BACKPRESSURE

@@ -29,6 +29,11 @@
 #include <fcntl.h>           /* For O_* constants */
 #include <sys/stat.h>        /* For mode constants */
 #include <semaphore.h>
+
+#include <sys/time.h>
+#include <sys/resource.h>
+
+
 #define USE_THIS_CLOCK  CLOCK_THREAD_CPUTIME_ID //CLOCK_PROCESS_CPUTIME_ID //CLOCK_MONOTONIC
 
 #ifdef USE_ZMQ
@@ -190,7 +195,7 @@ void test_clk_overhead()
         int64_t ttl = get_ttl_time(str,stp);
         delta = ttl/count;
         //printf("Run latency: %li ns\n", delta);
-        printf("CLOCK_MEASUREMENT_OVERHEADS: Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+        printf("CLOCK_MEASUREMENT_OVERHEADS: Min: %li, Max:%li and Avg latency: %li , Overall Time: %li ns\n", min, max, avg/count, delta);
 }
 
 void test_mq()
@@ -395,6 +400,72 @@ void test_sem_2()
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
 
+#define MP_CLIENT_CGROUP_SET_CPU_SHARE_ONVM_MGR "/sys/fs/cgroup/cpu/nf_%u/cpu.shares"
+void cgroup_update1(void) {
+        FILE *fp = NULL;
+        uint32_t shared_bw_val = 10240;  //when share_val is absolute bandwidth
+        static char buffer[sizeof(MP_CLIENT_CGROUP_SET_CPU_SHARE_ONVM_MGR) + 20];
+        snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_CGROUP_SET_CPU_SHARE_ONVM_MGR, 1);
+        const char* cg_set_cmd = buffer;
+
+        fp = fopen(cg_set_cmd, "w"); //optimize with mmap if that is allowed!!
+        if (fp){
+                fprintf(fp,"%d",shared_bw_val);
+                fclose(fp);
+        }
+        return ;
+}
+
+void test_cgroup_update1() {
+        int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
+        int count = 1000, i =0;
+        for ( i = 0; i < count; i++) {
+                get_start_time();
+                cgroup_update1();
+                get_stop_time();
+                ttl_elapsed = get_elapsed_time();
+                min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                avg += ttl_elapsed;
+
+                //printf("Run latency: %li ns\n", delta);
+        }
+        printf("CGROUP_UPDATE(1): Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+}
+
+#define MP_CLIENT_CGROUP_SET_CPU_SHARE "echo %u > /sys/fs/cgroup/cpu/nf_%u/cpu.shares"
+void cgroup_update2(void) {
+        FILE *fp = NULL;
+        uint32_t shared_bw_val = 12420;  //when share_val is absolute bandwidth
+        static char buffer[sizeof(MP_CLIENT_CGROUP_SET_CPU_SHARE) + 20];
+        snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_CGROUP_SET_CPU_SHARE, shared_bw_val, 1);
+        const char* cg_set_cmd = buffer;
+        int ret = system(cg_set_cmd);
+        return ;
+}
+
+void test_cgroup_update2() {
+        int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
+        int count = 1000, i =0;
+        for ( i = 0; i < count; i++) {
+                get_start_time();
+                cgroup_update2();
+                get_stop_time();
+                ttl_elapsed = get_elapsed_time();
+                min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                avg += ttl_elapsed;
+                //printf("Run latency: %li ns\n", delta);
+        }
+        printf("CGROUP_UPDATE(2): Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+}
+
+void test_group_prio() {
+        int my_proc_prio= getpriority(PRIO_PROCESS, 0);
+        int my_grp_prio= getpriority(PRIO_PGRP, 0);
+        int my_user_prio= getpriority(PRIO_USER, 0);
+        printf("GetPriority: PROCESS [%d], GROUP [%d], USER [%d]\n", my_proc_prio,my_grp_prio,my_user_prio);
+}
 int main()
 {
         #if defined(_POSIX_TIMERS) && (_POSIX_TIMERS > 0) && defined(_POSIX_MONOTONIC_CLOCK)
@@ -404,11 +475,14 @@ int main()
         #endif
 
         test_clk_overhead();
+        test_cgroup_update1();
+        test_cgroup_update2();
         test_mq();
         test_mq_2();
         test_sem();
         test_sem_2();
         test_nanosleep();
         test_sched_yield();
+        test_group_prio();
 }
 

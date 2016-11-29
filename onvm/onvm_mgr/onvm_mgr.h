@@ -138,5 +138,10 @@ struct wakeup_info {
 };
 #endif //INTERRUPT_SEM
 
+#ifdef ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
+//static int onv_pkt_send_on_alt_port(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count);
+//int send_direct_on_alt_port(struct rte_mbuf *pkts[], uint16_t rx_count);
+#endif //ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
+
 
 #endif  // _ONVM_MGR_H_

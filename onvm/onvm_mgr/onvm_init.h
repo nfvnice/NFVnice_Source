@@ -106,7 +106,7 @@
 // Note: Based on the approach the tuned values change. For NF Throttling (80/75,20/25) works better, for Packet Throttling (70,50 or 70,40 or 80,40) seems better -- must be tuned and set accordingly.
 #ifdef NF_BACKPRESSURE_APPROACH_1
 #define CLIENT_QUEUE_RING_THRESHOLD (70)
-#define CLIENT_QUEUE_RING_THRESHOLD_GAP (25)
+#define CLIENT_QUEUE_RING_THRESHOLD_GAP (25) //(25)
 #else  // defined NF_BACKPRESSURE_APPROACH_2 or other
 #define CLIENT_QUEUE_RING_THRESHOLD (80)
 #define CLIENT_QUEUE_RING_THRESHOLD_GAP (20)

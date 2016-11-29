@@ -53,6 +53,10 @@
 #include "onvm_pkt.h"
 #include "onvm_nf.h"
 
+#ifdef ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
+static int onv_pkt_send_on_alt_port(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count);
+#endif //ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
+
 #ifdef INTERRUPT_SEM
 struct wakeup_info *wakeup_infos;
 #endif //INTERRUPT_SEM
@@ -175,7 +179,6 @@ performance_log_thread(void *pdata) {
 
 /*******************************Worker threads********************************/
 
-
 /*
  * Stats thread periodically prints per-port and per-NF stats.
  */
@@ -194,7 +197,6 @@ master_thread_main(void) {
                 onvm_stats_display_all(sleeptime);
         }
 }
-
 
 /*
  * Function to receive packets from the NIC
@@ -224,7 +226,12 @@ rx_thread_main(void *arg) {
                         if (likely(rx_count > 0)) {
                                 // If there is no running NF, we drop all the packets of the batch.
                                 if (!num_clients) {
+                                        #ifdef ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
+                                        (void)onv_pkt_send_on_alt_port(rx, pkts, rx_count);
+                                        #else
                                         onvm_pkt_drop_batch(pkts, rx_count);
+                                        #endif //ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
+
                                 } else {
                                         onvm_pkt_process_rx_batch(rx, pkts, rx_count);
                                 }
@@ -381,7 +388,16 @@ main(int argc, char *argv[]) {
                 tx->queue_id = i;
                 tx->port_tx_buf = calloc(RTE_MAX_ETHPORTS, sizeof(struct packet_buf));
                 tx->nf_rx_buf = calloc(MAX_CLIENTS, sizeof(struct packet_buf));
+
+#ifdef ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
+                if ( i == 0) {
+                        tx->first_cl = RTE_MIN(i * clients_per_tx, temp_num_clients);       //changed to read from NF[0]
+                } else {
+                        tx->first_cl = RTE_MIN(i * clients_per_tx + 1, temp_num_clients);
+                }
+#else
                 tx->first_cl = RTE_MIN(i * clients_per_tx + 1, temp_num_clients);
+#endif  //ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
                 tx->last_cl = RTE_MIN((i+1) * clients_per_tx + 1, temp_num_clients);
                 cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
                 if (rte_eal_remote_launch(tx_thread_main, (void*)tx,  cur_lcore) == -EBUSY) {
@@ -658,5 +674,127 @@ register_signal_handler(void) {
 }
 #endif
 
+
+#ifdef ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
+int send_direct_on_alt_port(struct rte_mbuf *pkts[], uint16_t rx_count);
+int send_direct_on_alt_port(struct rte_mbuf *pkts[], uint16_t rx_count) {
+        uint16_t i, sent_0,sent_1;
+        volatile struct tx_stats *tx_stats;
+        tx_stats = &(ports->tx_stats);
+
+        struct rte_mbuf *pkts_0[PACKET_READ_SIZE];
+        struct rte_mbuf *pkts_1[PACKET_READ_SIZE];
+        uint16_t count_0=0, count_1=0;
+
+        for (i = 0; i < rx_count; i++) {
+                if (pkts[i]->port == 0) {
+                        pkts_1[count_1++] = pkts[i];
+                } else {
+                        pkts_0[count_0++] = pkts[i];
+                }
+        }
+#ifdef DELAY_BEFORE_SEND
+        usleep(DELAY_PER_PKT*count_0);
+#endif
+        if(count_0) {
+                sent_0 = rte_eth_tx_burst(0,
+                                        0,//tx->queue_id,
+                                        pkts_0,
+                                        count_0);
+                if (unlikely(sent_0 < count_0)) {
+                        for (i = sent_0; i < count_0; i++) {
+                                onvm_pkt_drop(pkts_0[i]);
+                        }
+                        tx_stats->tx_drop[0] += (count_0 - sent_0);
+                }
+                tx_stats->tx[0] += sent_0;
+        }
+#ifdef DELAY_BEFORE_SEND
+        usleep(DELAY_PER_PKT*count_1);
+#endif
+        if(count_1) {
+                sent_1 = rte_eth_tx_burst(1,
+                                        0,//tx->queue_id,
+                                        pkts_1,
+                                        count_1);
+                if (unlikely(sent_1 < count_1)) {
+                        for (i = sent_1; i < count_1; i++) {
+                                onvm_pkt_drop(pkts_1[i]);
+                        }
+                        tx_stats->tx_drop[1] += (count_1 - sent_1);
+                }
+                tx_stats->tx[1] += sent_1;
+        }
+        return 0;
+}
+static int onv_pkt_send_on_alt_port(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count) {
+
+        int ret = 0;
+        int i = 0;
+        struct onvm_pkt_meta *meta = NULL;
+        struct rte_mbuf *pkt = NULL;
+        static struct client *cl = NULL; //&clients[0];
+
+        if (rx == NULL || pkts == NULL || rx_count== 0)
+                return ret;
+
+#ifdef SEND_DIRECT_ON_ALT_PORT
+        return send_direct_on_alt_port(pkts, rx_count);
+#endif //SEND_DIRECT_ON_ALT_PORT
+
+        for (i = 0; i < rx_count; i++) {
+               meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)pkts[i])->udata64);
+               meta->src = 0;
+               meta->chain_index = 0;
+               pkt = (struct rte_mbuf*)pkts[i];
+                if (pkt->port == 0) {
+                        meta->destination = 1;
+                }
+                else {
+                        meta->destination = 0;
+                }
+                meta->action = ONVM_NF_ACTION_OUT;
+        }
+
+        //Push all pkts directly to NF[0]->tx_ring
+        cl = &clients[0];
+
+        // DO ONCE: Ensure destination NF is running and ready to receive packets
+        if (!onvm_nf_is_valid(cl)) {
+                void *mempool_data = NULL;
+                struct onvm_nf_info *info = NULL;
+                struct rte_mempool *nf_info_mp = NULL;
+                nf_info_mp = rte_mempool_lookup(_NF_MEMPOOL_NAME);
+                if (nf_info_mp == NULL) {
+                        printf("Failed to get NF_MEMPOOL");
+                        return ret;
+                }
+                if (rte_mempool_get(nf_info_mp, &mempool_data) < 0) {
+                        printf("Failed to get client info memory");
+                        return ret;
+                }
+                if (mempool_data == NULL) {
+                        printf("Client Info struct not allocated");
+                        return ret;
+                }
+
+                info = (struct onvm_nf_info*) mempool_data;
+                info->instance_id = 0;
+                info->service_id = 0;
+                info->status = NF_RUNNING;
+                info->tag = "INTERNAL_BRIDGE";
+
+                cl->info=info;
+        }
+        //return ret;
+
+      int enq_status = rte_ring_enqueue_bulk(cl->tx_q, (void **)pkts, rx_count);
+      if (enq_status) {
+              printf("Enqueue to NF[0] Tx Buffer failed!!");
+              cl->stats.rx_drop += rx_count;
+      }
+        return ret;
+}
+#endif //ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
 
 
