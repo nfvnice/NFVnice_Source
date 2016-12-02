@@ -62,7 +62,8 @@ struct wakeup_info *wakeup_infos;
 #endif //INTERRUPT_SEM
 
 #ifdef INTERRUPT_SEM
-#define ENABLE_PERFORMANCE_LOG
+//#define ENABLE_PERFORMANCE_LOG
+
 #ifdef ENABLE_PERFORMANCE_LOG
 #ifdef USE_MQ
 const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_MQ.csv";
@@ -273,12 +274,14 @@ tx_thread_main(void *arg) {
                         if (!onvm_nf_is_valid(cl))
                                 continue;
                         /* try dequeuing max possible packets first, if that fails, get the
-                         * most we can. Loop body should only execute once, maximum */
+                         * most we can. Loop body should only execute once, maximum
                         while (tx_count > 0 &&
                                 unlikely(rte_ring_dequeue_bulk(cl->tx_q, (void **) pkts, tx_count) != 0)) {
                                 tx_count = (uint16_t)RTE_MIN(rte_ring_count(cl->tx_q),
                                                 PACKET_READ_SIZE);
                         }
+                        */
+                        tx_count = rte_ring_dequeue_burst(cl->tx_q, (void **) pkts, tx_count);
 
                         /* Now process the Client packets read */
                         if (likely(tx_count > 0)) {
@@ -439,7 +442,8 @@ main(int argc, char *argv[]) {
                 wakeup_infos[i].last_client = RTE_MIN((i+1) * clients_per_wakethread + 1, temp_num_clients);
                 cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
                 rte_eal_remote_launch(wakeup_nfs, (void*)&wakeup_infos[i], cur_lcore);
-                printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
+                //printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
+                RTE_LOG(INFO, APP, "Core %d: Running wakeup thread, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
         }
         
         #ifdef INTERRUPT_SEM
@@ -657,7 +661,7 @@ static void signal_handler(int sig, siginfo_t *info, void *secret) {
                 #endif
         }
         
-        exit(1);
+        exit(10);
 }
 static void 
 register_signal_handler(void) {
@@ -756,7 +760,7 @@ static int onv_pkt_send_on_alt_port(struct thread_info *rx, struct rte_mbuf *pkt
                 meta->action = ONVM_NF_ACTION_OUT;
         }
 
-        //Push all pkts directly to NF[0]->tx_ring
+        //Make use of the internal NF[0]
         cl = &clients[0];
 
         // DO ONCE: Ensure destination NF is running and ready to receive packets
@@ -788,11 +792,13 @@ static int onv_pkt_send_on_alt_port(struct thread_info *rx, struct rte_mbuf *pkt
         }
         //return ret;
 
-      int enq_status = rte_ring_enqueue_bulk(cl->tx_q, (void **)pkts, rx_count);
-      if (enq_status) {
-              printf("Enqueue to NF[0] Tx Buffer failed!!");
-              cl->stats.rx_drop += rx_count;
-      }
+        //Push all packets directly to the NF[0]->tx_ring
+        int enq_status = rte_ring_enqueue_bulk(cl->tx_q, (void **)pkts, rx_count);
+        if (enq_status) {
+                //printf("Enqueue to NF[0] Tx Buffer failed!!");
+                onvm_pkt_drop_batch(pkts,rx_count);
+                cl->stats.rx_drop += rx_count;
+        }
         return ret;
 }
 #endif //ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE

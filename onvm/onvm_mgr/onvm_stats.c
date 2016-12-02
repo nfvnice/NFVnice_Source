@@ -212,7 +212,7 @@ onvm_stats_display_clients(unsigned difftime) {
         #endif
 
 #ifdef ENABLE_NF_BACKPRESSURE
-        printf("OverflowFlag=[%d], Highest_DS_SID=[%d], Lowest_DS_SID=[%d], Num Throttles=[%"PRIu64"] \n", downstream_nf_overflow, highest_downstream_nf_service_id, lowest_upstream_to_throttle, throttle_count);
+        printf("BkprMode=[%d], OverflowFlag=[%d], Highest_DS_SID=[%d], Lowest_DS_SID=[%d], Num Throttles=[%"PRIu64"] \n", global_bkpr_mode, downstream_nf_overflow, highest_downstream_nf_service_id, lowest_upstream_to_throttle, throttle_count);
 #endif  //ENABLE_NF_BACKPRESSURE
 
         printf("\nCLIENTS\n");
@@ -293,9 +293,13 @@ onvm_stats_display_clients(unsigned difftime) {
 
         #ifdef ENABLE_NF_BACKPRESSURE
                 //printf("rx_overflow=[%d], ThrottleNF_Flag=[%d], Highest_DS_SID=[%d] NF_Throttle_count=[%"PRIu64"], \n", clients[i].rx_buffer_overflow, clients[i].throttle_this_upstream_nf, clients[i].highest_downstream_nf_index_id, clients[i].throttle_count);
-                #ifdef NF_BACKPRESSURE_APPROACH_1
-                printf("bkpr_drop=%"PRIu64", bkpr_drop_rate=%"PRIu64"\n",clients[i].stats.bkpr_drop,(clients[i].stats.bkpr_drop - clients[i].stats.prev_bkpr_drop)/ difftime);
+                //#ifdef NF_BACKPRESSURE_APPROACH_1
+                #if defined (NF_BACKPRESSURE_APPROACH_1) && defined (BACKPRESSURE_EXTRA_DEBUG_LOGS)
+                printf("bottleneck_flows=[%d], bkpr_count [%d], max_rx_q_len=[%d], max_tx_q_len=[%d], bkpr_drop=%"PRIu64", bkpr_drop_rate=%"PRIu64"\n",clients[i].bft_list.bft_count, clients[i].stats.bkpr_count,clients[i].stats.max_rx_q_len, clients[i].stats.max_tx_q_len, clients[i].stats.bkpr_drop,(clients[i].stats.bkpr_drop - clients[i].stats.prev_bkpr_drop)/ difftime);
                 clients[i].stats.prev_bkpr_drop = clients[i].stats.bkpr_drop;
+                clients[i].stats.max_rx_q_len=0;
+                clients[i].stats.max_tx_q_len=0;
+                //clients[i].stats.bkpr_count=0;
                 #endif //NF_BACKPRESSURE_APPROACH_1
 
                 #ifdef NF_BACKPRESSURE_APPROACH_2

@@ -106,7 +106,7 @@
 // Note: Based on the approach the tuned values change. For NF Throttling (80/75,20/25) works better, for Packet Throttling (70,50 or 70,40 or 80,40) seems better -- must be tuned and set accordingly.
 #ifdef NF_BACKPRESSURE_APPROACH_1
 #define CLIENT_QUEUE_RING_THRESHOLD (70)
-#define CLIENT_QUEUE_RING_THRESHOLD_GAP (25) //(25)
+#define CLIENT_QUEUE_RING_THRESHOLD_GAP (40) //(25)
 #else  // defined NF_BACKPRESSURE_APPROACH_2 or other
 #define CLIENT_QUEUE_RING_THRESHOLD (80)
 #define CLIENT_QUEUE_RING_THRESHOLD_GAP (20)
@@ -119,12 +119,27 @@
 
 #define ONVM_NUM_RX_THREADS 1
 
-#define DYNAMIC_CLIENTS 0
-#define STATIC_CLIENTS 1
+#define DYNAMIC_CLIENTS 1
+#define STATIC_CLIENTS 0
 
 
 /******************************Data structures********************************/
+#ifdef ENABLE_NF_BACKPRESSURE //NF_BACKPRESSURE_APPROACH_1
+//#if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
+typedef struct bottleneck_ft_data {
+        uint16_t chain_index;
+         struct onvm_flow_entry* bft;
+}bottleneck_ft_data_t;
+typedef struct bottleneck_ft_info {
+        uint16_t bft_count;
+        uint16_t r_h;
+        uint16_t w_h;
+        uint16_t max_len;
+        //struct onvm_flow_entry* bft[CLIENT_QUEUE_RINGSIZE];
+        bottleneck_ft_data_t bft[CLIENT_QUEUE_RINGSIZE+1];
+}bottlenect_ft_info_t;
 
+#endif //ENABLE_NF_BACKPRESSURE
 
 /*
  * Define a client structure with all needed info, including
@@ -154,12 +169,24 @@ struct client {
                 volatile uint64_t prev_rx_drop;
                 volatile uint64_t prev_wakeup_count;
                 #endif
+//#ifdef ENABLE_NF_BACKPRESSURE
 #if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
                 volatile uint64_t bkpr_drop;
                 volatile uint64_t prev_bkpr_drop;
-#endif //defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
+#endif //#if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
+//#ifdef ENABLE_NF_BACKPRESSURE
+#if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1) && defined (BACKPRESSURE_EXTRA_DEBUG_LOGS)
+                uint16_t max_rx_q_len;
+                uint16_t max_tx_q_len;
+                uint16_t bkpr_count;
+#endif //defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1) && defined (BACKPRESSURE_EXTRA_DEBUG_LOGS)
         } stats;
         
+#ifdef ENABLE_NF_BACKPRESSURE
+//#if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
+        bottlenect_ft_info_t bft_list;
+#endif //defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
+
         /* mutex and semaphore name for NFs to wait on */ 
         #ifdef INTERRUPT_SEM        
         const char *sem_name;

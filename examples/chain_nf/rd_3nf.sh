@@ -5,7 +5,7 @@ core_id=8
 svc_id=2
 dst_id=3
 inst_id=2
-cost=3
+cost=4
 #cost=0
 ./og.sh $core_id $svc_id $dst_id $inst_id $cost &
   sleep 2

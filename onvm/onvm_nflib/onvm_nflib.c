@@ -106,6 +106,24 @@ void init_cgroup_info(struct onvm_nf_info *nf_info) {
 }
 #endif
 
+
+/******************************Timer Helper functions*******************************/
+#ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+#define STATS_PERIOD_IN_MS 1000
+static void
+stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
+        __attribute__((unused)) void *ptr_data) {
+
+        static unsigned counter = 0;
+        unsigned lcore_id = rte_lcore_id();
+        printf("%s() on lcore %u : [%u]\n", __func__, lcore_id, ++counter);
+
+        printf("\n On core [%d] Inside Timer Callback function: %"PRIu64" !!\n", rte_lcore_id(), rte_rdtsc_precise());
+        //printf("Echo %d", system("echo > hello_timer.txt"));
+        printf("\n Inside Timer Callback function: %"PRIu64" !!\n", rte_rdtsc_precise());
+}
+#endif
+
 int
 onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
         const struct rte_memzone *mz;
@@ -221,6 +239,42 @@ onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
 #ifdef USE_CGROUPS_PER_NF_INSTANCE
         init_cgroup_info(nf_info);
 #endif
+
+#ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+        //unsigned cur_lcore = rte_lcore_id();
+        //unsigned timer_core = rte_get_next_lcore(cur_lcore, 1, 1);
+        //printf("cur_core [%u], timer_core [%u]", cur_lcore,timer_core);
+        rte_timer_subsystem_init();
+        rte_timer_init(&nf_info->stats_timer);
+        rte_timer_reset_sync(&nf_info->stats_timer,
+                                (STATS_PERIOD_IN_MS * rte_get_timer_hz()) / 1000,
+                                PERIODICAL,
+                                rte_lcore_id(), //timer_core
+                                &stats_timer_cb, NULL
+                                );
+        /*
+        if (rte_timer_reset(&nf_info->stats_timer,
+                        (STATS_PERIOD_IN_MS * rte_get_timer_hz()) / 1000,
+                        PERIODICAL,
+                        rte_lcore_id(),
+                        &stats_timer_cb, NULL
+                        ) != 0 )
+                rte_exit(EXIT_FAILURE, "Stats setup failure.\n");
+        */
+        printf("\n 0 RTE_TIMER INITIALIZED SUCCESSFULLY!! [ %d] \n", rte_timer_pending(&nf_info->stats_timer));
+        rte_timer_manage();
+        //rte_timer_dump_stats(fdopen(2,"w"));
+        sleep(2);
+        rte_timer_manage();
+        printf("\n 1 RTE_TIMER INITIALIZED CHECK!! [ %d] \n", rte_timer_pending(&nf_info->stats_timer));
+        rte_timer_manage();
+        sleep(1);
+        rte_timer_manage();
+        printf("\n 2 RTE_TIMER INITIALIZED CHECK!! [ %d] \n", rte_timer_pending(&nf_info->stats_timer));
+
+
+#endif
+
 
         RTE_LOG(INFO, APP, "Finished Process Init.\n");
         return retval_final;
@@ -392,10 +446,12 @@ onvm_nflib_run(
                 #endif  // defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_2)
 
                 /* try dequeuing max possible packets first, if that fails, get the
-                 * most we can. Loop body should only execute once, maximum */
+                 * most we can. Loop body should only execute once, maximum
                 while (nb_pkts > 0 &&
                                 unlikely(rte_ring_dequeue_bulk(rx_ring, pkts, nb_pkts) != 0))
                         nb_pkts = (uint16_t)RTE_MIN(rte_ring_count(rx_ring), PKT_READ_SIZE);
+                */
+                nb_pkts = (uint16_t)rte_ring_dequeue_burst(rx_ring, pkts, nb_pkts);
 
                 if(nb_pkts == 0) {
                         #ifdef INTERRUPT_SEM
@@ -558,8 +614,6 @@ onvm_nflib_stop(void) {
 
 
 /******************************Helper functions*******************************/
-
-
 static struct onvm_nf_info *
 onvm_nflib_info_init(const char *tag)
 {

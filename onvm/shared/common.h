@@ -58,7 +58,7 @@
 
 /* Enable the ONVM_MGR to act as a 2-port bridge without any NFs */
 #define ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE    // Work as bridge < without any NFs :: only testing purpose.. >
-#define SEND_DIRECT_ON_ALT_PORT
+//#define SEND_DIRECT_ON_ALT_PORT
 //#define DELAY_BEFORE_SEND
 //#define DELAY_PER_PKT (5) //20micro seconds
 
@@ -73,13 +73,13 @@
 #define ONVM_NF_ACTION_OUT 3    // send the packet out the NIC port set in the argument field
 
 /* Note: Make the PACKET_READ_SIZE defined in onvm_mgr.h same as PKT_READ_SIZE defined in onvm_nflib_internal.h, better get rid of latter */
-#define PRE_PROCESS_DROP_ON_RX  // To lookup NF Tx queue occupancy and drop packets pro-actively before pushing to NFs Rx Ring.
-//#define DROP_APPROACH_1
-//#define DROP_APPROACH_2s
-#define DROP_APPROACH_3
-//#define DROP_APPROACH_3_WITH_YIELD
-//#define DROP_APPROACH_3_WITH_POLL
-#define DROP_APPROACH_3_WITH_SYNC
+#define PRE_PROCESS_DROP_ON_RX  // Feature flag for addressing NF Local Back-pressure:: To lookup NF Tx queue occupancy and drop packets pro-actively before pushing to NFs Rx Ring.
+//#define DROP_APPROACH_1       // Handle inside NF_LIB:: After dequeue from NFs Rx ring, check for Tx Ring size and drop pkts before pushing packet to the NFs processing function. < Too late, only avoids packet processing by NF:: Discontinued.. Results are OK, but not preferred approach>
+//#define DROP_APPROACH_2       // Handle in onvm_mgr:: After segregation of Rx/Tx buffers to specific NF: Drop the packet before pushing the packets to the NFs Rx Ring buffer. < Early decision. Must also account for packets that could be currently under processing. < Results OK, but not preferred approach>
+#define DROP_APPROACH_3         // Handle inside NF_LIB:: Make the NF to block until it cannot push the packets to the Tx Ring, Subsequent packets will be dropped in onvm_mgr context by Rx/Tx Threads < 3 options: Poll till Tx is free, Yield or Block on Semaphore>
+//#define DROP_APPROACH_3_WITH_YIELD    //sub-option for approach 3: Results are good, but could result in lots of un-necessary context switches as one block might result in multiple yields. Thrpt is on par with block-approach.
+//#define DROP_APPROACH_3_WITH_POLL     //sub-option for approach 3: Results are good, but accounts to CPU wastage and hence not preferred.
+#define DROP_APPROACH_3_WITH_SYNC       //sub-option for approach 3: Results are good, but prefer block rather than yield.
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
 #define USE_SEMAPHORE           // Use Semaphore for IPC
@@ -103,23 +103,45 @@
 
 /* Enable this flag to assign a distinct CGROUP for each NF instance */
 #define USE_CGROUPS_PER_NF_INSTANCE                 // To create CGroup per NF instance
-#define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT    // To dynamically evaluate and periodically adjust weight on NFs cpu share
+//#define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT    // To dynamically evaluate and periodically adjust weight on NFs cpu share
 
-/* Enable ECN CE FLAG */
-//#define ENABLE_ECN_CE
+/* For Bottleneck on Rx Ring; whether or not to Drop packets from Rx/Tx buf during flush_operation
+ * Note: This is one of the likely cause of Out-of_order packets in the OpenNetVM (with Bridge) case: */
+#define DO_NOT_DROP_PKTS_ON_FLUSH_FOR_BOTTLENECK_NF   //Disable drop of existing packets -- may have caveats on when next flush would operate on that Tx/Rx buffer..
+                                                        //Repercussions in onvm_pkt.c: onvm_pkt_enqueue_nf() to handle overflow and stop putting packet in full buffer and drop new ones instead.
 
 /* Enable watermark level NFs Tx and Rx Rings */
 #define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
+
+/* Enable ECN CE FLAG : Feature Flag to enable marking ECN_CE flag on the flows that pass through the NFs with Rx Rign buffers exceeding the watermark level.
+ * Dependency: Must have ENABLE_RING_WATERMARK feature defined. and HIGH and LOW Thresholds to be set. otherwise, marking may not happen at all.. Ideally, marking should be done after dequeue from Tx, to mark if Rx is overbudget..
+ * On similar lines, even the back-pressure marking must be done for all flows after dequeue from the Tx Ring.. */
+//#define ENABLE_ECN_CE
 
 /* Enable back-pressure handling to throttle NFs upstream */
 #define ENABLE_NF_BACKPRESSURE
 #define NF_BACKPRESSURE_APPROACH_1  //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
 //#define NF_BACKPRESSURE_APPROACH_2  //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
 //#define NF_BACKPRESSURE_APPROACH_3  //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
+
+// Extensions and sub-options for Back_Pressure handling
+#define DROP_PKTS_ONLY_AT_BEGGINING // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF).
+#define BACKPRESSURE_USE_RING_BUFFER_MODE   // Use Ring buffer to store and delete backlog Flow Entries per NF
+#define RECHECK_BACKPRESSURE_MARK_ON_TQ_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
+//#define BACKPRESSURE_EXTRA_DEBUG_LOGS     // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
+
+//other test-variants and disregarded options: not to be used!!
 //#define HOP_BY_HOP_BACKPRESSURE     //Option to enable [ON] = HOP by HOP propagation of back-pressure vs [OFF] = direct First NF to N-1 Discard(Drop)/block.
-//#define DROP_PKTS_ONLY_AT_BEGGINING // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF).
-//#define ENABLE_NF_BKLOG_BUFFERING   //Extension to Approach 3 wherein each NF can pre-buffer internally the  packets for bottlenecked service chains.
+//#define ENABLE_NF_BKLOG_BUFFERING   //Extension to Approach 3 wherein each NF can pre-buffer internally the  packets for bottlenecked service chains. (Not Implemented!!)
 //#define DUMMY_FT_LOAD_ONLY //Load Only onvm_ft and Bypass ENABLE_NF_BACKPRESSURE/NF_BACKPRESSURE_APPROACH_3
+
+
+/* ENABLE TIMER BASED WEIGHT COMPUTATION IN NF_LIB */
+//#define ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+#ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+#include <rte_timer.h>
+#endif //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+
 
 #ifdef ENABLE_NF_BACKPRESSURE
 //forward declaration either store reference of onvm_flow_entry or onvm_service_chain (latter may be sufficient)
@@ -128,21 +150,21 @@ struct onvm_service_chain;
 #endif  //ENABLE_NF_BACKPRESSURE
 
 
-#define SET_BIT(x,bitNum) (x|=(1<<(bitNum-1)))
+#define SET_BIT(x,bitNum) ((x)|=(1<<(bitNum-1)))
 static inline void set_bit(long *x, unsigned bitNum) {
     *x |= (1L << (bitNum-1));
 }
 
-#define CLEAR_BIT(x,bitNum) (x&=(~(1<<(bitNum-1))))
+#define CLEAR_BIT(x,bitNum) ((x) &= ~(1<<(bitNum-1)))
 static inline void clear_bit(long *x, unsigned bitNum) {
     *x &= (~(1L << (bitNum-1)));
 }
 
-#define TOGGLE_BIT(x,bitNum) (x ^= (1<<(bitNum-1)))
+#define TOGGLE_BIT(x,bitNum) ((x) ^= (1<<(bitNum-1)))
 static inline void toggle_bit(long *x, unsigned bitNum) {
     *x ^= (1L << (bitNum-1));
 }
-#define TEST_BIT(x,bitNum) (x & (1<<(bitNum-1)))
+#define TEST_BIT(x,bitNum) ((x) & (1<<(bitNum-1)))
 static inline long test_bit(long x, unsigned bitNum) {
     return (x & (1L << (bitNum-1)));
 }
@@ -256,6 +278,10 @@ struct onvm_nf_info {
         uint32_t comp_cost;     //indicates the computation cost of NF
 #endif
 
+#ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+        struct rte_timer stats_timer;
+#endif //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+
         #if defined (INTERRUPT_SEM) && defined (USE_SIGNAL)
         //pid_t pid;
         #endif
@@ -274,7 +300,7 @@ struct onvm_service_chain {
 	uint8_t chain_length;
 	uint8_t ref_cnt;
 #ifdef ENABLE_NF_BACKPRESSURE
-	uint8_t highest_downstream_nf_index_id;     // bit index of each NF in the chain that is overflowing
+	volatile uint8_t highest_downstream_nf_index_id;     // bit index of each NF in the chain that is overflowing
 #ifdef NF_BACKPRESSURE_APPROACH_2
 	uint8_t nf_instances_mapped; //set when all nf_instances are populated in the below array
 	uint8_t nf_instance_id[ONVM_MAX_CHAIN_LENGTH+1];

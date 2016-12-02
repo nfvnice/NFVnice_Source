@@ -50,7 +50,7 @@
 #include "onvm_flow_dir.h"
 
 #define NO_FLAGS 0
-#define SDN_FT_ENTRIES  (1024) //(1024*4)
+#define SDN_FT_ENTRIES  (1024*10*10) //(1024*4)
 
 struct onvm_ft *sdn_ft;
 struct onvm_ft **sdn_ft_p;
@@ -195,6 +195,7 @@ onvm_flow_dir_print_stats(void) {
                 int32_t tbl_index = 0;
                 uint32_t active_chains = 0;
                 uint32_t mapped_chains = 0;
+                uint32_t bottlnecked_chains=0;
                 for (; tbl_index < SDN_FT_ENTRIES; tbl_index++)
                 {
                         struct onvm_flow_entry *flow_entry = (struct onvm_flow_entry *)&sdn_ft->data[tbl_index*sdn_ft->entry_size];
@@ -211,19 +212,23 @@ onvm_flow_dir_print_stats(void) {
                         else continue;
 #ifdef ENABLE_NF_BACKPRESSURE
                         if (flow_entry->sc->highest_downstream_nf_index_id) {
-                                //printf ("FT_Key[%d], OverflowStatus [%d], \t", (int)flow_entry->key->src_addr, (int)flow_entry->sc->highest_downstream_nf_index_id);
-                                printf ("OverflowStatus [%d], \t", flow_entry->sc->highest_downstream_nf_index_id);
+                                int i =0;
+                                printf ("OverflowStatus [(binx=%d, %d),(nfid=%d),(scl=%d)::", flow_entry->sc->highest_downstream_nf_index_id, flow_entry->idle_timeout, flow_entry->sc->ref_cnt, flow_entry->sc->chain_length );
+                                for(i=1;i<=flow_entry->sc->chain_length;++i)printf("[%d], ",flow_entry->sc->sc[i].destination);
+                                if(flow_entry->key)
+                                        printf ("Tuple:[SRC(%d:%d),DST(%d:%d), PROTO(%d)], \t", flow_entry->key->src_addr, rte_be_to_cpu_16(flow_entry->key->src_port), flow_entry->key->dst_addr, rte_be_to_cpu_16(flow_entry->key->dst_port), flow_entry->key->proto);
 #ifdef NF_BACKPRESSURE_APPROACH_2
                                 uint8_t nf_idx = 0;
                                 for (; nf_idx < ONVM_MAX_CHAIN_LENGTH; nf_idx++) {
                                         printf("[%d: %d] \t", nf_idx, flow_entry->sc->nf_instance_id[nf_idx]);
                                 }
 #endif //NF_BACKPRESSURE_APPROACH_2
-                                printf("\n");
+                                // printf("\n");
+                                bottlnecked_chains++;
                         }
 #endif  //ENABLE_NF_BACKPRESSURE
                 }
-                printf("Total chains: [%d], mapped chains: [%d]  \n", active_chains, mapped_chains);
+                printf("Total chains: [%d], Bottleneck'd Chains: [%d], mapped chains: [%d]  \n", active_chains, bottlnecked_chains, mapped_chains);
         }
 
         return ;

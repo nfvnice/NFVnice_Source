@@ -157,7 +157,7 @@ init(int argc, char *argv[]) {
         retval = onvm_sc_append_entry(default_chain, ONVM_NF_ACTION_TONF, 1);
         if (retval == ENOSPC) {
                 printf("chain length can not be larger than the maximum chain length\n");
-                exit(1);
+                exit(5);
         }
         printf("Default service chain: send to sdn NF\n");        
         
@@ -468,6 +468,12 @@ init_shm_rings(void) {
 
                 clients[i].shm_server = (rte_atomic16_t *)shm;
                 rte_atomic16_set(clients[i].shm_server, 0);
+                #endif
+
+                //#if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
+                #ifdef ENABLE_NF_BACKPRESSURE
+                memset(&clients[i].bft_list, 0, sizeof(clients[i].bft_list));
+                clients[i].bft_list.max_len=CLIENT_QUEUE_RINGSIZE;
                 #endif
         }
         return 0;

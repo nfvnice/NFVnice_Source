@@ -212,7 +212,7 @@ parse_services(int services[][ONVM_MAX_CHAIN_LENGTH]) {
         if (fp) {
                 fclose(fp);
         }
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
         int j = 0;
         printf("Read Service List!\n");
@@ -308,7 +308,7 @@ parse_ipv4_5t_rules(void) {
         if (fp) {
                 fclose(fp);
         }
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
         printf("Read IPv4-5T List!\n");
         for(i=0; i< max_ft_entries; i++){
@@ -380,6 +380,7 @@ setup_service_chain_for_flow_entry(struct onvm_service_chain *sc, int sc_index, 
                         }
                 }
         }
+#ifdef DEBUG_0
         if(chain_len){
                 printf("setup the service chain of length: %d\n ",chain_len);
                 //next_sc = (next_sc+1)%max_service_chains;
@@ -387,6 +388,7 @@ setup_service_chain_for_flow_entry(struct onvm_service_chain *sc, int sc_index, 
         else {
                 printf("Didn't setup the service chain of length: %d\n ",chain_len);
         }
+#endif
         if(!use_input_sc_index) {
                 next_sc = (next_sc == ((uint32_t)(max_service_chains-1))?(0):(next_sc+1));
         }
@@ -407,7 +409,10 @@ setup_schain_and_flow_entry_for_flip_key(struct onvm_ft_ipv4_5tuple *fk_in, int 
         struct onvm_ft_ipv4_5tuple *fk = NULL;
         fk = rte_calloc("flow_key",1, sizeof(struct onvm_ft_ipv4_5tuple), 0); //RTE_CACHE_LINE_SIZE
         if (fk == NULL) {
+                #ifdef DEBUG_0
                 printf("failed in rte_calloc \n");
+                #endif
+
                 return -ENOMEM;
                 rte_exit(EXIT_FAILURE, "Cannot allocate memory for flow key\n");
                 exit(1);
@@ -441,18 +446,28 @@ setup_schain_and_flow_entry_for_flip_key(struct onvm_ft_ipv4_5tuple *fk_in, int 
                 //rte_free(flow_entry->key);
                 //rte_free(flow_entry->sc);
                 //printf("Flow Entry already exits for Key [%x] for flow_entry [%x] \n", fk->src_addr, flow_entry->key->src_addr);
-                  printf("Flow Entry in Table already exits at index [%d]\n\n", ret);
+                #ifdef DEBUG_0
+                printf("Flow Entry in Table already exits at index [%d]\n\n", ret);
+#endif
+                rte_free(fk);
                 return -EEXIST;
         }
         else {
+                #ifdef DEBUG_0
                 printf("\n Existing due to unknown Failure in get_key()! \n");
+#endif
+                rte_free(fk);
                 return ret;
+
                 rte_exit(EXIT_FAILURE, "onvm_flow_dir_get parameters are invalid");
                 exit(2);
         }
 
         if(NULL == flow_entry) {
-                printf("Failed flow_entry Allocations!!" ); return -ENOMEM;
+                #ifdef DEBUG_0
+                printf("Failed flow_entry Allocations!!" );
+#endif
+                return -ENOMEM;
         }
 
         memset(flow_entry, 0, sizeof(struct onvm_flow_entry));
@@ -709,7 +724,7 @@ setup_flow_rule_and_sc_entries(void) {
 static int setup_rule_for_packet(struct rte_mbuf *pkt, struct onvm_pkt_meta* meta) {
         int ret = 0;
         //struct onvm_pkt_meta* meta = (struct onvm_pkt_meta*) &(((struct rte_mbuf*)pkt)->udata64);
-        meta->src = 0;
+        meta->src = nf_info->instance_id;
         meta->chain_index = 0;
         struct onvm_flow_entry *flow_entry = NULL;
 
@@ -719,14 +734,17 @@ static int setup_rule_for_packet(struct rte_mbuf *pkt, struct onvm_pkt_meta* met
                 //printf("Setting to drop packet \n");
 
                 printf("Setting to redirect on alternate port\n ");
+                onvm_pkt_print(pkt);
+
                 meta->destination = (pkt->port == 0)? (1):(0);
                 meta->action = ONVM_NF_ACTION_OUT;
                 return 0;
         }
 
-        struct onvm_ft_ipv4_5tuple fk;
         uint8_t ipv4_pkt = 0;
-        /* Check if it is IPv4 packet and get Ipv4 tuple Key*/
+        /*
+        struct onvm_ft_ipv4_5tuple fk;
+        //Check if it is IPv4 packet and get Ipv4 tuple Key
         if (onvm_ft_fill_key(&fk, pkt)) {
                 // Not and Ipv4 pkt
                 printf("No IP4 header found\n");
@@ -734,6 +752,26 @@ static int setup_rule_for_packet(struct rte_mbuf *pkt, struct onvm_pkt_meta* met
         else {
                 onvm_pkt_print(pkt);
                 ipv4_pkt = 1;
+        }
+        */
+        struct onvm_ft_ipv4_5tuple *fk = NULL;
+        fk = rte_calloc("flow_key",1, sizeof(struct onvm_ft_ipv4_5tuple), 0); //RTE_CACHE_LINE_SIZE
+
+        if (fk == NULL) {
+                printf("failed in rte_calloc \n");
+                return -ENOMEM;
+                rte_exit(EXIT_FAILURE, "Cannot allocate memory for flow key\n");
+                exit(1);
+        }
+        else {
+                if (onvm_ft_fill_key(fk, pkt)) {
+                        // Not and Ipv4 pkt
+                        printf("No IP4 header found\n");
+                }
+                else {
+                        //onvm_pkt_print(pkt);
+                        ipv4_pkt = 1;
+                }
         }
 
         /* Get the Flow Entry for this packet:: Must fail if there is no entry in flow_table */
@@ -743,12 +781,18 @@ static int setup_rule_for_packet(struct rte_mbuf *pkt, struct onvm_pkt_meta* met
                 #ifdef DEBUG_0
                 printf("Exisitng_S:[%x] \n", pkt->hash.rss);
                 #endif
-                meta->action = flow_entry->sc->sc[meta->chain_index].action;//ONVM_NF_ACTION_NEXT;
-                meta->destination = flow_entry->sc->sc[meta->chain_index].destination;  //globals.destination;
-                meta->chain_index -=1; //  (meta->chain_index)--;
+
+                //meta->action = flow_entry->sc->sc[meta->chain_index].action;//ONVM_NF_ACTION_NEXT;
+                //meta->destination = flow_entry->sc->sc[meta->chain_index].destination;  //globals.destination;
+                //meta->chain_index -=1; //  (meta->chain_index)--;
+                meta->action = ONVM_NF_ACTION_NEXT;
+
                 #ifdef DEBUG_0
                 printf("Exisitng_E:\n"); //onvm_sc_print(flow_entry->sc);
+                printf("\n DUP Pkt with with already installed rule [ %d, %d]", meta->destination, meta->chain_index);
                 #endif
+
+                rte_free(fk);
         }
         // Expected Failure case: setup the Flow table entry with appropriate service chain
         else {
@@ -762,23 +806,30 @@ static int setup_rule_for_packet(struct rte_mbuf *pkt, struct onvm_pkt_meta* met
                 }
                 memset(flow_entry, 0, sizeof(struct onvm_flow_entry));
                 flow_entry->sc = onvm_sc_create();
+                flow_entry->key = fk;
                 int sc_index = setup_service_chain_for_flow_entry(flow_entry->sc, -1,0);
 
                 if(ipv4_pkt) {
                         //set the same schain for flow_entry with flipped ipv4 % Tuple rule
-                        sc_index = setup_schain_and_flow_entry_for_flip_key(&fk, sc_index);
+                        sc_index = setup_schain_and_flow_entry_for_flip_key(fk, sc_index);
                 } else {
+                        #ifdef DEBUG_0
                         printf("Skipped adding Flip rule \n");
+                        #endif
                 }
 
+                meta->action = ONVM_NF_ACTION_NEXT;//ONVM_NF_ACTION_NEXT;
+                //meta->chain_index -=1;
                 //onvm_sc_append_entry(flow_entry->sc, ONVM_NF_ACTION_TONF, globals.destination);
                 #ifdef DEBUG_0
                 printf("Setting new_E:\n");//onvm_sc_print(flow_entry->sc);
+                printf("\n New Pkt  installed rule! [%d, %d]", meta->destination, meta->chain_index);
                 #endif
-                meta->action = ONVM_NF_ACTION_NEXT;//ONVM_NF_ACTION_NEXT;
+
                 //meta->action = ONVM_NF_ACTION_DROP;
                 //meta->destination = 0;
                 //sleep(1);
+
         }
                return 0;
 }
@@ -788,7 +839,7 @@ packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) { // __attribut
         int ret=0;
         
         //reactive rule setup: check/lookup if packet already has entry 
-        printf("inside flow_rule_instaler packet handler\n");
+        //printf("inside flow_rule_instaler packet handler\n");
         ret = setup_rule_for_packet(pkt, meta);
 
         return ret;
