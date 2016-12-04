@@ -194,6 +194,9 @@ master_thread_main(void) {
 
         /* Loop forever: sleep always returns 0 or <= param */
         while (sleep(sleeptime) <= sleeptime) {
+#if defined(ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD)
+                rte_timer_manage();
+#endif
                 onvm_nf_check_status();
                 onvm_stats_display_all(sleeptime);
         }
