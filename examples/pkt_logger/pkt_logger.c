@@ -98,7 +98,7 @@ static const char *optString = "d:p:s:r:b:m:M";
 static globalArgs_t globals = {
         .destination = 0,
         .print_delay = 1, //1000000,
-        .pktlog_file = "pkt_logger.txt", //"/dev/null", //
+        .pktlog_file = "pkt_logger.txt", // "/dev/null", // "pkt_logger.txt", //
         .ipv4rules_file = "ipv4rules.txt",
         .base_ip_addr   = "10.0.0.1",
         .max_bufs   = 2, //1,
@@ -125,7 +125,7 @@ typedef enum PktBufState {
 
 typedef struct pkt_buf_t {
         volatile PktBufState_e state;
-        uint8_t* buf;
+        void* buf;
         uint32_t max_size;
         uint32_t buf_len;
 
@@ -317,7 +317,10 @@ initialize_log_buffers (void) {
                         rte_exit(EXIT_FAILURE, "Cannot allocate memory for log_pktbuf_buf or log_pktbuf_aio \n");
                 }
                 else {
+                        memset(pkt_buf_pool[i].buf, 18, sizeof(uint8_t)*alloc_buf_size);
+
                         #ifdef ENABLE_DEBUG_LOGS
+                        for(ret=0; ret < 10; ret++) printf("%d", pkt_buf_pool[i].buf[ret]);
                         printf("allocated buf [%d] of size [%d]\n ", (int)i, (int)alloc_buf_size);
                         #endif //ENABLE_DEBUG_LOGS
                 }
@@ -455,6 +458,7 @@ int write_log_buffer(pkt_buf_t *pbuf) {
                 printf("Error at aio_write(): %s\n", strerror(errno));
                 ret = pbuf->req_status;
                 return refresh_log_buffer(pbuf);
+                //exit(1);
         }
         pbuf->state = BUF_SUBMITTED;
         //globals.cur_buf_index = ((globals.cur_buf_index+1) % (globals.max_bufs));
@@ -547,7 +551,7 @@ int clear_thread_start(void *pdata) {
         }
         return ret;
 }
-
+#include <rte_ether.h>
 int log_the_packet(struct rte_mbuf* pkt) {
         int ret = 0;
         static int pkt_count_per_buf = 0;
@@ -568,9 +572,43 @@ int log_the_packet(struct rte_mbuf* pkt) {
                 uint64_t pkt_buf_len = MIN((uint64_t)64, (uint64_t)pkt->buf_len); // Eth + IP + TCP header is 64 bytes
                 uint64_t remaining_buf_size = (pbuf->max_size - pbuf->buf_len);
                 size_t hdr_len = MIN((uint64_t)remaining_buf_size, (uint64_t)pkt_buf_len); //(pkt->l2_len+pkt->l3_len)
+
                 //printf("copying data of len [%d]", (int)hdr_len);
-                memcpy(pbuf->buf+pbuf->buf_len, pkt->buf_addr, hdr_len);
-                pbuf->buf_len += hdr_len;
+                //onvm_pkt_print(pkt);
+                //char* inp= (char*)pkt->buf_addr;
+                //char* oup=(char*)((char*)pbuf->buf+pbuf->buf_len);
+                //printf("\n Input:");
+                //for(ret=0; ret < 10; ret++) printf("%d", inp[ret]);
+                //printf("\n Output:");
+
+                //memcpy(((char*)(pbuf->buf)+pbuf->buf_len), pkt->buf_addr, hdr_len);
+                //pbuf->buf_len += hdr_len;
+
+                //for(ret=0; ret < 10; ret++) printf("%d", oup[ret]); ret = 0;
+
+                struct ether_hdr *eth = rte_pktmbuf_mtod(pkt, struct ether_hdr *);
+                struct ipv4_hdr* ipv4 = (struct ipv4_hdr*)(rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr));
+                struct tcp_hdr*  tcp  = onvm_pkt_tcp_hdr(pkt);
+                struct udp_hdr* udp   = onvm_pkt_udp_hdr(pkt);
+                int wlen = 0;
+                if(eth && (sizeof(struct ether_hdr) < (hdr_len - wlen))) {
+                        memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), eth, sizeof(struct ether_hdr) );
+                        wlen += sizeof(struct ether_hdr);
+                }
+                if(ipv4 && (sizeof(struct ipv4_hdr) < (hdr_len - wlen))) {
+                        memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), ipv4, sizeof(struct ipv4_hdr) );
+                        wlen += sizeof(struct ipv4_hdr);
+                }
+                if(tcp && (sizeof(struct tcp_hdr) < (hdr_len - wlen))) {
+                        memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), tcp, sizeof(struct tcp_hdr) );
+                        wlen += sizeof(struct tcp_hdr);
+                }
+                if(udp && (sizeof(struct tcp_hdr) < (hdr_len - wlen))) {
+                        memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), udp, sizeof(struct udp_hdr) );
+                        wlen += sizeof(struct udp_hdr);
+                }
+                pbuf->buf_len += wlen;
+
                 pkt_count_per_buf++;
                 if(hdr_len + pbuf->buf_len > pbuf->max_size) {
                         #ifdef ENABLE_DEBUG_LOGS
@@ -583,8 +621,34 @@ int log_the_packet(struct rte_mbuf* pkt) {
 
         return ret;
 }
+
+static void
+do_stats_display(void) {
+        //const char clr[] = { 27, '[', '2', 'J', '\0' };
+        //const char topLeft[] = { 27, '[', '1', ';', '1', 'H', '\0' };
+        static uint32_t pkt_process = 0;
+        pkt_process+=100000;
+
+        /* Clear screen and move to top left */
+        //printf("%s%s", clr, topLeft);
+
+        printf("PKT_LOGGER STATS:\n");
+        printf("-----\n");
+        printf("Total Packets Serviced: %d\n", pkt_process);
+        printf("Total Bytes Written : %d\n", globals.file_offset);
+        printf("Total Blocks on Sem : %d\n", (uint32_t)globals.sem_block_count);
+        //printf("N°   : %d\n", pkt_process);
+        printf("\n\n");
+}
+
 static int
 packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) { // __attribute__((unused))
+        static uint32_t counter = 0;
+                if (++counter == 100000) {
+                        do_stats_display();
+                        counter = 0;
+                }
+
         int ret=0;
         ret = log_the_packet(pkt);
         //For time being act as bridge:

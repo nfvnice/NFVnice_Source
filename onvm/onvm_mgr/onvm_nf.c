@@ -69,8 +69,9 @@ void monitor_nf_node_liveliness_via_pid_monitoring(void);
 void compute_and_assign_nf_cgroup_weight(void) {
 #if defined (USE_CGROUPS_PER_NF_INSTANCE)
         typedef struct nf_core_and_cc_info {
-                uint32_t total_comp_cost;   //overflow possible
-                uint16_t total_nf_count;
+                uint32_t total_comp_cost;       //total computation cost on the core (sum of all NFs computation cost)
+                uint32_t total_nf_count;        //total count of the NFs on the core (sum of all NFs)
+                uint32_t total_pkts_served;     //total pkts processed on the core (sum of all NFs packet processed)
         }nf_core_and_cc_info_t;
 
         static int update_rate = 0;
@@ -80,9 +81,8 @@ void compute_and_assign_nf_cgroup_weight(void) {
         }
         update_rate = 0;
 
-        nf_core_and_cc_info_t nf_pool_per_core[rte_lcore_count()+1]; // = {{0,0},};
-        //nf_core_and_cc_info_t nf_pool_per_core[256]; // = {{0,0},};
-        //uint16_t nf_pool_per_core[rte_lcore_count()+1] = {0,};
+        //nf_core_and_cc_info_t nf_pool_per_core[rte_lcore_count()+1]; // = {{0,0},};
+        nf_core_and_cc_info_t nf_pool_per_core[64]; // = {{0,0},};
 
         uint16_t nf_id = 0;
         memset(nf_pool_per_core, 0, sizeof(nf_pool_per_core));

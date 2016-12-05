@@ -278,6 +278,7 @@ struct onvm_nf_info {
         uint32_t cpu_share;     //indicates current share of NFs cpu
         uint32_t core_id;       //indicates the core ID the NF is running on
         uint32_t comp_cost;     //indicates the computation cost of NF
+        uint32_t comp_pkts;     //indicates the number of pkts processed by NF over specific sampling period (demand (new pkts arrival) = Rx, better? or serviced (new pkts sent out) = Tx better?)
 #endif
 
 #ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
