@@ -249,29 +249,6 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
         if (!onvm_nf_is_valid(cl))
                 return;
 
-        /* Note: Adding check here might have impact on cases where NF is transferring packets from its Tx queue to Rx queue
-         * Possible situation where the service Id is repeated in the chain and Instance is same for processing.
-         */
-        //#define PRE_PROCESS_DROP_ON_RX
-        #ifdef PRE_PROCESS_DROP_ON_RX
-        #ifdef DROP_APPROACH_2
-        //#define MAX_RING_QUEUE_SIZE (CLIENT_QUEUE_RINGSIZE - PACKET_READ_SIZE)
-        /* check here for the Tx Ring size to drop apriori to pushing to NFs Rx Ring */
-        if(rte_ring_count(cl->tx_q) >= (CLIENT_QUEUE_RINGSIZE-rte_ring_count(cl->rx_q) - thread->nf_rx_buf[client].count - PACKET_READ_SIZE) ) {
-        //if(rte_ring_count(cl->tx_q) >= (CLIENT_QUEUE_RINGSIZE-rte_ring_count(cl->rx_q)) ) {
-        //if(rte_ring_count(cl->tx_q) >= MAX_RING_QUEUE_SIZE) {
-        //if (rte_ring_full(cl->tx_q)) {
-                for (i = 0; i < thread->nf_rx_buf[client].count; i++) {
-                        onvm_pkt_drop(thread->nf_rx_buf[client].buffer[i]);
-                }
-                cl->stats.rx_drop += thread->nf_rx_buf[client].count;
-                thread->nf_rx_buf[client].count = 0;
-                //cl->stats.rx_drop += !onvm_pkt_drop(pkt); //onvm_pkt_drop(pkt); -- This call doesnt always ensure that freed packet is set to null; hence not a good way; revert others as well.
-                return;
-        }
-        #endif // DROP_APPROACH_2
-        #endif //PRE_PROCESS_DROP_ON_RX
-
         int enq_status = rte_ring_enqueue_bulk(cl->rx_q, (void **)thread->nf_rx_buf[client].buffer,
                                 thread->nf_rx_buf[client].count);
 

@@ -74,12 +74,12 @@
 
 /* Note: Make the PACKET_READ_SIZE defined in onvm_mgr.h same as PKT_READ_SIZE defined in onvm_nflib_internal.h, better get rid of latter */
 #define PRE_PROCESS_DROP_ON_RX  // Feature flag for addressing NF Local Back-pressure:: To lookup NF Tx queue occupancy and drop packets pro-actively before pushing to NFs Rx Ring.
-//#define DROP_APPROACH_1       // Handle inside NF_LIB:: After dequeue from NFs Rx ring, check for Tx Ring size and drop pkts before pushing packet to the NFs processing function. < Too late, only avoids packet processing by NF:: Discontinued.. Results are OK, but not preferred approach>
-//#define DROP_APPROACH_2       // Handle in onvm_mgr:: After segregation of Rx/Tx buffers to specific NF: Drop the packet before pushing the packets to the NFs Rx Ring buffer. < Early decision. Must also account for packets that could be currently under processing. < Results OK, but not preferred approach>
+//#define DROP_APPROACH_1       // (cleaned out) Handle inside NF_LIB:: After dequeue from NFs Rx ring, check for Tx Ring size and drop pkts before pushing packet to the NFs processing function. < Too late, only avoids packet processing by NF:: Discontinued.. Results are OK, but not preferred approach>
+//#define DROP_APPROACH_2       // (cleaned out) Handle in onvm_mgr:: After segregation of Rx/Tx buffers to specific NF: Drop the packet before pushing the packets to the NFs Rx Ring buffer. < Early decision. Must also account for packets that could be currently under processing. < Results OK, but not preferred approach>
 #define DROP_APPROACH_3         // Handle inside NF_LIB:: Make the NF to block until it cannot push the packets to the Tx Ring, Subsequent packets will be dropped in onvm_mgr context by Rx/Tx Threads < 3 options: Poll till Tx is free, Yield or Block on Semaphore>
 //#define DROP_APPROACH_3_WITH_YIELD    //sub-option for approach 3: Results are good, but could result in lots of un-necessary context switches as one block might result in multiple yields. Thrpt is on par with block-approach.
-//#define DROP_APPROACH_3_WITH_POLL     //sub-option for approach 3: Results are good, but accounts to CPU wastage and hence not preferred.
-#define DROP_APPROACH_3_WITH_SYNC       //sub-option for approach 3: Results are good, but prefer block rather than yield.
+//#define DROP_APPROACH_3_WITH_POLL     // (cleaned out) sub-option for approach 3: Results are good, but accounts to CPU wastage and hence not preferred.
+#define DROP_APPROACH_3_WITH_SYNC       //sub-option for approach 3: Results are good, preferred approach.
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
 #define USE_SEMAPHORE           // Use Semaphore for IPC
@@ -252,12 +252,6 @@ struct client_tx_stats {
         volatile uint64_t comp_cost[MAX_CLIENTS];
         volatile uint64_t prev_wkup_count[MAX_CLIENTS];
         #endif  //INTERRUPT_SEM
-
-        #ifdef PRE_PROCESS_DROP_ON_RX
-        #ifdef DROP_APPROACH_1
-        volatile uint64_t tx_predrop[MAX_CLIENTS];
-        #endif  //DROP_APPROACH_1
-        #endif  //PRE_PROCESS_DROP_ON_RX
 
         /* FIXME: Why are these stats kept separately from the rest?
          * Would it be better to have an array of struct client_tx_stats instead

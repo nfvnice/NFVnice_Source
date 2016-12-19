@@ -52,137 +52,22 @@
 #include "onvm_stats.h"
 #include "onvm_pkt.h"
 #include "onvm_nf.h"
+#include "onvm_wakemgr.h"
 
 #ifdef ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
 static int onv_pkt_send_on_alt_port(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count);
 #endif //ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
 
-#ifdef INTERRUPT_SEM
-struct wakeup_info *wakeup_infos;
-#endif //INTERRUPT_SEM
-
-#ifdef INTERRUPT_SEM
-//#define ENABLE_PERFORMANCE_LOG
-
-#ifdef ENABLE_PERFORMANCE_LOG
-#ifdef USE_MQ
-const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_MQ.csv";
-const char *cmd2 = "perf stat --cpu=0-14  -r 30 -o perf_log_MQ.csv sleep 1"; //-I 2000
-//-I 2000
-#endif
-#ifdef USE_SEMAPHORE
-const char *cmd = "pidstat -C \"bridge|forward|monitor\" -lrsuwh 1 30 > pidstat_log_SEM.csv";
-const char *cmd2 = "perf stat --cpu=0-14  -r 30 -o perf_log_SEM.csv sleep 1"; //-I 2000
-#endif
-#ifdef USE_SCHED_YIELD
-const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_YLD.csv";
-const char *cmd2 = "perf stat --cpu=0-14 -r 30 -o perf_log_YLD.csv sleep 1"; //-I 2000
-#endif
-#ifdef USE_SOCKET
-const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_SOCK.csv";
-const char *cmd2 = "perf stat --cpu=0-14 -r 30 -o perf_log_SOCK.csv sleep 1"; //-I 2000
-#endif
-#ifdef USE_SIGNAL
-const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_SIG.csv";
-const char *cmd2 = "perf stat --cpu=0-14 -r 30 -o perf_log_SIG.csv sleep 1"; //-I 2000
-#endif
-#ifdef USE_MQ2
-const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_MQ2.csv";
-const char *cmd2 = "perf stat --cpu=0-14 -r 30 -o perf_log_MQ2.csv sleep 1"; //-I 2000
-#endif
-#ifdef USE_ZMQ
-const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_ZMQ.csv";
-const char *cmd2 = "perf stat --cpu=0-14 -r 30 -o perf_log_ZMQ.csv sleep 1"; //-I 2000
-#endif
-#ifdef USE_FLOCK
-const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_FLK.csv";
-const char *cmd2 = "perf stat --cpu=0-14,10 --per-core -r 30 -o perf_log_FLK.csv sleep 1"; //-I 2000
-#endif
-#ifdef USE_NANO_SLEEP
-const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_NNS.csv";
-const char *cmd2 = "perf stat --cpu=0-14,10 --per-core -r 30 -o perf_log_NNS.csv sleep 1"; //-I 2000
-#endif
-#ifdef USE_POLL_MODE
-const char *cmd = "pidstat -C \"bridge|forward|monitor|basic_nf|\" -lrsuwh 1 30 > pidstat_log_POLL.csv";
-const char *cmd2 = "perf stat --cpu=0-14  -r 30 -o perf_log_POLL.csv sleep 1"; //-I 2000
-#endif
-
-//const char *cmd2 = "perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations --cpu=0-14,10 --per-core -o perf_log.csv sleep 10"; //-I 2000
-//const char *cmd2 = "perf stat --cpu=0-14,23 --per-core -o perf_log.csv sleep 30"; //-I 2000
-//static int do_performance_log(void __attribute__((unused)) *pd_data) {
-static int do_performance_log_2(void) {
-        FILE *pp =NULL;
-        //FILE *pp2 =NULL;
-        //char buf[256];
-        //return 0;
-        pp = popen(cmd, "r");
-        //pp2 = popen(cmd2, "r");
-        int done = 0;
-        //if (pp != NULL && pp2 != NULL) {
-        if (pp != NULL ) {
-                while (1) {
-                        //char *line = NULL;
-
-                        done = system(cmd2); //this will block as it runs in the foreground;
-                        done |= 0x02;
-
-                        /*
-                        line = fgets(buf, sizeof buf, pp);
-                        if (line == NULL) done |= 0x01; //break;
-                        //printf("%s", line);
-
-                        */
-
-                        done |=0x01;
-
-                        /* line = fgets(buf, sizeof buf, pp2);
-                        if (line == NULL) done |= 0x02; //break;
-                        //printf("%s", line);
-                        */
-
-                        if(done == 0x03) break;
-                }
-                //printf("\n perf_logger: %d\n", done);
-                //sleep(10);
-                pclose(pp);
-                //pclose(pp2);
-        }
-        return 0;
-}
-static int
-performance_log_thread(void *pdata) {
-        if(!pdata) return 0;
-        while (1) {
-                if(pdata){;}
-
-                if(!num_clients) continue;
-
-                sleep(20);
-
-                printf("********************* Starting to LOG PEFORMANCE COUNTERS!!!! *************\n\n");
-                //do_performance_log(pdata);
-                do_performance_log_2();
-                printf("********************* END of LOG PEFORMANCE COUNTERS!!!! *************\n\n");
-
-                sleep(20);
-
-                break;
-        }
-        //return 0;
-        while (1) {
-                printf("********************* IDLING PEFORMANCE COUNTERS!!!! *************\n\n");
-                sleep(10);
-        }
-        return 0;
-}
-#endif // ENABLE_PERFORMANCE_LOG
-#endif // INTERRUPT_SEM
 
 #ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
 #define NF_STATUS_CHECK_PERIOD_IN_MS    (500)       // 500ms or 0.5seconds
 #define DISPLAY_STATS_PERIOD_IN_MS      (1000)      // 1000ms or Every second
 #define NF_LOAD_EVAL_PERIOD_IN_MS       (1)         // 1ms
-#define USLEEP_INTERVAL_IN_US           (500)       // 500 micro seconds
+#define USLEEP_INTERVAL_IN_US           (250)       // 500 micro seconds (best precision >100micro)
+//Note: Running arbiter at 100micro to 250 micro seconds is fine provided we have the buffers available as:
+//RTT (measured with bridge and 1 basic NF) =0.2ms B=10Gbps => B*delay ( 2*RTT*Bw) = 2*200*10^-6 * 10*10^9 = 4Mb = 0.5MB
+//Assuming avg pkt size of 1000 bytes => 500 *10^3/1000 = 500 packets. (~512 packets)
+//For smaller pkt size of 64 bytes => 500*10^3/64 = 7812 packets. (~8K packets)
 
 #define SECOND_TO_MICRO_SECOND          (1000*1000)
 #define NANO_SECOND_TO_MICRO_SECOND     (double)(1/1000)
@@ -319,6 +204,8 @@ master_thread_main(void) {
         if(initialize_master_timers() == 0) {
                 while (usleep(USLEEP_INTERVAL_IN_US) == 0) {
                         rte_timer_manage();
+                        //struct timespec ctime; get_current_time(&ctime);
+                        //printf("\n sec:[%ld]: nanosec [%ld]", ctime.tv_sec, ctime.tv_nsec);
                 }
         } //else
 #else
@@ -440,23 +327,6 @@ tx_thread_main(void *arg) {
 
 
 /*******************************Main function*********************************/
-//TODO: Move to apporpriate header or a different file for onvm_nf_wakeup_mgr/hdlr.c
-#ifdef INTERRUPT_SEM
-#include <signal.h>
-
-unsigned nfs_wakethr[MAX_CLIENTS] = {[0 ... MAX_CLIENTS-1] = 1};
-
-static void 
-register_signal_handler(void);
-static inline int
-whether_wakeup_client(int instance_id);
-static inline void
-wakeup_client(int instance_id, struct wakeup_info *wakeup_info);
-static int
-wakeup_nfs(void *arg);
-
-#endif
-
 int
 main(int argc, char *argv[]) {
         unsigned cur_lcore, rx_lcores, tx_lcores;
@@ -577,20 +447,6 @@ main(int argc, char *argv[]) {
                 //printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
                 RTE_LOG(INFO, APP, "Core %d: Running wakeup thread, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
         }
-        
-        #ifdef INTERRUPT_SEM
-        #ifdef ENABLE_PERFORMANCE_LOG
-        cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
-        printf("performance_record_lcore=%u\n", cur_lcore);
-        rte_eal_remote_launch(performance_log_thread,NULL, cur_lcore);
-        #endif  // ENABLE_PERFORMANCE_LOG
-        #endif  // INTERRUPT_SEM
-
-        /* this change is Not needed anymore
-        cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
-        printf("monitor_lcore=%u\n", cur_lcore);
-        rte_eal_remote_launch(monitor, NULL, cur_lcore);
-        */        
         #endif
 
         /* Master thread handles statistics and NF management */
@@ -600,270 +456,6 @@ main(int argc, char *argv[]) {
 }
 
 /*******************************Helper functions********************************/
-#ifdef INTERRUPT_SEM
-#define WAKEUP_THRESHOLD 1
-static inline int
-whether_wakeup_client(int instance_id)
-{
-        uint16_t cur_entries;
-        if (clients[instance_id].rx_q == NULL) {
-                return 0;
-        }
-
-        #ifdef ENABLE_NF_BACKPRESSURE
-        #ifdef NF_BACKPRESSURE_APPROACH_2
-        /* Block the upstream (earlier) NFs from getting scheduled, if there is NF at downstream that is bottlenecked! */
-        if (downstream_nf_overflow) {
-                if (clients[instance_id].info != NULL && is_upstream_NF(highest_downstream_nf_service_id,clients[instance_id].info->service_id)) {
-                        throttle_count++;
-                        return -1;
-                }
-        }
-        //service chain case
-        else if (clients[instance_id].throttle_this_upstream_nf) {
-                clients[instance_id].throttle_count++;
-                return -1;
-        }
-        #endif //NF_BACKPRESSURE_APPROACH_2
-        #endif //ENABLE_NF_BACKPRESSURE
-
-        cur_entries = rte_ring_count(clients[instance_id].rx_q);
-        if (cur_entries >= nfs_wakethr[instance_id]) {
-                return 1;
-        }
-        return 0;
-}
-
-static inline void 
-notify_client(int instance_id)
-{
-        #ifdef USE_MQ
-        static int msg = '\0';
-        //struct timespec timeout = {.tv_sec=0, .tv_nsec=1000};
-        //clock_gettime(CLOCK_REALTIME, &timeout);timeout..tv_nsec+=1000;
-        //msg = (unsigned int)mq_timedsend(clients[instance_id].mutex, (const char*) &msg, sizeof(msg),(unsigned int)prio, &timeout);
-        //msg = (unsigned int)mq_send(clients[instance_id].mutex, (const char*) &msg, sizeof(msg),(unsigned int)prio);
-        msg = mq_send(clients[instance_id].mutex, (const char*) &msg,0,0);
-        if (0 > msg) { perror ("mq_send failed!");}
-        #endif
-        
-        #ifdef USE_FIFO
-        unsigned msg = 1;
-        msg = write(clients[instance_id].mutex, (void*) &msg, sizeof(msg));
-        #endif
-        
-
-        #ifdef USE_SIGNAL
-        //static int count = 0;
-        //if (count < 100) { count++;
-        int sts = sigqueue(clients[instance_id].info->pid, SIGUSR1, (const union sigval)0);        
-        if (sts) perror ("sigqueue failed!!");        
-        //}
-        #endif
-
-        #ifdef USE_SEMAPHORE 
-        sem_post(clients[instance_id].mutex);
-        #endif 
-
-        #ifdef USE_SCHED_YIELD
-        rte_atomic16_read(clients[instance_id].shm_server);
-        #endif
-
-        #ifdef USE_NANO_SLEEP
-        rte_atomic16_read(clients[instance_id].shm_server);
-        #endif
-
-        #ifdef USE_SOCKET
-        static char msg[2] = "\0";
-        sendto(onvm_socket_id, msg, sizeof(msg), 0, (struct sockaddr *) &clients[instance_id].mutex, (socklen_t) sizeof(struct sockaddr_un));
-        #endif
-
-        #ifdef USE_FLOCK
-        if (0 > (flock(clients[instance_id].mutex, LOCK_UN|LOCK_NB))) { perror ("FILE UnLock Failed!!");}
-        #endif
-
-        #ifdef USE_MQ2
-        static unsigned long msg = 1;
-        //static msgbuf_t msg = {.mtype = 1, .mtext[0]='\0'};
-        //if (0 > msgsnd(clients[instance_id].mutex, (const void*) &msg, sizeof(msg.mtext), IPC_NOWAIT)) {
-        if (0 > msgsnd(clients[instance_id].mutex, (const void*) &msg, 0, IPC_NOWAIT)) {
-                perror ("Msgsnd Failed!!");
-        }
-        #endif
-
-        #ifdef USE_ZMQ
-        static char msg[2] = "\0";
-        zmq_connect (onvm_socket_id,get_sem_name(instance_id));
-        zmq_send (onvm_socket_id, msg, sizeof(msg), 0);
-        #endif
-
-        #ifdef USE_POLL_MODE
-        rte_atomic16_read(clients[instance_id].shm_server);
-        #endif
-}
-#ifdef SORT_EFFICEINCY_TET
-static int rdata[MAX_CLIENTS];
-void quickSort( int a[], int l, int r);
-int partition( int a[], int l, int r);
-void quickSort( int a[], int l, int r)
-{
-   int j;
-
-   if( l < r )
-   {
-    // divide and conquer
-        j = partition( a, l, r);
-       quickSort( a, l, j-1);
-       quickSort( a, j+1, r);
-   }
-
-}
-
-int partition( int a[], int l, int r) {
-   int pivot, i, j, t;
-   pivot = a[l];
-   i = l; j = r+1;
-
-   while( 1)
-   {
-    do ++i; while( a[i] <= pivot && i <= r );
-    do --j; while( a[j] > pivot );
-    if( i >= j ) break;
-    t = a[i]; a[i] = a[j]; a[j] = t;
-   }
-   t = a[l]; a[l] = a[j]; a[j] = t;
-   return j;
-}
-void populate_and_sort_rdata(void);
-void populate_and_sort_rdata(void) {
-        unsigned i = 0;
-        for (i=0; i< MAX_CLIENTS; i++) {
-                uint16_t demand = rte_ring_count(clients[i].rx_q);
-                uint16_t offload = rte_ring_count(clients[i].tx_q);
-                uint16_t ccost   = clients[i].info->comp_cost;
-                uint32_t prio = demand*ccost - offload;
-                rdata[i] = prio;
-        }
-        quickSort(rdata, 0, MAX_CLIENTS-1);
-}
-#endif
-
-static inline void
-wakeup_client(int instance_id, struct wakeup_info *wakeup_info)  {
-        int wkup_sts = whether_wakeup_client(instance_id);
-        if ( wkup_sts == 1) {
-                if (rte_atomic16_read(clients[instance_id].shm_server) ==1) {
-                        wakeup_info->num_wakeups += 1;
-                        //if(wakeup_info->num_wakeups) {}//populate_and_sort_rdata();}
-                        clients[instance_id].stats.wakeup_count+=1;
-                        rte_atomic16_set(clients[instance_id].shm_server, 0);
-                        notify_client(instance_id);
-                }
-        }
-        #ifdef ENABLE_NF_BACKPRESSURE
-        #ifdef NF_BACKPRESSURE_APPROACH_2
-        else if (-1 == wkup_sts) {
-                /* Make sure to set the flag here and check for flag in nf_lib and block */
-                rte_atomic16_set(clients[instance_id].shm_server, 1);
-        }
-        #endif //NF_BACKPRESSURE_APPROACH_2
-        #endif //ENABLE_NF_BACKPRESSURE
-}
-
-static int
-wakeup_nfs(void *arg) {
-        struct wakeup_info *wakeup_info = (struct wakeup_info *)arg;
-        unsigned i;
-
-        /*
-        if (wakeup_info->first_client == 1) {
-                wakeup_info->first_client += ONVM_SPECIAL_NF;
-        }
-        */
-
-        while (true) {
-                //wakeup_info->num_wakeups += 1;    //count for debug
-                for (i = wakeup_info->first_client; i < wakeup_info->last_client; i++) {
-                        wakeup_client(i, wakeup_info);
-                }
-                //usleep(100);
-        }
-
-        return 0;
-}
-
-static void signal_handler(int sig, siginfo_t *info, void *secret) {
-        int i;
-        (void)info;
-        (void)secret;
- 
-        //2 means terminal interrupt, 3 means terminal quit, 9 means kill and 15 means termination
-        if (sig <= 15) {
-                for (i = 1; i < MAX_CLIENTS; i++) {
-                        
-                        #ifdef USE_MQ
-                        mq_close(clients[i].mutex);
-                        mq_unlink(clients[i].sem_name);
-                        #endif                      
-
-                        #ifdef USE_FIFO
-                        close(clients[i].mutex);
-                        unlink(clients[i].sem_name);  
-                        #endif
-
-                        #ifdef USE_SIGNAL
-                        #endif
-                        
-                        #ifdef USE_SOCKET
-                        #endif             
-                        
-                        #ifdef USE_SEMAPHORE
-                        sem_close(clients[i].mutex);
-                        sem_unlink(clients[i].sem_name);
-                        #endif
-
-                        #ifdef USE_FLOCK
-                        flock(clients[i].mutex, LOCK_UN|LOCK_NB);
-                        close(clients[i].mutex);
-                        #endif
-
-                        #ifdef USE_MQ2
-                        msgctl(clients[i].mutex, IPC_RMID, 0);
-                        #endif
-
-                        #ifdef USE_ZMQ
-                        zmq_close(onvm_socket_id);
-                        zmq_ctx_destroy(onvm_socket_ctx);
-                        #endif
-
-                }        
-                #ifdef MONITOR
-//                rte_free(port_stats);
-//                rte_free(port_prev_stats);
-                #endif
-        }
-        printf("Got Signal [%d]\n", sig);
-        if(info) {
-                printf("[signo: %d,errno: %d,code: %d]\n", info->si_signo, info->si_errno, info->si_code);
-        }
-        exit(10);
-}
-static void 
-register_signal_handler(void) {
-        unsigned i;
-        struct sigaction act;
-        memset(&act, 0, sizeof(act));        
-        sigemptyset(&act.sa_mask);
-        act.sa_flags = SA_SIGINFO;
-        act.sa_handler = (void *)signal_handler;
-
-        for (i = 1; i < 31; i++) {
-                sigaction(i, &act, 0);
-        }
-}
-#endif
-
-
 #ifdef ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
 int send_direct_on_alt_port(struct rte_mbuf *pkts[], uint16_t rx_count);
 int send_direct_on_alt_port(struct rte_mbuf *pkts[], uint16_t rx_count) {

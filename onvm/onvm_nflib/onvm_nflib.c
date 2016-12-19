@@ -462,24 +462,6 @@ onvm_nflib_run(
                         continue;
                 }
 
-                /* Precheck if Tx buffer can hold the processed packets, if not Drop */
-                #ifdef PRE_PROCESS_DROP_ON_RX
-                #ifdef DROP_APPROACH_1
-                /* check here for the Tx Ring size to drop apriori to pushing to NFs Rx Ring */
-                if(rte_ring_free_count(tx_ring) < PKT_READ_SIZE) {
-                        for (j = 0; j < nb_pkts; j++) {
-                                 rte_pktmbuf_free(pkts[j]);
-                        }
-                        //Note: Difficult to account for number of Dropped buffers as client struct is not shared.
-                        tx_stats->tx_predrop[nf_info->instance_id]+=nb_pkts;
-                        nb_pkts=0;continue;
-                }
-                #endif //DROP_APPROACH_1
-                #else
-                (void)j;
-                #endif //PRE_PROCESS_DROP_ON_RX
-
-
                 /* Give each packet to the user proccessing function */
                 for (i = 0; i < nb_pkts; i++) {
                         meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
@@ -569,7 +551,6 @@ onvm_nflib_run(
                                 #endif
                                 #endif
 
-                                //j++;
                                 #ifdef DROP_APPROACH_3_WITH_YIELD
                                 sched_yield();
                                 #endif
