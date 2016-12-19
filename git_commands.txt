@@ -64,3 +64,24 @@ $ git branch -D [name_of_your_new_branch]
 
 Delete the branch on github :
 $ git push origin :[name_of_your_new_branch]
+
+Tagging
+check/list all tags
+git tag
+
+Tag a commit
+git tag -a <tag_id> <commit id>  //ex. v1.8 82c28e4e29522fd6f85223a09bb021121c2a32ab
+
+Show Tag details
+git show <tag_id>
+
+Push the Tag to Origin
+git push origin <tag_id>
+
+Push all tags to Origin
+git push origin --tags
+
+Get commit list
+git log --pretty=oneline
+
+
