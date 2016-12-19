@@ -101,12 +101,15 @@
 
 #define RTE_MP_RX_DESC_DEFAULT 512 //512 //1536 //2048 //1024 //512 (use 1024)
 #define RTE_MP_TX_DESC_DEFAULT 512 //512 //1536 //2048 //1024 //512 (use 1024)
-#define CLIENT_QUEUE_RINGSIZE (128)  //128 //4096  //4096 //128   (use 4096)
+#define CLIENT_QUEUE_RINGSIZE (512)  //128 //4096  //4096 //128   (use 4096)
+
+//For TCP UDP use 70,40
+//For TCP TCP, IO use 80 20
 
 // Note: Based on the approach the tuned values change. For NF Throttling (80/75,20/25) works better, for Packet Throttling (70,50 or 70,40 or 80,40) seems better -- must be tuned and set accordingly.
 #ifdef NF_BACKPRESSURE_APPROACH_1
-#define CLIENT_QUEUE_RING_THRESHOLD (70)
-#define CLIENT_QUEUE_RING_THRESHOLD_GAP (40) //(25)
+#define CLIENT_QUEUE_RING_THRESHOLD (100)
+#define CLIENT_QUEUE_RING_THRESHOLD_GAP (0) //(25)
 #else  // defined NF_BACKPRESSURE_APPROACH_2 or other
 #define CLIENT_QUEUE_RING_THRESHOLD (80)
 #define CLIENT_QUEUE_RING_THRESHOLD_GAP (20)
@@ -127,16 +130,16 @@
 #ifdef ENABLE_NF_BACKPRESSURE //NF_BACKPRESSURE_APPROACH_1
 //#if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
 typedef struct bottleneck_ft_data {
-        uint16_t chain_index;
-         struct onvm_flow_entry* bft;
+        uint16_t chain_index;           //index of NF (bottleneck) in the chain
+         struct onvm_flow_entry* bft;   //flow_entry field
 }bottleneck_ft_data_t;
 typedef struct bottleneck_ft_info {
-        uint16_t bft_count;
-        uint16_t r_h;
-        uint16_t w_h;
-        uint16_t max_len;
+        uint16_t bft_count; // num of entries in the bft[]
+        uint16_t r_h;       // read_head in the bft[]
+        uint16_t w_h;       // write head in the bft[]
+        uint16_t max_len;   // Max size/count of bft[]
         //struct onvm_flow_entry* bft[CLIENT_QUEUE_RINGSIZE];
-        bottleneck_ft_data_t bft[CLIENT_QUEUE_RINGSIZE+1];
+        bottleneck_ft_data_t bft[CLIENT_QUEUE_RINGSIZE*2+1];
 }bottlenect_ft_info_t;
 
 #endif //ENABLE_NF_BACKPRESSURE
@@ -169,11 +172,14 @@ struct client {
                 volatile uint64_t prev_rx_drop;
                 volatile uint64_t prev_wakeup_count;
                 #endif
+
 //#ifdef ENABLE_NF_BACKPRESSURE
 #if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
                 volatile uint64_t bkpr_drop;
                 volatile uint64_t prev_bkpr_drop;
 #endif //#if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
+
+
 //#ifdef ENABLE_NF_BACKPRESSURE
 #if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1) && defined (BACKPRESSURE_EXTRA_DEBUG_LOGS)
                 uint16_t max_rx_q_len;

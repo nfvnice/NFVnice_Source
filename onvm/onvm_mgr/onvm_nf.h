@@ -108,6 +108,13 @@ inline uint16_t
 onvm_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt);
 
 
+/*
+ * Interface to evaluate statistics relevant for nf_scheduling for all registered NFs.
+ *
+ */
+void
+onvm_nf_stats_update(unsigned long interval);
+
 /****************************Internal functions*******************************/
 
 

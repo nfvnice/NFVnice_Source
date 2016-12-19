@@ -70,6 +70,20 @@ onvm_sc_next_destination(struct onvm_service_chain* chain, struct rte_mbuf* pkt)
 	return onvm_next_destination(chain, onvm_get_pkt_chain_index(pkt));
 }
 
+static inline int
+onvm_sc_get_next_action_and_destionation(struct onvm_service_chain* chain,
+        struct rte_mbuf* pkt, uint16_t* next_act, uint16_t* next_dst ) {
+        uint16_t index = onvm_get_pkt_chain_index(pkt);
+        if (unlikely(index >= chain->chain_length)) {
+                *next_act = ONVM_NF_ACTION_DROP;
+                return -1;
+        }
+        *next_act = chain->sc[index].action;
+        *next_dst = chain->sc[index].destination;
+
+        return index;
+}
+
 /*get service chain*/
 struct onvm_service_chain* onvm_sc_get(void);
 /*create service chain*/

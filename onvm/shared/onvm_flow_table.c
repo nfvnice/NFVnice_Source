@@ -167,13 +167,13 @@ onvm_ft_remove_pkt(struct onvm_ft *table, struct rte_mbuf *pkt)
 int
 onvm_ft_add_key(struct onvm_ft* table, struct onvm_ft_ipv4_5tuple *key, char** data) {
         int32_t tbl_index;
-	uint32_t softrss;
+        uint32_t softrss;
 
-	softrss = onvm_softrss(key);
+        softrss = onvm_softrss(key);
 
         tbl_index = rte_hash_add_key_with_hash(table->hash, (const void *)key, softrss);
         if (tbl_index >= 0) {
-		*data = onvm_ft_get_data(table, tbl_index);
+                *data = onvm_ft_get_data(table, tbl_index);
         }
 
         return tbl_index;

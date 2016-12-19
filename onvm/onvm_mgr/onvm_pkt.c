@@ -54,14 +54,29 @@
 
 //pthread_mutex_t mymutex = PTHREAD_MUTEX_INITIALIZER;
 /**********************************Interfaces*********************************/
-
+#define USE_KEY_MODE_FOR_FLOW_ENTRY
+static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
+static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry) {
+        int ret = -1;
+        if(flow_entry)*flow_entry = NULL;
+#ifdef USE_KEY_MODE_FOR_FLOW_ENTRY
+        struct onvm_ft_ipv4_5tuple fk;
+        if ((ret = onvm_ft_fill_key(&fk, pkt))) {
+                return ret;
+        }
+        ret = onvm_flow_dir_get_key(&fk, flow_entry);
+#else  // #elif defined (USE_KEY_MODE_FOR_FLOW_ENTRY)
+        ret = onvm_flow_dir_get_pkt(pkt, flow_entry);
+#endif
+        return ret;
+}
 
 void
 onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count) {
         uint16_t i;
         struct onvm_pkt_meta *meta = NULL;
         struct onvm_flow_entry *flow_entry = NULL;
-        int ret;
+        //int ret;
 
         if (rx == NULL || pkts == NULL)
                 return;
@@ -71,9 +86,14 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
                 meta->src = 0;
                 meta->chain_index = 0;
 
-                ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
+                get_flow_entry(pkts[i], &flow_entry); //ret = get_flow_entry(pkts[i], &flow_entry);
+                /*if((ret >=0 && flow_entry == NULL) || (flow_entry && flow_entry->sc == NULL) ) {
+                        printf("\n Aborting due to invalid hit [%d]\n", ret);
+                        exit(ret);
+                }
+                */
 
-                if (ret >= 0) {
+                if (flow_entry && flow_entry->sc ) {
                         meta->action = onvm_sc_next_action(flow_entry->sc, pkts[i]);
                         meta->destination = onvm_sc_next_destination(flow_entry->sc, pkts[i]);
                         #ifdef ENABLE_NF_BACKPRESSURE
@@ -124,13 +144,13 @@ onvm_pkt_process_tx_batch(struct thread_info *tx, struct rte_mbuf *pkts[], uint1
 #ifndef ENABLE_NF_BACKPRESSURE
                         onvm_pkt_process_next_action(tx, pkts[i], cl);
 #else
-                        onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
+                        get_flow_entry(pkts[i], &flow_entry);
                         onvm_pkt_process_next_action(tx, pkts[i], meta, flow_entry, cl);
 #endif //ENABLE_NF_BACKPRESSURE
                 } else if (meta->action == ONVM_NF_ACTION_TONF) {
                         cl->stats.act_tonf++;
                         (meta->chain_index)++;
-                        onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
+                        get_flow_entry(pkts[i], &flow_entry);
                         #ifdef ENABLE_NF_BACKPRESSURE
                         if(NULL == flow_entry) global_bkpr_mode=1;
                         #endif //ENABLE_NF_BACKPRESSURE
@@ -215,7 +235,6 @@ onvm_pkt_flush_port_queue(struct thread_info *tx, uint16_t port) {
 
 void
 onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
-        uint16_t i;
         struct client *cl;
 
         if (thread == NULL)
@@ -258,13 +277,15 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
 
 
 #if defined(ENABLE_NF_BACKPRESSURE) || defined (ENABLE_ECN_CE)
-        //if ( 0 != enq_status) {
-        if (-EDQUOT == enq_status) {
-#ifdef ENABLE_ECN_CE
+        if ( 0 != enq_status) {
+        //if (-EDQUOT == enq_status) {
+#if 0
+#ifdef ENABLE_ECN_CE    //Better to mark ECN_CE ON DEQUEUE
                 if (-EDQUOT == enq_status) {
                         onvm_detect_and_set_ecn_ce(thread->nf_rx_buf[client].buffer, thread->nf_rx_buf[client].count, cl);
                 }
 #endif //ENABLE_ECN_CE
+#endif
 #ifdef ENABLE_NF_BACKPRESSURE
                 onvm_detect_and_set_back_pressure(thread->nf_rx_buf[client].buffer, thread->nf_rx_buf[client].count, cl);
 #endif //ENABLE_NF_BACKPRESSURE
@@ -273,18 +294,17 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
 
 
 #ifdef  DO_NOT_DROP_PKTS_ON_FLUSH_FOR_BOTTLENECK_NF
-        /* In case of Failure with NoBUFS currently dropping all packets: instead hold on to the packets in the thread buffer, till they can be flushed, but rather drop new packets that need to be enqueued */
+        // In case of Failure with NoBUFS hold on to the packets in the thread buffer, till they can be flushed, and rather drop new packets that need to be enqueued
         if ( -ENOBUFS == enq_status) {
                 //do nothing..
-                i++;
-        }
-        else {
+        } else {
                 cl->stats.rx += thread->nf_rx_buf[client].count;
                 thread->nf_rx_buf[client].count = 0;
         }
 #else
-        /* Drop the packets and make way for new packets to be inserted */
+        /* Existing Approach: Drop the packets and make way for new packets to be inserted */
         if ( -ENOBUFS == enq_status) {
+                uint16_t i;
                 for (i = 0; i < thread->nf_rx_buf[client].count; i++) {
                         onvm_pkt_drop(thread->nf_rx_buf[client].buffer[i]);
                 }
@@ -338,22 +358,26 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
                 //printf("\n\n\n\n***************************** INVALID NF STATE!!!! DROPPING PACKETS!!!! ***************************\n\n\n\n");
                 return;
         }
+
         if (meta == NULL || flow_entry == NULL) {
+
+#if 0
                 #ifdef ENABLE_NF_BACKPRESSURE
                 if (flow_entry == NULL) {
-                        int ret = onvm_flow_dir_get_pkt(pkt, &flow_entry);
+                        int ret = get_flow_entry(pkt, &flow_entry);
                         if (ret < 0) flow_entry = NULL;
                 }
                 if(meta == NULL) {
                         meta = onvm_get_pkt_meta(pkt);
                 }
                 #endif
+#endif
         }
 
         #ifdef ENABLE_NF_BACKPRESSURE
         // First regardless of the approach, fill in the NF MAP of service chain if not already done
         // second: if approach is throttle by buffer drop, check if this chain needs upstreams to drop and if this one such upstream NF, then drop packet and return.
-        if (flow_entry && flow_entry->sc){
+        if (flow_entry && flow_entry->sc) {
 
                 #ifdef NF_BACKPRESSURE_APPROACH_2
                 // this information is needed only for NF based throttling apporach; packet drop approach is more in-line.
@@ -373,6 +397,7 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
                 }
                 #endif //NF_BACKPRESSURE_APPROACH_1
         }
+
         //global chain case (using def_chain and no flow_entry): action only for approach#1 to drop packets.
         #ifdef NF_BACKPRESSURE_APPROACH_1
         else if (downstream_nf_overflow) {
@@ -438,9 +463,7 @@ onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struc
         struct onvm_flow_entry *flow_entry = NULL;
         struct onvm_service_chain *sc;
         struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pkt);
-        int ret;
-
-        ret = onvm_flow_dir_get_pkt(pkt, &flow_entry);
+        int ret = get_flow_entry(pkt, &flow_entry);
         if (ret >= 0) {
                 sc = flow_entry->sc;
                 meta->action = onvm_sc_next_action(sc, pkt);
@@ -482,7 +505,7 @@ onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struc
         if (flow_entry == NULL) {
                 #ifdef ENABLE_NF_BACKPRESSURE
                 if (flow_entry == NULL) {
-                        int ret = onvm_flow_dir_get_pkt(pkt, &flow_entry);
+                        int ret = get_flow_entry(pkt, &flow_entry);
                         if (ret < 0) flow_entry = NULL;
                 }
                 #endif
@@ -558,6 +581,7 @@ onvm_detect_and_set_ecn_ce(struct rte_mbuf *pkts[], uint16_t count, struct clien
 
 #ifdef ENABLE_NF_BACKPRESSURE
 
+#ifdef ENABLE_SAVE_BACKLOG_FT_PER_NF
 static inline void write_ft_to_cl_bft(struct client *cl, struct onvm_flow_entry *flow_entry, uint16_t chain_index);
 static inline void read_all_ft_frm_cl_bft(struct client *cl);
 static inline void write_ft_to_cl_bft(struct client *cl, struct onvm_flow_entry *flow_entry, uint16_t  chain_index) {
@@ -591,7 +615,7 @@ static inline void write_ft_to_cl_bft(struct client *cl, struct onvm_flow_entry 
         //}
 #endif
         flow_entry->idle_timeout |= (1<< (chain_index-1));     // Note: overloading idle timeout for storing chain_index
-        flow_entry->sc->ref_cnt = cl->instance_id;              // Note: overloading ref_cnt for storing cl_instance id where it is last marked for bottleneck.
+        flow_entry->hard_timeout = cl->instance_id;            // Note: overloading hard_timeout for storing cl_instance id where it is last marked for bottleneck.
 #if 0
         //if (cl->bft_list.bft_count >= CLIENT_QUEUE_RINGSIZE) {printf("\n***** TERMINATING DUE TO OVERFLOW OF RING BUFFER BOTTLENECK STORE!!****** \n");  } //exit(1); continue;
                 //cl->bft_list.bft[cl->bft_list.bft_count++]=flow_entry;
@@ -636,6 +660,8 @@ static inline void read_all_ft_frm_cl_bft(struct client *cl) {
         }
 #endif
 }
+#endif //ENABLE_SAVE_BACKLOG_FT_PER_NF
+
 void
 onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struct client *cl) {
         /*** Make sure this function is called only on error status on rx_enqueue() ***/
@@ -644,8 +670,8 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
         #ifdef ENABLE_NF_BACKPRESSURE
         struct onvm_pkt_meta *meta = NULL;
         uint16_t i;
-        //unsigned rx_q_count = rte_ring_count(cl->rx_q);
         struct onvm_flow_entry *flow_entry = NULL;
+        //unsigned rx_q_count = rte_ring_count(cl->rx_q);
 
 #if defined (NF_BACKPRESSURE_APPROACH_1) && defined (BACKPRESSURE_EXTRA_DEBUG_LOGS)
         unsigned rx_q_count = rte_ring_count(cl->rx_q);
@@ -654,8 +680,8 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
         cl->stats.max_tx_q_len =  (tx_q_count>cl->stats.max_tx_q_len)?(tx_q_count):(cl->stats.max_tx_q_len);
 #endif
 
-        //Inside this function indicates NFs Rx buffer has exceeded water-mark
 
+        //Inside this function indicates NFs Rx buffer has exceeded water-mark
 
         /** global single chain scenario:: Note: This only works for the default chain case where service ID of chain is always in increasing order **/
         if(global_bkpr_mode) {
@@ -664,16 +690,24 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
                 return;
         }
 
+        /** Flow Entry based/Per Service Chain classification scenario **/
+
         // Flow Entry mode
         for(i = 0; i < count; i++) {
-                int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
-                if (ret >= 0 && flow_entry && flow_entry->sc) {
+                get_flow_entry(pkts[i], &flow_entry); //int ret = get_flow_entry(pkts[i], &flow_entry);
+                if (flow_entry && flow_entry->sc) {
                         meta = onvm_get_pkt_meta(pkts[i]);
-                        if(meta->chain_index <=1) continue; 
-                        // Add Flow Entry to the List of FTs marked as bottleneck
+                        // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
+                        if(meta->chain_index < 1) continue;
+
+                        //Check the Flow Entry mark status and Add mark if not already done!
                         if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
                                 SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
+
+                                // Add Flow Entry to the List of FTs marked as bottleneck
+                                #ifdef ENABLE_SAVE_BACKLOG_FT_PER_NF
                                 write_ft_to_cl_bft(cl, flow_entry, meta->chain_index);
+                                #endif //ENABLE_SAVE_BACKLOG_FT_PER_NF
                         //}
                                 #ifdef NF_BACKPRESSURE_APPROACH_2
                                 uint8_t index = 1;
@@ -687,6 +721,8 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
                                 #endif  //NF_BACKPRESSURE_APPROACH_2
                                 //approach: extend the service chain to keep track of client_nf_ids that service the chain, in-order to know which NFs to throttle in the wakeup thread..?
                                 //Test and Set
+
+                                //reset flow_entry and meta
                                 flow_entry = NULL;
                                 meta = NULL;
                         }
@@ -709,20 +745,24 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
         unsigned rx_q_count = rte_ring_count(cl->rx_q);
 
         // check if rx_q_size has decreased to acceptable level
-        if (rx_q_count >= CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
+        if (rx_q_count > CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
 
-                #if defined(RECHECK_BACKPRESSURE_MARK_ON_TQ_DEQUEUE) || defined(ENABLE_ECN_CE)
+                #if defined(RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE) || defined(ENABLE_ECN_CE)
                 if(rx_q_count >=CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
-                        #ifdef RECHECK_BACKPRESSURE_MARK_ON_TQ_DEQUEUE
+
+                        #ifdef RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE
                         onvm_detect_and_set_back_pressure(pkts,count,cl);
-                        #endif //RECHECK_BACKPRESSURE_MARK_ON_TQ_DEQUEUE
+                        #endif //RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE
+
                         #ifdef ENABLE_ECN_CE
                         onvm_detect_and_set_ecn_ce(pkts, count, cl);
                         #endif //ENABLE_ECN_CE
                 }
-                #endif //RECHECK_BACKPRESSURE_MARK_ON_TQ_DEQUEUE || ENABLE_ECN_CE
+                #endif //RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE || ENABLE_ECN_CE
                 return;
         }
+
+
         //Inside here indicates NFs Rx buffer has resumed to acceptable level (watermark - hysterisis)
 
         /** global single chain scenario:: Note: This only works for the default chain case where service ID of chain is always in increasing order **/
@@ -742,6 +782,7 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
                 return;
         }
 
+#ifdef ENABLE_SAVE_BACKLOG_FT_PER_NF
         //  if acceptable range then for all service chains, if marked to be overflow, then reset the overflow status
         /*
         rx_q_count=cl->bft_list.max_len;  //CLIENT_QUEUE_RINGSIZE; //cl->bft_list.bft_count;
@@ -767,10 +808,11 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
         }
         */
         read_all_ft_frm_cl_bft(cl);
-        //return;
+        return;
+#endif //ENABLE_SAVE_BACKLOG_FT_PER_NF
 
         for(i = 0; i < count; i++) {
-                int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
+                int ret = get_flow_entry(pkts[i], &flow_entry);
                 if (ret >= 0 && flow_entry && flow_entry->sc) {
                         if(flow_entry->sc->highest_downstream_nf_index_id ) {
                                 meta = onvm_get_pkt_meta(pkts[i]);

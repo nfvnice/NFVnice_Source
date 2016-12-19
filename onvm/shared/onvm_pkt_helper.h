@@ -67,6 +67,9 @@ onvm_pkt_udp_hdr(struct rte_mbuf* pkt);
 struct ipv4_hdr*
 onvm_pkt_ipv4_hdr(struct rte_mbuf* pkt);
 
+struct vlan_hdr*
+onvm_pkt_vlan_hdr(struct rte_mbuf* pkt);
+
 /**
  * Check the type of a packet. Return 1 if packet is of the specified type, else 0
  */

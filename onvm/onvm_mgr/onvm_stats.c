@@ -308,7 +308,7 @@ onvm_stats_display_clients(unsigned difftime) {
         #endif  //ENABLE_NF_BACKPRESSURE
 
         #ifdef USE_CGROUPS_PER_NF_INSTANCE
-                printf("NF_Core_Id [%d], NF_comp cost=[%d], NF_CPU_SHARE=[%d]\n", clients[i].info->core_id, clients[i].info->comp_cost, clients[i].info->cpu_share);
+                printf("CoreId [%d], cpu_share=[%d], compcost=[%d], load:[%d,%d], svc_rate:[%d,%d] \n", clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc);
         #endif //USE_CGROUPS_PER_NF_INSTANCE
                 printf("\n");
 

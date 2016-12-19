@@ -73,10 +73,24 @@ struct onvm_nf_info *nf_info;
 /* Service Chain Related entries */
 #define MAX_SERVICE_CHAINS 32
 int services[MAX_SERVICE_CHAINS][ONVM_MAX_CHAIN_LENGTH];
-int max_service_chains=0;
+uint32_t max_service_chains=0;
+
+/* Use this to pre-allocate and pre-populate the service chains, rather than allocating per flow_entry */
+typedef struct service_chain_list {
+        struct onvm_service_chain *sc[MAX_SERVICE_CHAINS];
+        struct onvm_service_chain *sc_flip[MAX_SERVICE_CHAINS];
+        uint32_t ref_count_for_sc[MAX_SERVICE_CHAINS];
+        uint32_t ref_count_for_sc_flip[MAX_SERVICE_CHAINS];
+        uint32_t max_service_chains;
+}service_chain_list_t;
+service_chain_list_t gSClist;
 
 /* IPv4 5Tuple Rules for Flow Table Entries */
+#ifdef SDN_FT_ENTRIES
+#define MAX_FLOW_TABLE_ENTRIES SDN_FT_ENTRIES
+#else
 #define MAX_FLOW_TABLE_ENTRIES 1024
+#endif //SDN_FT_ENTRIES
 struct onvm_ft_ipv4_5tuple ipv4_5tRules[MAX_FLOW_TABLE_ENTRIES];
 uint32_t max_ft_entries=0;
 //static const char *base_ip_addr = "10.0.0.1";
@@ -103,6 +117,28 @@ static globalArgs_t globals = {
         .max_ft_rules   = MAX_FLOW_TABLE_ENTRIES,
 };
 
+/******************************************************************************
+ *                      FUNCTION DECLARATIONS
+ ******************************************************************************/
+static void usage(const char *progname);
+static int parse_app_args(int argc, char *argv[], const char *progname);
+static void parse_services(int services[][ONVM_MAX_CHAIN_LENGTH]);
+static void parse_ipv4_5t_rules(void);
+
+static int setup_service_chain_for_flow_entry(struct onvm_service_chain *sc, int sc_index, int rev_order, struct onvm_ft_ipv4_5tuple *fk);
+static int setup_schain_and_flow_entry_for_flip_key(struct onvm_ft_ipv4_5tuple *fk_in, int sc_index);
+static int setup_flow_rule_and_sc_entries(void);
+
+static uint32_t get_ipv4_value(const char *ip_addr);
+static int get_sc_index_based_on_flow_key(struct onvm_ft_ipv4_5tuple *fk);
+static int add_flow_key_to_sc_flow_table(struct onvm_ft_ipv4_5tuple *ft);
+static struct onvm_service_chain* get_sc_and_index_based_on_flow_key(struct onvm_ft_ipv4_5tuple *fk, int *sc_index, int flip);
+uint32_t populate_random_flow_rules(uint32_t max_rules);
+static int setup_flow_rule_and_sc_entries(void);
+static int setup_rule_for_packet(struct rte_mbuf *pkt, struct onvm_pkt_meta* meta);
+/******************************************************************************
+ *                      FUNCTION DECLARATIONS
+ ******************************************************************************/
 
 static void
 usage(const char *progname) {
@@ -174,7 +210,7 @@ parse_services(int services[][ONVM_MAX_CHAIN_LENGTH]) {
                 if (fgets(line, 63, fp) == NULL) {
                         continue;
                 }
-                printf("parsing services in line[%s]", line);
+                printf("parsing services in line:%s \n", line);
 
                 int llen = strlen(line);
                 int slen = 0;
@@ -226,6 +262,36 @@ parse_services(int services[][ONVM_MAX_CHAIN_LENGTH]) {
 #else
         printf("Total Service Chains = [%d]", max_service_chains);
 #endif
+        // pre-allocate and setup the list of service chains and flip variants
+        for(i =0; i< (int)max_service_chains; i++) {
+                struct onvm_service_chain *sc       = gSClist.sc[i];
+                struct onvm_service_chain *sc_flip  = gSClist.sc_flip[i];
+                sc      = onvm_sc_create();
+                if(sc == NULL) {
+                        //return -ENOMEM;
+                        rte_exit(EXIT_FAILURE, "Cannot allocate memory for SC Entry\n");
+                }
+                gSClist.sc[i]=sc;
+                sc_flip = onvm_sc_create();
+                if(sc_flip == NULL) {
+                        //return -ENOMEM;
+                        rte_exit(EXIT_FAILURE, "Cannot allocate memory for SC_FILP Entry\n");
+                }
+                gSClist.sc_flip[i]=sc_flip;
+                int sc_index = setup_service_chain_for_flow_entry(sc, i, 0, NULL);
+                if(sc_index != i) {
+                        printf("PANIC!!! Requested Service chain Index [%d] Got [%d]\n", i, sc_index);
+                }
+                setup_service_chain_for_flow_entry(sc_flip, sc_index, 1, NULL);
+                gSClist.ref_count_for_sc[i]         = 0;
+                gSClist.ref_count_for_sc_flip[i]    = 0;
+                gSClist.max_service_chains++;
+                printf("\n Populated Service Chains [%d]:\n", gSClist.max_service_chains);
+                #ifdef DEBUG_0
+                onvm_sc_print(gSClist.sc[i]);
+                onvm_sc_print(gSClist.sc_flip[i]);
+                #endif
+        }
         return;
 }
 
@@ -322,19 +388,91 @@ parse_ipv4_5t_rules(void) {
         return;
 }
 
+
+static int get_sc_index_based_on_flow_key(struct onvm_ft_ipv4_5tuple *fk) {
+        static uint32_t tcp_inx = 0;
+        static uint32_t udp_inx = 1;
+        int index = -1; // default: no classification
+        //classify based on flow_key and return appropriate index
+        if (!fk) return index;
+        if (0 == max_service_chains) {
+                return -1;
+        }
+
+        if(fk->proto == IP_PROTOCOL_TCP) {
+                index = tcp_inx;
+                tcp_inx+=2;
+                if(rte_be_to_cpu_16(fk->dst_port) == 6000 ){
+                        index = 0;
+                        tcp_inx-=2;
+                }
+                if(tcp_inx >= max_service_chains)tcp_inx = 0;
+        }
+        else if (fk->proto == IP_PROTOCOL_UDP) {
+                index = udp_inx;
+                udp_inx+=2;
+                if(udp_inx >= max_service_chains)udp_inx = 1;
+        }
+
+        if(index >= (int)max_service_chains) index = -1;
+        printf("\n PROTO:[%d], SC Id [%d]: ", fk->proto, index);
+        return index;
+}
+
+//fk= input, in_index=input/output, flip=true or flase
+static struct onvm_service_chain* get_sc_and_index_based_on_flow_key(struct onvm_ft_ipv4_5tuple *fk, int *in_index, int flip) {
+        int index = -1;
+        int i = 0;
+        if(in_index && *in_index != -1) {
+                index = *in_index;
+        }
+        else {
+                index = get_sc_index_based_on_flow_key(fk);
+        }
+        if(in_index) *in_index=index;
+
+        if(index >=0 && index < (int)max_service_chains) {
+                if(flip) {
+                        gSClist.ref_count_for_sc_flip[index]+=1;
+                        gSClist.sc_flip[index]->ref_cnt+=1;
+                        printf("\n Returning Flip chain at index:[%d], len:[%d], ref_cnt:[%d, %d], : ", index, gSClist.sc[index]->chain_length, gSClist.sc[index]->ref_cnt, gSClist.ref_count_for_sc[index]);
+                        for(i = 1; i <= gSClist.sc_flip[index]->chain_length; i++) printf(" [%d]", gSClist.sc_flip[index]->sc[i].destination);
+                        #ifdef DEBUG_0
+                        onvm_sc_print(gSClist.sc_flip[index]);
+                        #endif
+                        return gSClist.sc_flip[index];
+                }
+                else {
+                        gSClist.ref_count_for_sc[index]+=1;
+                        gSClist.sc[index]->ref_cnt+=1;
+                        printf("\n Returning chain at index:[%d], len:[%d], ref_cnt:[%d, %d], : ", index, gSClist.sc[index]->chain_length, gSClist.sc[index]->ref_cnt, gSClist.ref_count_for_sc[index]);
+                        for(i = 1; i <= gSClist.sc[index]->chain_length; i++) printf(" [%d]", gSClist.sc[index]->sc[i].destination);
+                        #ifdef DEBUG_0
+                        onvm_sc_print(gSClist.sc[index]);
+                        #endif
+                        return gSClist.sc[index];
+                }
+        }
+        return NULL;
+}
+
 static int 
-setup_service_chain_for_flow_entry(struct onvm_service_chain *sc, int sc_index, int rev_order) {
+setup_service_chain_for_flow_entry(struct onvm_service_chain *sc, int sc_index, int rev_order, struct onvm_ft_ipv4_5tuple *fk) {
         static uint32_t next_sc = 0;
         int index = 0, service_id=0, chain_len = 0;
         if (0 == max_service_chains) {
                 return -1;
         }
 
+        /* Auto deduce the Rule if the sc_index=-1 and flow_key is valid */
+        if((fk)&& (sc_index == -1)) {
+                sc_index = get_sc_index_based_on_flow_key(fk);
+        }
 
         //Get the sc_index based on either valid passed value or static incremental
         //sc_index = (sc_index >= 0 && sc_index < max_service_chains)? (sc_index):((int)next_sc);
         uint8_t use_input_sc_index = 0;
-        if(sc_index >= 0 && sc_index < max_service_chains) {
+        if(sc_index >= 0 && sc_index < (int)max_service_chains) {
                 use_input_sc_index = 1;
         }
         else {
@@ -396,8 +534,7 @@ setup_service_chain_for_flow_entry(struct onvm_service_chain *sc, int sc_index, 
         //return chain_len;
         return sc_index;
 }
-static int
-setup_schain_and_flow_entry_for_flip_key(struct onvm_ft_ipv4_5tuple *fk_in, int sc_index);
+
 
 static int
 setup_schain_and_flow_entry_for_flip_key(struct onvm_ft_ipv4_5tuple *fk_in, int sc_index) {
@@ -424,7 +561,7 @@ setup_schain_and_flow_entry_for_flip_key(struct onvm_ft_ipv4_5tuple *fk_in, int 
         fk->dst_port = fk_in->src_port;
         fk->proto    = fk_in->proto;
 
-        printf("\nAdding Flip rule for FlowKey [%x:%u:, %x:%u, %u]", fk->src_addr, fk->src_port, fk->dst_addr, fk->dst_port, fk->proto);
+        //printf("\nAdding Flip rule for FlowKey [%x:%u:, %x:%u, %u]", fk->src_addr, fk->src_port, fk->dst_addr, fk->dst_port, fk->proto);
 
         struct onvm_flow_entry *flow_entry = NULL;
         ret = onvm_flow_dir_get_key(fk, &flow_entry);
@@ -470,23 +607,19 @@ setup_schain_and_flow_entry_for_flip_key(struct onvm_ft_ipv4_5tuple *fk_in, int 
                 return -ENOMEM;
         }
 
-        memset(flow_entry, 0, sizeof(struct onvm_flow_entry));
+        (void)onvm_flow_dir_reset_entry(flow_entry);//memset(flow_entry, 0, sizeof(struct onvm_flow_entry));
         flow_entry->key = fk;
 
         #ifdef DEBUG_0
         //printf("\n Enter in sc_create()! \n");
         #endif
 
-        flow_entry->sc = onvm_sc_create();
+        flow_entry->sc = NULL; //onvm_sc_create();
+        flow_entry->sc = get_sc_and_index_based_on_flow_key(fk,&sc_index,1);
         if (NULL ==  flow_entry->sc) {
                 rte_exit(EXIT_FAILURE, "onvm_sc_create() Failed!!");
         }
-
-        sc_index = setup_service_chain_for_flow_entry(flow_entry->sc, sc_index,1);
-
-        /* Setup the properties of Flow Entry */
-        flow_entry->idle_timeout = 0; //OFP_FLOW_PERMANENT;
-        flow_entry->hard_timeout = 0; //OFP_FLOW_PERMANENT;
+        //sc_index = setup_service_chain_for_flow_entry(flow_entry->sc, sc_index,1, fk);
 
         #ifdef DEBUG_0
         onvm_sc_print(flow_entry->sc);
@@ -498,7 +631,7 @@ setup_schain_and_flow_entry_for_flip_key(struct onvm_ft_ipv4_5tuple *fk_in, int 
 }
 
 //#define DEBUG_0
-static int setup_flow_rule_and_sc_entries(void);
+
 static int
 add_flow_key_to_sc_flow_table(struct onvm_ft_ipv4_5tuple *ft)
 {
@@ -539,7 +672,6 @@ add_flow_key_to_sc_flow_table(struct onvm_ft_ipv4_5tuple *ft)
         if (ret == -ENOENT) {
                 flow_entry = NULL;
                 ret = onvm_flow_dir_add_key(fk, &flow_entry);
-
                 #ifdef DEBUG_0
                 printf("Adding fresh Key [%x] for flow_entry\n", fk->src_addr);
                 #endif
@@ -549,38 +681,39 @@ add_flow_key_to_sc_flow_table(struct onvm_ft_ipv4_5tuple *ft)
                 //rte_free(flow_entry->key);
                 //rte_free(flow_entry->sc);
                 //printf("Flow Entry already exits for Key [%x] for flow_entry [%x] \n", fk->src_addr, flow_entry->key->src_addr);
-                  printf("Flow Entry in Table already exits at index [%d]\n\n", ret);
+                rte_free(fk);
+                printf("Flow Entry in Table already exits at index [%d]\n\n", ret);
                 return -EEXIST;
         }
         else {
+                rte_free(fk);
                 printf("\n Existing due to unknown Failure in get_key()! \n");
                 return ret;
                 rte_exit(EXIT_FAILURE, "onvm_flow_dir_get parameters are invalid");
                 exit(2);
         }
 
+        /* New Entry create also failed */
         if(NULL == flow_entry) {
                 printf("Failed flow_entry Allocations!!" ); return -ENOMEM;
         }
 
-        memset(flow_entry, 0, sizeof(struct onvm_flow_entry));
+        /* Setup New Entry: */
+        (void)onvm_flow_dir_reset_entry(flow_entry);//memset(flow_entry, 0, sizeof(struct onvm_flow_entry));
         flow_entry->key = fk;
 
         #ifdef DEBUG_0
         //printf("\n Enter in sc_create()! \n");
         #endif
 
-        flow_entry->sc = onvm_sc_create();
+        flow_entry->sc = NULL; //onvm_sc_create();
+        int sc_index = -1;
+        flow_entry->sc = get_sc_and_index_based_on_flow_key(fk,&sc_index,0);
         if (NULL ==  flow_entry->sc) {
                 rte_exit(EXIT_FAILURE, "onvm_sc_create() Failed!!");
         }
-
-        int sc_index = setup_service_chain_for_flow_entry(flow_entry->sc, -1,0);
+        //sc_index = setup_service_chain_for_flow_entry(flow_entry->sc, sc_index,0, fk);
         sc_index = setup_schain_and_flow_entry_for_flip_key(fk, sc_index);
-
-        /* Setup the properties of Flow Entry */
-        flow_entry->idle_timeout = 0; //OFP_FLOW_PERMANENT;
-        flow_entry->hard_timeout = 0; //OFP_FLOW_PERMANENT;
 
         #ifdef DEBUG_0
         onvm_sc_print(flow_entry->sc);
@@ -602,8 +735,8 @@ static int populate_random_flow_rules_with_pkts(uint32_t max_rules) {
                         rte_exit(EXIT_FAILURE, "Cannot allocate memory for flow key\n");
                         exit(1);
                 }
-                sc = onvm_sc_create();
-                setup_service_chain_for_flow_entry(sc);
+                sc = get_sc_and_index_based_on_flow_key(fk,NULL,0); //onvm_sc_create();
+                //setup_service_chain_for_flow_entry(sc, -1, 0, fk);
                 printf("[%d] \n",ret);
         }
 #endif
@@ -641,7 +774,7 @@ static int populate_random_flow_rules_with_pkts(uint32_t max_rules) {
 }
 #endif
 
-uint32_t populate_random_flow_rules(uint32_t max_rules);
+
 uint32_t
 populate_random_flow_rules(uint32_t max_rules) {
         uint32_t ret=0;
@@ -729,62 +862,74 @@ static int setup_rule_for_packet(struct rte_mbuf *pkt, struct onvm_pkt_meta* met
         struct onvm_flow_entry *flow_entry = NULL;
 
         if (pkt->hash.rss == 0) {
-                //meta->action = ONVM_NF_ACTION_DROP;
-                //meta->destination = 0;
-                //printf("Setting to drop packet \n");
-
-                printf("Setting to redirect on alternate port\n ");
+                printf("\n [Zero RSS packet] Setting to redirect on alternate port\n ");
                 onvm_pkt_print(pkt);
 
                 meta->destination = (pkt->port == 0)? (1):(0);
-                meta->action = ONVM_NF_ACTION_OUT;
+                meta->action = ONVM_NF_ACTION_OUT;  //ONVM_NF_ACTION_DROP;
                 return 0;
         }
 
-        uint8_t ipv4_pkt = 0;
-        /*
-        struct onvm_ft_ipv4_5tuple fk;
-        //Check if it is IPv4 packet and get Ipv4 tuple Key
-        if (onvm_ft_fill_key(&fk, pkt)) {
-                // Not and Ipv4 pkt
-                printf("No IP4 header found\n");
-        }
-        else {
-                onvm_pkt_print(pkt);
-                ipv4_pkt = 1;
-        }
-        */
         struct onvm_ft_ipv4_5tuple *fk = NULL;
         fk = rte_calloc("flow_key",1, sizeof(struct onvm_ft_ipv4_5tuple), 0); //RTE_CACHE_LINE_SIZE
 
         if (fk == NULL) {
-                printf("failed in rte_calloc \n");
+                printf("\n [PKT] Failed in rte_calloc \n");
                 return -ENOMEM;
                 rte_exit(EXIT_FAILURE, "Cannot allocate memory for flow key\n");
                 exit(1);
         }
         else {
                 if (onvm_ft_fill_key(fk, pkt)) {
-                        // Not and Ipv4 pkt
-                        printf("No IP4 header found\n");
+                        printf("\n No IP4 header found\n");
+                        printf("\n Setting NON-IPv4 [%d] to redirect on alternate port [%d]\n ", fk->proto, pkt->port);
+                        meta->destination = (pkt->port == 0)? (1):(0);
+                        meta->action = ONVM_NF_ACTION_OUT;
+                        rte_free(fk);
+                        return 0;
                 }
                 else {
-                        //onvm_pkt_print(pkt);
-                        ipv4_pkt = 1;
+                        //ICMP or Other Packet : Just redirect on alt port
+                        if(fk && ((fk->proto != IP_PROTOCOL_TCP) && (fk->proto != IP_PROTOCOL_UDP))) {
+                                printf("\n Setting IPv4 (not TCP or UDP [%d]) to redirect on alternate port [%d]\n ", fk->proto, pkt->port);
+                                meta->destination = (pkt->port == 0)? (1):(0);
+                                meta->action = ONVM_NF_ACTION_OUT;
+                                rte_free(fk);
+                                return 0;
+                        }
                 }
         }
+        // Here we should have only TCP/UDP packets
 
+//#define USE_PKT_FOR_ADD
+#ifdef USE_PKT_FOR_ADD
         /* Get the Flow Entry for this packet:: Must fail if there is no entry in flow_table */
         ret = onvm_flow_dir_get_pkt(pkt, &flow_entry);
+#else
+        ret = onvm_flow_dir_get_key(fk, &flow_entry);
+#endif
+
         // Success case: Duplicate packet requesting entry, make it point to first index and return to make pkt proceed with already setup chain
         if (ret >= 0 && flow_entry != NULL) {
                 #ifdef DEBUG_0
                 printf("Exisitng_S:[%x] \n", pkt->hash.rss);
                 #endif
 
-                //meta->action = flow_entry->sc->sc[meta->chain_index].action;//ONVM_NF_ACTION_NEXT;
-                //meta->destination = flow_entry->sc->sc[meta->chain_index].destination;  //globals.destination;
-                //meta->chain_index -=1; //  (meta->chain_index)--;
+                rte_free(fk);
+
+                printf("\n Existing Rule for the Packet! [%d, %d, %d]: ",meta->action, meta->destination,  flow_entry->sc->chain_length); //onvm_pkt_print(pkt);
+                for(ret=1; ret <=flow_entry->sc->chain_length; ret++) printf("[%d]", flow_entry->sc->sc[ret].destination); printf("\n");
+
+                //meta->action = flow_entry->sc->sc[meta->chain_index+1].action;//ONVM_NF_ACTION_NEXT;
+                //meta->destination = flow_entry->sc->sc[meta->chain_index+1].destination;  //globals.destination;
+                //meta->chain_index +=1; //  (meta->chain_index)--;
+                //meta->action = onvm_sc_next_action(flow_entry->sc, pkt);
+                //meta->destination = onvm_sc_next_destination(flow_entry->sc, pkt);
+                //meta->chain_index +=1;
+                //meta->action = ONVM_NF_ACTION_TONF;
+                //meta->destination = flow_entry->sc->sc[meta->chain_index+1].destination;
+                //meta->chain_index +=1;
+
                 meta->action = ONVM_NF_ACTION_NEXT;
 
                 #ifdef DEBUG_0
@@ -792,38 +937,65 @@ static int setup_rule_for_packet(struct rte_mbuf *pkt, struct onvm_pkt_meta* met
                 printf("\n DUP Pkt with with already installed rule [ %d, %d]", meta->destination, meta->chain_index);
                 #endif
 
-                rte_free(fk);
+                return 0;
         }
         // Expected Failure case: setup the Flow table entry with appropriate service chain
         else {
                 #ifdef DEBUG_0
                 printf("Setting new_S for [%x]:\n", pkt->hash.rss);
                 #endif
+                flow_entry = NULL;
+                #ifdef USE_PKT_FOR_ADD
                 ret = onvm_flow_dir_add_pkt(pkt, &flow_entry);
+                #else
+                ret = onvm_flow_dir_add_key(fk, &flow_entry);
+                #endif
                 if (NULL == flow_entry) {
-                        printf("Couldnt! get the flow entry!!");
-                        return 0;
+                        printf("\n Could not! setup the Flow entry Error=[%d]!!", ret);
+                        if(fk ) {
+                                if((fk->proto != IP_PROTOCOL_TCP) && (fk->proto != IP_PROTOCOL_UDP)) {
+                                        rte_free(fk);
+                                        printf("[Should Never Hit here] Setting NON UDP/TCP to redirect on alternate port\n ");
+                                        meta->destination = ((pkt->port == 0)? (1):(0));
+                                        meta->action = ONVM_NF_ACTION_OUT;
+                                        return 0;
+                                }
+                                else {  //UDP or TCP packet
+                                        //printf("Exitting!! Cannot Handle Packet: \n");
+                                        rte_free(fk);
+                                        printf("Failed Flowentry for UDP/TCP [%d], packet, better to drop! than to redirect on alternate port\n ", fk->proto);
+                                        meta->destination = ((pkt->port == 0)? (1):(0));
+                                        meta->action = ONVM_NF_ACTION_DROP; //ONVM_NF_ACTION_OUT;
+                                        //onvm_pkt_print(pkt);
+                                        return 0;
+                                }
+                        }
+                        //else : we are out of memory, something terribly bad!!
+                        printf("\n Out of Memory[1]!!\n");
+                        exit(1);
                 }
-                memset(flow_entry, 0, sizeof(struct onvm_flow_entry));
-                flow_entry->sc = onvm_sc_create();
+                (void) onvm_flow_dir_reset_entry(flow_entry); //memset(flow_entry, 0, sizeof(struct onvm_flow_entry));
+                flow_entry->sc = NULL; //onvm_sc_create();
                 flow_entry->key = fk;
-                int sc_index = setup_service_chain_for_flow_entry(flow_entry->sc, -1,0);
-
-                if(ipv4_pkt) {
-                        //set the same schain for flow_entry with flipped ipv4 % Tuple rule
-                        sc_index = setup_schain_and_flow_entry_for_flip_key(fk, sc_index);
-                } else {
-                        #ifdef DEBUG_0
-                        printf("Skipped adding Flip rule \n");
-                        #endif
+                int sc_index = -1;
+                flow_entry->sc = get_sc_and_index_based_on_flow_key(fk,&sc_index,0); //sc_index = get_sc_index_based_on_flow_key(fk);
+                if(flow_entry->sc == NULL) {
+                        rte_free(fk);
+                        printf("\n Out of Memory[2]!!\n");
+                        exit(2);
                 }
-
+                //sc_index = setup_service_chain_for_flow_entry(flow_entry->sc, sc_index,0,fk);
+                //set the same schain for flow_entry with flipped ipv4 % Tuple rule
+                sc_index = setup_schain_and_flow_entry_for_flip_key(fk, sc_index);
                 meta->action = ONVM_NF_ACTION_NEXT;//ONVM_NF_ACTION_NEXT;
+
                 //meta->chain_index -=1;
                 //onvm_sc_append_entry(flow_entry->sc, ONVM_NF_ACTION_TONF, globals.destination);
+
                 #ifdef DEBUG_0
-                printf("Setting new_E:\n");//onvm_sc_print(flow_entry->sc);
+                //printf("Setting new_E:\n");//onvm_sc_print(flow_entry->sc);
                 printf("\n New Pkt  installed rule! [%d, %d]", meta->destination, meta->chain_index);
+                printf("\n New flow_entry->index:%"PRIu64", sc_index: %d", flow_entry->entry_index, sc_index);
                 #endif
 
                 //meta->action = ONVM_NF_ACTION_DROP;

@@ -173,6 +173,9 @@ init(int argc, char *argv[]) {
 
         onvm_flow_dir_init();
 
+#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
+        rte_timer_subsystem_init();
+#endif //ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
         return 0;
 }
 
@@ -372,11 +375,11 @@ init_shm_rings(void) {
                 clients[i].rx_q = rte_ring_create(rq_name,
                                 ringsize, socket_id,
                                 //RING_F_SP_ENQ|RING_F_SC_DEQ);     /* single prod, single cons */
-                                RING_F_SC_DEQ);                 /* multi prod, single cons */
+                                RING_F_SC_DEQ);                 /* multi prod, single cons (Enqueue can be by either Rx/Tx Threads, but dequeue only by NF thread)*/
                 clients[i].tx_q = rte_ring_create(tq_name,
                                 ringsize, socket_id,
-                                //RING_F_SP_ENQ|RING_F_SC_DEQ);      /* single prod, single cons */
-                                 RING_F_SC_DEQ);                 /* multi prod, single cons */
+                                RING_F_SP_ENQ|RING_F_SC_DEQ);      /* single prod, single cons (Enqueue only by NF Thread, and dequeue only by dedicated Tx thread) */
+                                //RING_F_SC_DEQ);                 /* multi prod, single cons */
                                 //but it should be RING_F_SP_ENQ
 
                 if (clients[i].rx_q == NULL)
@@ -473,7 +476,7 @@ init_shm_rings(void) {
                 //#if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
                 #ifdef ENABLE_NF_BACKPRESSURE
                 memset(&clients[i].bft_list, 0, sizeof(clients[i].bft_list));
-                clients[i].bft_list.max_len=CLIENT_QUEUE_RINGSIZE;
+                clients[i].bft_list.max_len=CLIENT_QUEUE_RINGSIZE*2;
                 #endif
         }
         return 0;

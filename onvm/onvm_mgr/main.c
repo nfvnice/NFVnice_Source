@@ -178,6 +178,129 @@ performance_log_thread(void *pdata) {
 #endif // ENABLE_PERFORMANCE_LOG
 #endif // INTERRUPT_SEM
 
+#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
+#define NF_STATUS_CHECK_PERIOD_IN_MS    (500)       // 500ms or 0.5seconds
+#define DISPLAY_STATS_PERIOD_IN_MS      (1000)      // 1000ms or Every second
+#define NF_LOAD_EVAL_PERIOD_IN_MS       (1)         // 1ms
+#define USLEEP_INTERVAL_IN_US           (500)       // 500 micro seconds
+
+#define SECOND_TO_MICRO_SECOND          (1000*1000)
+#define NANO_SECOND_TO_MICRO_SECOND     (double)(1/1000)
+#define MICRO_SECOND_TO_SECOND          (double)(1/(SECOND_TO_MICRO_SECOND))
+
+#define USE_THIS_CLOCK  CLOCK_MONOTONIC //CLOCK_THREAD_CPUTIME_ID     //CLOCK_PROCESS_CPUTIME_ID //CLOCK_MONOTONIC
+typedef struct nf_stats_time_info {
+        uint8_t in_read;
+        struct timespec prev_time;
+        struct timespec cur_time;
+}nf_stats_time_info_t;
+static nf_stats_time_info_t nf_stat_time;
+
+struct rte_timer display_stats_timer;
+struct rte_timer nf_status_check_timer;
+struct rte_timer nf_load_eval_timer;
+
+int initialize_master_timers(void);
+static void display_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
+        __attribute__((unused)) void *ptr_data);
+static void nf_status_check_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
+        __attribute__((unused)) void *ptr_data);
+static void nf_load_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
+        __attribute__((unused)) void *ptr_data);
+
+int get_current_time(struct timespec *pTime);
+unsigned long get_difftime_us(struct timespec *start, struct timespec *end);
+
+#endif //ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
+
+#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
+int get_current_time(struct timespec *pTime) {
+        if (clock_gettime(USE_THIS_CLOCK, pTime) == -1) {
+              perror("\n clock_gettime");
+              return 1;
+        }
+        return 0;
+}
+
+unsigned long get_difftime_us(struct timespec *pStart, struct timespec *pEnd) {
+        unsigned long delta = ( ((pEnd->tv_sec - pStart->tv_sec) * SECOND_TO_MICRO_SECOND) +
+                     ((pEnd->tv_nsec - pStart->tv_nsec) /1000) );
+        //printf("Delta [%ld], sec:[%ld]: nanosec [%ld]", delta, (pEnd->tv_sec - pStart->tv_sec), (pEnd->tv_nsec - pStart->tv_nsec));
+        return delta;
+}
+
+static void
+display_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
+        __attribute__((unused)) void *ptr_data) {
+
+        static const unsigned diff_time_sec = (unsigned) (DISPLAY_STATS_PERIOD_IN_MS/1000);
+        onvm_stats_display_all(diff_time_sec);
+        return;
+}
+
+static void
+nf_status_check_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
+        __attribute__((unused)) void *ptr_data) {
+
+        onvm_nf_check_status();
+        return;
+}
+
+static void
+nf_load_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
+        __attribute__((unused)) void *ptr_data) {
+
+        if(nf_stat_time.in_read == 0) {
+                if( get_current_time(&nf_stat_time.prev_time) == 0) {
+                        nf_stat_time.in_read = 1;
+                }
+                return ;
+        }
+
+        if(0 == get_current_time(&nf_stat_time.cur_time)) {
+                unsigned long difftime_us = get_difftime_us(&nf_stat_time.prev_time, &nf_stat_time.cur_time);
+                if(difftime_us) {
+                        onvm_nf_stats_update(difftime_us);
+                }
+                nf_stat_time.prev_time = nf_stat_time.cur_time;
+        }
+        return;
+}
+
+int
+initialize_master_timers(void) {
+
+        rte_timer_init(&nf_status_check_timer);
+        rte_timer_init(&display_stats_timer);
+        rte_timer_init(&nf_load_eval_timer);
+        uint64_t ticks = 0;
+
+        ticks = ((uint64_t)NF_STATUS_CHECK_PERIOD_IN_MS *(rte_get_timer_hz()/1000));
+        rte_timer_reset_sync(&nf_status_check_timer,
+                ticks,
+                PERIODICAL,
+                rte_lcore_id(), //timer_core
+                &nf_status_check_timer_cb, NULL
+                );
+
+        ticks = ((uint64_t)DISPLAY_STATS_PERIOD_IN_MS *(rte_get_timer_hz()/1000));
+        rte_timer_reset_sync(&display_stats_timer,
+                ticks,
+                PERIODICAL,
+                rte_lcore_id(), //timer_core
+                &display_stats_timer_cb, NULL
+                );
+
+        ticks = ((uint64_t)NF_LOAD_EVAL_PERIOD_IN_MS *(rte_get_timer_hz()/1000));
+        rte_timer_reset_sync(&nf_load_eval_timer,
+                ticks,
+                PERIODICAL,
+                rte_lcore_id(), //timer_core
+                &nf_load_stats_timer_cb, NULL
+                );
+        return 0;
+}
+#endif //ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
 /*******************************Worker threads********************************/
 
 /*
@@ -192,14 +315,20 @@ master_thread_main(void) {
         /* Longer initial pause so above printf is seen */
         sleep(sleeptime * 3);
 
+#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
+        if(initialize_master_timers() == 0) {
+                while (usleep(USLEEP_INTERVAL_IN_US) == 0) {
+                        rte_timer_manage();
+                }
+        } //else
+#else
+
         /* Loop forever: sleep always returns 0 or <= param */
         while (sleep(sleeptime) <= sleeptime) {
-#if defined(ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD)
-                rte_timer_manage();
-#endif
                 onvm_nf_check_status();
                 onvm_stats_display_all(sleeptime);
         }
+#endif //ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
 }
 
 /*
@@ -572,12 +701,60 @@ notify_client(int instance_id)
         rte_atomic16_read(clients[instance_id].shm_server);
         #endif
 }
+#ifdef SORT_EFFICEINCY_TET
+static int rdata[MAX_CLIENTS];
+void quickSort( int a[], int l, int r);
+int partition( int a[], int l, int r);
+void quickSort( int a[], int l, int r)
+{
+   int j;
+
+   if( l < r )
+   {
+    // divide and conquer
+        j = partition( a, l, r);
+       quickSort( a, l, j-1);
+       quickSort( a, j+1, r);
+   }
+
+}
+
+int partition( int a[], int l, int r) {
+   int pivot, i, j, t;
+   pivot = a[l];
+   i = l; j = r+1;
+
+   while( 1)
+   {
+    do ++i; while( a[i] <= pivot && i <= r );
+    do --j; while( a[j] > pivot );
+    if( i >= j ) break;
+    t = a[i]; a[i] = a[j]; a[j] = t;
+   }
+   t = a[l]; a[l] = a[j]; a[j] = t;
+   return j;
+}
+void populate_and_sort_rdata(void);
+void populate_and_sort_rdata(void) {
+        unsigned i = 0;
+        for (i=0; i< MAX_CLIENTS; i++) {
+                uint16_t demand = rte_ring_count(clients[i].rx_q);
+                uint16_t offload = rte_ring_count(clients[i].tx_q);
+                uint16_t ccost   = clients[i].info->comp_cost;
+                uint32_t prio = demand*ccost - offload;
+                rdata[i] = prio;
+        }
+        quickSort(rdata, 0, MAX_CLIENTS-1);
+}
+#endif
+
 static inline void
 wakeup_client(int instance_id, struct wakeup_info *wakeup_info)  {
         int wkup_sts = whether_wakeup_client(instance_id);
         if ( wkup_sts == 1) {
                 if (rte_atomic16_read(clients[instance_id].shm_server) ==1) {
                         wakeup_info->num_wakeups += 1;
+                        //if(wakeup_info->num_wakeups) {}//populate_and_sort_rdata();}
                         clients[instance_id].stats.wakeup_count+=1;
                         rte_atomic16_set(clients[instance_id].shm_server, 0);
                         notify_client(instance_id);
@@ -605,9 +782,11 @@ wakeup_nfs(void *arg) {
         */
 
         while (true) {
+                //wakeup_info->num_wakeups += 1;    //count for debug
                 for (i = wakeup_info->first_client; i < wakeup_info->last_client; i++) {
                         wakeup_client(i, wakeup_info);
                 }
+                //usleep(100);
         }
 
         return 0;
@@ -663,7 +842,10 @@ static void signal_handler(int sig, siginfo_t *info, void *secret) {
 //                rte_free(port_prev_stats);
                 #endif
         }
-        
+        printf("Got Signal [%d]\n", sig);
+        if(info) {
+                printf("[signo: %d,errno: %d,code: %d]\n", info->si_signo, info->si_errno, info->si_code);
+        }
         exit(10);
 }
 static void 

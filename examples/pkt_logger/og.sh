@@ -29,7 +29,7 @@ echo "cost is set to $cost"
 
 if [ -z $print ]
 then
-        sudo ./build/pkt_logger -l $cpu -n 3 --proc-type=secondary -- -r $service -n $inst_id -- -d $dst -c $cost
+        sudo ./build/pkt_logger -l $cpu -n 3 --proc-type=secondary -- -r $service -n $inst_id -- -d $dst 
 else
-        sudo ./build/pkt_logger -l $cpu -n 3 --proc-type=secondary -- -r $service -n $inst_id -- -d $dst -c $cost -p $print
+        sudo ./build/pkt_logger -l $cpu -n 3 --proc-type=secondary -- -r $service -n $inst_id -- -d $dst  -p $print
 fi

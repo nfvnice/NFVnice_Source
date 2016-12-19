@@ -134,7 +134,17 @@ onvm_pkt_ipv4_hdr(struct rte_mbuf* pkt) {
         }
         return ipv4;
 }
+struct vlan_hdr*
+onvm_pkt_vlan_hdr(struct rte_mbuf* pkt) {
 
+        struct ether_hdr *eth = rte_pktmbuf_mtod(pkt, struct ether_hdr *);
+        struct vlan_hdr* vlan = (struct vlan_hdr*)(rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr));
+
+        if (ETHER_TYPE_VLAN != rte_be_to_cpu_16(eth->ether_type)) {
+                return NULL;
+        }
+        return vlan;
+}
 
 int
 onvm_pkt_is_tcp(struct rte_mbuf* pkt) {

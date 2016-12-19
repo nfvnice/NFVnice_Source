@@ -57,7 +57,7 @@
 #include <sys/msg.h>
 
 /* Enable the ONVM_MGR to act as a 2-port bridge without any NFs */
-#define ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE    // Work as bridge < without any NFs :: only testing purpose.. >
+//#define ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE    // Work as bridge < without any NFs :: only testing purpose.. >
 //#define SEND_DIRECT_ON_ALT_PORT
 //#define DELAY_BEFORE_SEND
 //#define DELAY_PER_PKT (5) //20micro seconds
@@ -85,13 +85,13 @@
 #define USE_SEMAPHORE           // Use Semaphore for IPC
 //#define USE_MQ                // USe Message Queue for IPC between NFs and NF manager
 //#define USE_FIFO              // Use Named Pipe (FIFO) -- cannot work in our model as Writer cannot be opened in nonblock
-//#define USE_SIGNAL             // Use Signals (SIGUSR1) for IPC
-//#define USE_SCHED_YIELD         // Use Explicit CPU Relinquish CPU, no explicit IPC other than shared mem read/write
-//#define USE_NANO_SLEEP         // Use Sleep call to Reqlinqush CPU no explicit IPC other than shared mem read/write
-//#define USE_SOCKET              // Use socket for IPC, NFs block on recv and mgr sends to ublock clients
-//#define USE_FLOCK               // USE FILE_LOCK PREMITIVE for Blocking the NFs and mgr opens files in locked mode
-//#define USE_MQ2                 // USE SYS_V5 Message Queue
-//#define USE_ZMQ                 // Use ZeroMQ sockets for communication
+//#define USE_SIGNAL            // Use Signals (SIGUSR1) for IPC -- not reliable; makes the program exit after a while ( more pending singals??)..
+//#define USE_SCHED_YIELD       // Use Explicit CPU Relinquish CPU, no explicit IPC other than shared mem read/write
+//#define USE_NANO_SLEEP        // Use Sleep call to Reqlinqush CPU no explicit IPC other than shared mem read/write
+//#define USE_SOCKET            // Use socket for IPC, NFs block on recv and mgr sends to ublock clients
+//#define USE_FLOCK             // USE FILE_LOCK PREMITIVE for Blocking the NFs and mgr opens files in locked mode < Very expensive>
+//#define USE_MQ2               // USE SYS_V5 Message Queue <good but relatively expensive than MQ >
+//#define USE_ZMQ               // Use ZeroMQ sockets for communication < expensive as well, it doesn't seem to fit in our model>
 #if (defined(INTERRUPT_SEM) && !defined(USE_SEMAPHORE) && !defined(USE_MQ) && !defined(USE_FIFO) && !defined(USE_SIGNAL) \
 && !defined(USE_SCHED_YIELD) && !defined(USE_NANO_SLEEP) && !defined(USE_SOCKET) && !defined(USE_FLOCK) && !defined(USE_MQ2) && !defined(USE_ZMQ))
 #define USE_POLL_MODE
@@ -103,7 +103,8 @@
 
 /* Enable this flag to assign a distinct CGROUP for each NF instance */
 #define USE_CGROUPS_PER_NF_INSTANCE                 // To create CGroup per NF instance
-//#define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT    // To dynamically evaluate and periodically adjust weight on NFs cpu share
+#define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT     // To dynamically evaluate and periodically adjust weight on NFs cpu share
+#define USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE       // Enable Load*comp_cost
 
 /* For Bottleneck on Rx Ring; whether or not to Drop packets from Rx/Tx buf during flush_operation
  * Note: This is one of the likely cause of Out-of_order packets in the OpenNetVM (with Bridge) case: */
@@ -113,7 +114,7 @@
 /* Enable watermark level NFs Tx and Rx Rings */
 #define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
 
-/* Enable ECN CE FLAG : Feature Flag to enable marking ECN_CE flag on the flows that pass through the NFs with Rx Rign buffers exceeding the watermark level.
+/* Enable ECN CE FLAG : Feature Flag to enable marking ECN_CE flag on the flows that pass through the NFs with Rx Ring buffers exceeding the watermark level.
  * Dependency: Must have ENABLE_RING_WATERMARK feature defined. and HIGH and LOW Thresholds to be set. otherwise, marking may not happen at all.. Ideally, marking should be done after dequeue from Tx, to mark if Rx is overbudget..
  * On similar lines, even the back-pressure marking must be done for all flows after dequeue from the Tx Ring.. */
 //#define ENABLE_ECN_CE
@@ -125,10 +126,15 @@
 //#define NF_BACKPRESSURE_APPROACH_3  //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
 
 // Extensions and sub-options for Back_Pressure handling
-#define DROP_PKTS_ONLY_AT_BEGGINING // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF).
-#define BACKPRESSURE_USE_RING_BUFFER_MODE   // Use Ring buffer to store and delete backlog Flow Entries per NF
-#define RECHECK_BACKPRESSURE_MARK_ON_TQ_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
-//#define BACKPRESSURE_EXTRA_DEBUG_LOGS     // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
+#define DROP_PKTS_ONLY_AT_BEGGINING             // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF). (Note: Enable)
+#define ENABLE_SAVE_BACKLOG_FT_PER_NF           // save backlog Flow Entries per NF (Note: Enable)
+#define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable)
+#define RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
+#define BACKPRESSURE_EXTRA_DEBUG_LOGS           // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
+
+//Need Early bind to NF for the chain and determine the bottlneck status: Avoid passing first few packets of a flow till the chain, only to drop them later: Helps for TCP and issue with storing multiple flows at earlier NF
+//#define ENABLE_EARLY_NF_BIND
+
 
 //other test-variants and disregarded options: not to be used!!
 //#define HOP_BY_HOP_BACKPRESSURE     //Option to enable [ON] = HOP by HOP propagation of back-pressure vs [OFF] = direct First NF to N-1 Discard(Drop)/block.
@@ -139,7 +145,7 @@
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
 
 /* ENABLE TIMER BASED WEIGHT COMPUTATION IN NF_LIB */
-//#define ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+#define ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 #if defined(ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION) || defined (ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD)
 #include <rte_timer.h>
 #endif //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
@@ -277,17 +283,19 @@ struct onvm_nf_info {
         //char cgroup_name[256];
         uint32_t cpu_share;     //indicates current share of NFs cpu
         uint32_t core_id;       //indicates the core ID the NF is running on
-        uint32_t comp_cost;     //indicates the computation cost of NF
-        uint32_t comp_pkts;     //indicates the number of pkts processed by NF over specific sampling period (demand (new pkts arrival) = Rx, better? or serviced (new pkts sent out) = Tx better?)
+        uint32_t comp_cost;     //indicates the computation cost of NF in num_of_cycles
+        uint32_t comp_pkts;     //[usage: TBD] indicates the number of pkts processed by NF over specific sampling period (demand (new pkts arrival) = Rx, better? or serviced (new pkts sent out) = Tx better?)
+        uint32_t load;          //indicates instantaneous load on the NF ( = num_of_packets on the rx_queue + pkts dropped on Rx)
+        uint32_t avg_load;      //indicates the average load on the NF
+        uint32_t svc_rate;      //indicates instantaneous service rate of the NF ( = num_of_packets processed in the sampling period)
+        uint32_t avg_svc;       //indicates the average service rate of the NF
 #endif
 
 #ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
         struct rte_timer stats_timer;
 #endif //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 
-        #if defined (INTERRUPT_SEM) && defined (USE_SIGNAL)
-        //pid_t pid;
-        #endif
+
 };
 
 /*
@@ -494,5 +502,35 @@ set_cgroup_nf_cpu_share_from_onvm_mgr(uint16_t instance_id, uint32_t share_val) 
 #endif //USE_CGROUPS_PER_NF_INSTANCE
 
 #define RTE_LOGTYPE_APP RTE_LOGTYPE_USER1
+
+/******************************** DATA STRUCTURES FOR FIPO SUPPORT *********************************
+*     fipo_buf_node_t:      each rte_buf_node (packet) added to the fipo_per_flow_list -- Need basic Queue add/remove
+*     fipo_per_flow_list:   Ordered list of buffers for each flow   -- Need Queue add/remove
+*     nf_flow_list_t:       Priority List of Flows for each NF      -- Need Queue add/remove
+*     Memory sharing Model is tedious to support this..
+*     Rx/Tx should access fipo_buf_node to create a pkt entry, then fipo_per_flow_list to insert into
+*
+******************************** DATA STRUCTURES FOR FIPO SUPPORT *********************************/
+typedef struct fipo_buf_node {
+        void *pkt;
+        struct fipo_buf_node *next;
+        struct fipo_buf_node *prev;
+}fipo_buf_node_t;
+
+typedef struct fipo_list {
+        uint32_t buf_count;
+        fipo_buf_node_t *head;
+        fipo_buf_node_t *tail;
+}fipo_list_t;
+typedef fipo_list_t fipo_per_flow_list;
+//Each entry of the list must be shared with the NF, i.e. unique memzone must be created per NF per flow as FIPO_%NFID_%FID
+//Fix the MAX_NUMBER_OF_FLOWS, cannot have dynamic memzones per NF, too expensive as it has to have locks..
+#define MAX_NUM_FIPO_FLOWS  (16)
+#define MAX_BUF_PER_FLOW  ((128)/(MAX_NUM_FIPO_FLOWS))//((CLIENT_QUEUE_RINGSIZE)/(MAX_NUM_FIPO_FLOWS))
+typedef struct nf_flow_list {
+        uint32_t flow_count;
+        fipo_per_flow_list *head;
+        fipo_per_flow_list *tail;
+}nf_flow_list_t;
 
 #endif  // _COMMON_H_

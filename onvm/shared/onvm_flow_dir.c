@@ -50,17 +50,42 @@
 #include "onvm_flow_dir.h"
 
 #define NO_FLAGS 0
-#define SDN_FT_ENTRIES  (1024*10*10) //(1024*4)
+
 
 struct onvm_ft *sdn_ft;
 struct onvm_ft **sdn_ft_p;
+
+void
+onvm_flow_dir_set_index(void) {
+
+        if(sdn_ft) {
+                uint32_t tbl_index = 0;
+                for (; tbl_index < SDN_FT_ENTRIES; tbl_index++)
+                {
+                        struct onvm_flow_entry *flow_entry = (struct onvm_flow_entry *)&sdn_ft->data[tbl_index*sdn_ft->entry_size];
+                        flow_entry->entry_index = tbl_index;
+                }
+        }
+        return ;
+}
+
+int onvm_flow_dir_reset_entry(struct onvm_flow_entry *flow_entry) {
+
+        if(flow_entry) {
+                uint64_t ft_index = flow_entry->entry_index;
+                memset(flow_entry,0,sizeof(struct onvm_flow_entry));
+                flow_entry->entry_index = ft_index;
+                return (int)ft_index;
+        }
+        return 0;
+}
 
 int
 onvm_flow_dir_init(void)
 {
 	const struct rte_memzone *mz_ftp;
 
-	sdn_ft = onvm_ft_create(SDN_FT_ENTRIES, sizeof(struct onvm_flow_entry));
+	    sdn_ft = onvm_ft_create(SDN_FT_ENTRIES, sizeof(struct onvm_flow_entry));
         if(sdn_ft == NULL) {
                 rte_exit(EXIT_FAILURE, "Unable to create flow table\n");
         }
@@ -73,6 +98,7 @@ onvm_flow_dir_init(void)
         sdn_ft_p = mz_ftp->addr;
         *sdn_ft_p = sdn_ft;
 
+    onvm_flow_dir_set_index();
 	return 0;
 }
 
@@ -131,7 +157,7 @@ onvm_flow_dir_del_and_free_pkt(struct rte_mbuf *pkt){
 
 	ret = onvm_flow_dir_get_pkt(pkt, &flow_entry);
 	if (ret >= 0) {
-		rte_free(flow_entry->sc);
+		//rte_free(flow_entry->sc); //modification mode to avoid releasing sc entry as it can be multiplexe  across different flow entries.
 		rte_free(flow_entry->key);
 		ret = onvm_ft_remove_pkt(sdn_ft, pkt);
 	}
@@ -180,16 +206,17 @@ onvm_flow_dir_del_and_free_key(struct onvm_ft_ipv4_5tuple *key){
         ret = onvm_flow_dir_get_key(key, &flow_entry);
         if (ret >= 0) {
                 //ret = onvm_ft_remove_key(sdn_ft, key); // This function keeps crashing
-                rte_free(flow_entry->sc);
-                flow_entry->sc=NULL;
+                //rte_free(flow_entry->sc); //Modification to avoid releasing the service chain which can be multiplexed acrossdfferent flow entries
+                //flow_entry->sc=NULL;      // Need separate call to release the service chain as the api onvm_fc_create() have onvm_fc_release()
                 rte_free(flow_entry->key);
                 flow_entry->key=NULL;
         }
 
         return ret;
 }
+void onvm_flow_dir_print_stats__old(void);
 void
-onvm_flow_dir_print_stats(void) {
+onvm_flow_dir_print_stats__old(void) {
 
         if(sdn_ft) {
                 int32_t tbl_index = 0;
@@ -229,6 +256,90 @@ onvm_flow_dir_print_stats(void) {
 #endif  //ENABLE_NF_BACKPRESSURE
                 }
                 printf("Total chains: [%d], Bottleneck'd Chains: [%d], mapped chains: [%d]  \n", active_chains, bottlnecked_chains, mapped_chains);
+        }
+
+        return ;
+}
+
+typedef struct sc_entries {
+        struct onvm_service_chain *sc;
+        uint16_t sc_count;
+        uint16_t bneck_flag;
+}sc_entries_list;
+static sc_entries_list sc_list[SDN_FT_ENTRIES];
+static inline uint32_t get_index_of_sc(struct onvm_service_chain *sc) {
+        uint32_t free_index = SDN_FT_ENTRIES;
+        uint32_t i = 0;
+        for (i=0; i<SDN_FT_ENTRIES; i++) {
+                if (sc_list[i].sc) {
+                        if(sc_list[i].sc == sc) {
+                                return i;
+                        }
+                }
+                else {
+                        free_index = ((i < free_index)? (i):(free_index));
+                }
+        }
+        return free_index;
+}
+void
+onvm_flow_dir_print_stats(void) {
+
+        if(sdn_ft) {
+                int32_t tbl_index = 0;
+                uint32_t active_chains = 0, bneck_chains=0;
+                uint32_t active_fts = 0, bneck_fts=0;
+                uint32_t s_inx = SDN_FT_ENTRIES;
+                for (; tbl_index < SDN_FT_ENTRIES; tbl_index++)
+                {
+                        s_inx = SDN_FT_ENTRIES;
+                        struct onvm_flow_entry *flow_entry = (struct onvm_flow_entry *)&sdn_ft->data[tbl_index*sdn_ft->entry_size];
+                        if (flow_entry && flow_entry->sc && flow_entry->sc->chain_length) {
+                                active_fts+=1;
+                                s_inx = get_index_of_sc(flow_entry->sc);
+                                if(s_inx < SDN_FT_ENTRIES) {
+                                        sc_list[s_inx].sc = flow_entry->sc;
+                                        sc_list[s_inx].sc_count+=1;
+                                        if(1 == sc_list[s_inx].sc_count) sc_list[s_inx].bneck_flag=0;
+                                }
+                        }
+                        else continue;
+#ifdef ENABLE_NF_BACKPRESSURE
+                        if (flow_entry->sc->highest_downstream_nf_index_id) {
+                                bneck_fts++;
+                                if(s_inx < SDN_FT_ENTRIES) {
+                                        sc_list[s_inx].bneck_flag+=1;
+                                }
+                                //#define LIST_FLOW_ENTRIES
+                                #ifdef LIST_FLOW_ENTRIES
+                                int i =0;
+                                printf ("OverflowStatus [(binx=%d, %d),(nfid=%d),(scl=%d)::", flow_entry->sc->highest_downstream_nf_index_id, flow_entry->idle_timeout, flow_entry->sc->ref_cnt, flow_entry->sc->chain_length );
+                                for(i=1;i<=flow_entry->sc->chain_length;++i)printf("[%d], ",flow_entry->sc->sc[i].destination);
+                                if(flow_entry->key)
+                                        printf ("Tuple:[SRC(%d:%d),DST(%d:%d), PROTO(%d)], \t", flow_entry->key->src_addr, rte_be_to_cpu_16(flow_entry->key->src_port), flow_entry->key->dst_addr, rte_be_to_cpu_16(flow_entry->key->dst_port), flow_entry->key->proto);
+                                printf("\n");
+                                #endif
+                        }
+#endif  //ENABLE_NF_BACKPRESSURE
+                }
+
+                for(s_inx=0; s_inx <SDN_FT_ENTRIES; s_inx++) {
+                        if(sc_list[s_inx].sc) {
+                                active_chains+=1;
+                                if(sc_list[s_inx].bneck_flag) {
+                                        bneck_chains+=1;
+#ifdef ENABLE_NF_BACKPRESSURE
+                                        int i =0;
+                                        printf ("(ft_count=%d),, overflowStatus (binx=%d),(nfid=%d), (scl=%d)::", sc_list[s_inx].bneck_flag, sc_list[s_inx].sc->highest_downstream_nf_index_id, sc_list[s_inx].sc->ref_cnt, sc_list[s_inx].sc->chain_length);
+                                        for(i=1;i<=sc_list[s_inx].sc->chain_length;++i)printf("[%d], ",sc_list[s_inx].sc->sc[i].destination);
+                                        printf("\n");
+#endif
+                                }
+                        }
+                }
+                memset(sc_list,0,sizeof(sc_list));
+
+                printf("Total Flow entries and chains: [%d, %d], Bottleneck'd Flow entries and Chains: [%d, %d], \n", active_fts, active_chains, bneck_fts, bneck_chains);
         }
 
         return ;

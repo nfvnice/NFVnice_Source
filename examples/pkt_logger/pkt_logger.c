@@ -83,26 +83,28 @@ typedef struct globalArgs {
         uint32_t destination;               /* -d <destination_service ID> */
         uint32_t print_delay;               /* -p <print delay in num_pakets> */
         const char* pktlog_file;            /* -s <file name to save packet log> */
-        const char* ipv4rules_file;         /* -r <IPv45Tuple Flow Table entries> */
+        const char* read_file;              /* -r <file name to read ACL entries> */
         const char* base_ip_addr;           /* -b <IPv45Tuple Base Ip Address> */
         uint32_t max_bufs;                  /* -m <Maximum number of Buffers> */
         uint32_t buf_size;                  /* -M <Maximum size of packet buffers> */
-        int fd;                             /* .. file descriptor, internal to process */
+        int fd;                             /* .. file descriptor, internal to process to write/logging purpose*/
         uint32_t file_offset;               /* .. offset in file_location, internal '' */
         uint32_t cur_buf_index;             /* .. index of free buffer, internal '' */
         uint8_t is_blocked_on_sem;          /* .. status of nf_thread if blocked on sem for aio */
         uint64_t sem_block_count;           /* .. stat keeper for num_of_blocks */
+        int fd_r;                           /* .. file descriptor, internal to process for reading (ACL??) entries */
+        uint32_t read_offset;               /* .. offset in file_location, internal '' */
 }globalArgs_t;
 static const char *optString = "d:p:s:r:b:m:M";
 
 static globalArgs_t globals = {
         .destination = 0,
         .print_delay = 1, //1000000,
-        .pktlog_file = "pkt_logger.txt", // "/dev/null", // "pkt_logger.txt", //
-        .ipv4rules_file = "ipv4rules.txt",
+        .pktlog_file = "logger_pkt.txt", // "/dev/null", // "pkt_logger.txt", //
+        .read_file = "ipv4rules.txt",
         .base_ip_addr   = "10.0.0.1",
-        .max_bufs   = 2, //1,
-        .buf_size   = 4096, //128
+        .max_bufs   = 1, //1,
+        .buf_size   = 128, //4096, //128
         .fd = -1,
         .file_offset = 0,
         .cur_buf_index = 0,
@@ -133,6 +135,7 @@ typedef struct pkt_buf_t {
         int req_status;
 }pkt_buf_t;
 static pkt_buf_t *pkt_buf_pool = NULL;
+//static pkt_buf_t *pkt_buf_pord = NULL;    //For read puropose */
 
 
 #define IO_SIGNAL SIGUSR1   /* Signal used to notify I/O completion */
@@ -241,7 +244,7 @@ parse_app_args(int argc, char *argv[], const char *progname) {
                         globals.pktlog_file = optarg;
                         break;
                 case 'r':
-                        globals.ipv4rules_file = optarg;
+                        globals.read_file = optarg;
                         break;
                 case 'b':
                         globals.base_ip_addr = optarg;
@@ -552,6 +555,7 @@ int clear_thread_start(void *pdata) {
         return ret;
 }
 #include <rte_ether.h>
+#define MAX_PKT_HEADER_SIZE (68)
 int log_the_packet(struct rte_mbuf* pkt) {
         int ret = 0;
         static int pkt_count_per_buf = 0;
@@ -569,7 +573,7 @@ int log_the_packet(struct rte_mbuf* pkt) {
         }
 
         if(pbuf != NULL) {
-                uint64_t pkt_buf_len = MIN((uint64_t)64, (uint64_t)pkt->buf_len); // Eth + IP + TCP header is 64 bytes
+                uint64_t pkt_buf_len = MIN((uint64_t)MAX_PKT_HEADER_SIZE, (uint64_t)pkt->buf_len); // Eth(24) + VLAN(4) + IP(20) + TCP(20)/[UDP(8)] header is 68 bytes
                 uint64_t remaining_buf_size = (pbuf->max_size - pbuf->buf_len);
                 size_t hdr_len = MIN((uint64_t)remaining_buf_size, (uint64_t)pkt_buf_len); //(pkt->l2_len+pkt->l3_len)
 
@@ -586,14 +590,19 @@ int log_the_packet(struct rte_mbuf* pkt) {
 
                 //for(ret=0; ret < 10; ret++) printf("%d", oup[ret]); ret = 0;
 
-                struct ether_hdr *eth = rte_pktmbuf_mtod(pkt, struct ether_hdr *);
-                struct ipv4_hdr* ipv4 = (struct ipv4_hdr*)(rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr));
+                struct ether_hdr* eth = rte_pktmbuf_mtod(pkt, struct ether_hdr *);
+                struct vlan_hdr* vlan = onvm_pkt_vlan_hdr(pkt);
+                struct ipv4_hdr* ipv4 = onvm_pkt_ipv4_hdr(pkt);//(struct ipv4_hdr*)(rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr));
                 struct tcp_hdr*  tcp  = onvm_pkt_tcp_hdr(pkt);
-                struct udp_hdr* udp   = onvm_pkt_udp_hdr(pkt);
+                struct udp_hdr*  udp  = onvm_pkt_udp_hdr(pkt);
                 int wlen = 0;
                 if(eth && (sizeof(struct ether_hdr) < (hdr_len - wlen))) {
                         memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), eth, sizeof(struct ether_hdr) );
                         wlen += sizeof(struct ether_hdr);
+                }
+                if(vlan && (sizeof(struct vlan_hdr) < (hdr_len - wlen))) {
+                        memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), vlan, sizeof(struct vlan_hdr) );
+                        wlen += sizeof(struct vlan_hdr);
                 }
                 if(ipv4 && (sizeof(struct ipv4_hdr) < (hdr_len - wlen))) {
                         memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), ipv4, sizeof(struct ipv4_hdr) );
@@ -699,3 +708,69 @@ int main(int argc, char *argv[]) {
 
         //return aiotest_main(argc, argv);
 }
+/*
+ *
+ * ADIO READ FROM STDIN EXAMPLE
+ * include <sys/types.h>
+#include <aio.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <iostream>
+
+using namespace std;
+
+const int SIZE_TO_READ = 100;
+
+int main()
+{
+    // open the file
+    int file = open("blah.txt", O_RDONLY, 0);
+
+    if (file == -1)
+    {
+        cout << "Unable to open file!" << endl;
+        return 1;
+    }
+
+    // create the buffer
+    char* buffer = new char[SIZE_TO_READ];
+
+    // create the control block structure
+    aiocb cb;
+
+    memset(&cb, 0, sizeof(aiocb));
+    cb.aio_nbytes = SIZE_TO_READ;
+    cb.aio_fildes = file;
+    cb.aio_offset = 0;
+    cb.aio_buf = buffer;
+
+    // read!
+    if (aio_read(&cb) == -1)
+    {
+        cout << "Unable to create request!" << endl;
+        close(file);
+    }
+
+    cout << "Request enqueued!" << endl;
+
+    // wait until the request has finished
+    while(aio_error(&cb) == EINPROGRESS)
+    {
+        cout << "Working..." << endl;
+    }
+
+    // success?
+    int numBytes = aio_return(&cb);
+
+    if (numBytes != -1)
+        cout << "Success!" << endl;
+    else
+        cout << "Error!" << endl;
+
+    // now clean up
+    delete[] buffer;
+    close(file);
+
+    return 0;
+}
+ */

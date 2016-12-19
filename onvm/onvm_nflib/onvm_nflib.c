@@ -53,6 +53,8 @@
 /************************************API**************************************/
 #define USE_STATIC_IDS
 
+#define RTDSC_CYCLE_COST    (20*2) // profiled  approx. 18~27cycles per call
+
 #ifdef USE_CGROUPS_PER_NF_INSTANCE
 #include <stdlib.h>
 uint32_t get_nf_core_id(void);
@@ -109,18 +111,18 @@ void init_cgroup_info(struct onvm_nf_info *nf_info) {
 
 /******************************Timer Helper functions*******************************/
 #ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
-#define STATS_PERIOD_IN_MS 1000
+#define STATS_PERIOD_IN_MS 100
 static void
 stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data) {
 
-        static unsigned counter = 0;
-        unsigned lcore_id = rte_lcore_id();
-        printf("%s() on lcore %u : [%u]\n", __func__, lcore_id, ++counter);
-
-        printf("\n On core [%d] Inside Timer Callback function: %"PRIu64" !!\n", rte_lcore_id(), rte_rdtsc_precise());
+        //static unsigned counter = 0;
+        //unsigned lcore_id = rte_lcore_id();
+        //printf("%s() on lcore %u : [%u]\n", __func__, lcore_id, ++counter);
+        counter = SAMPLING_RATE;
+        //printf("\n On core [%d] Inside Timer Callback function: %"PRIu64" !!\n", rte_lcore_id(), rte_rdtsc_precise());
         //printf("Echo %d", system("echo > hello_timer.txt"));
-        printf("\n Inside Timer Callback function: %"PRIu64" !!\n", rte_rdtsc_precise());
+        //printf("\n Inside Timer Callback function: %"PRIu64" !!\n", rte_rdtsc_precise());
 }
 #endif
 
@@ -260,7 +262,6 @@ onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
                         &stats_timer_cb, NULL
                         ) != 0 )
                 rte_exit(EXIT_FAILURE, "Stats setup failure.\n");
-        */
         printf("\n 0 RTE_TIMER INITIALIZED SUCCESSFULLY!! [ %d] \n", rte_timer_pending(&nf_info->stats_timer));
         rte_timer_manage();
         //rte_timer_dump_stats(fdopen(2,"w"));
@@ -272,6 +273,7 @@ onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
         rte_timer_manage();
         printf("\n 2 RTE_TIMER INITIALIZED CHECK!! [ %d] \n", rte_timer_pending(&nf_info->stats_timer));
 
+        */
 
 #endif
 
@@ -515,16 +517,30 @@ onvm_nflib_run(
                                 //end_tsc = rte_rdtsc();
                                 //tx_stats->comp_cost[info->instance_id] = end_tsc - start_tsc;
                                 tx_stats->comp_cost[info->instance_id] = compute_total_cycles(start_tsc);
+
+                                if (tx_stats->comp_cost[info->instance_id] > RTDSC_CYCLE_COST) {
+                                        tx_stats->comp_cost[info->instance_id] -= RTDSC_CYCLE_COST;
+                                }
                                 #ifdef USE_CGROUPS_PER_NF_INSTANCE
-                                #define RTDSC_CYCLE_COST    (20*2) // profiled  approx. 18~27cycles per call
+
                                 nf_info->comp_cost  = (nf_info->comp_cost == 0)? (tx_stats->comp_cost[info->instance_id]): ((nf_info->comp_cost+ tx_stats->comp_cost[info->instance_id])/2);
+                                /*
                                 if (nf_info->comp_cost > RTDSC_CYCLE_COST) {
                                         nf_info->comp_cost -= RTDSC_CYCLE_COST;
                                 }
+                                */
                                 #endif //USE_CGROUPS_PER_NF_INSTANCE
+
+                                #ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+                                counter = 1;
+                                #endif  //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
                         }
+
+                        #ifndef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
                         counter++;  //computing for first packet makes also account reasonable cycles for cache-warming.
-                        #endif
+                        #endif //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+
+                        #endif  //INTERRUPT_SEM
 
                         /* NF returns 0 to return packets or 1 to buffer */
                         if(likely(ret_act == 0)) {
@@ -534,6 +550,10 @@ onvm_nflib_run(
                                 tx_stats->tx_buffer[info->instance_id]++;
                         }
                 }
+
+                #ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+                rte_timer_manage();
+                #endif  //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 
                 if (unlikely(tx_batch_size > 0 && rte_ring_enqueue_bulk(tx_ring, pktsTX, tx_batch_size) == -ENOBUFS)) {
 
