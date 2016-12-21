@@ -53,7 +53,23 @@
 
 
 /*********************************Interfaces**********************************/
+typedef struct onvm_stats_snapshot {
+        uint64_t rx_delta;
+        uint64_t tx_delta;
+        uint64_t rx_drop_delta;
+        uint64_t tx_drop_delta;
+        uint32_t arrival_rate;
+        uint32_t rx_rate;
+        uint32_t serv_rate;
+        uint32_t tx_rate;
+        uint32_t rx_drop_rate;
+        uint32_t tx_drop_rate;
+}onvm_stats_snapshot_t;
 
+/* Interace to retieve nf stats
+ * difftime: if 0 : only read but do not update params and rate else update
+ */
+int get_onvm_nf_stats_snapshot(unsigned nf_index, onvm_stats_snapshot_t *snapshot, unsigned difftime);
 
 /*
  * Interface called by the ONVM Manager to display all statistics

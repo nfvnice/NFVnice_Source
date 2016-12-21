@@ -59,11 +59,14 @@ struct wakeup_info *wakeup_infos;
 #endif
 
 /***********************Internal Functions************************************/
+#ifdef INTERRUPT_SEM
 static inline int
 whether_wakeup_client(int instance_id);
 
 static inline void
 wakeup_client(int instance_id, struct wakeup_info *wakeup_info);
+#endif
+
 /***********************Internal Functions************************************/
 
 
@@ -266,6 +269,12 @@ static void signal_handler(int sig, siginfo_t *info, void *secret) {
         (void)secret;
 
         //2 means terminal interrupt, 3 means terminal quit, 9 means kill and 15 means termination
+        printf("Got Signal [%d]\n", sig);
+        if(info) {
+                printf("[signo: %d,errno: %d,code: %d]\n", info->si_signo, info->si_errno, info->si_code);
+        }
+        if(sig == SIGWINCH) return;
+
         if (sig <= 15) {
                 for (i = 1; i < MAX_CLIENTS; i++) {
 
@@ -310,10 +319,7 @@ static void signal_handler(int sig, siginfo_t *info, void *secret) {
 //                rte_free(port_prev_stats);
                 #endif
         }
-        printf("Got Signal [%d]\n", sig);
-        if(info) {
-                printf("[signo: %d,errno: %d,code: %d]\n", info->si_signo, info->si_errno, info->si_code);
-        }
+
         exit(10);
 }
 
@@ -327,6 +333,7 @@ register_signal_handler(void) {
         act.sa_handler = (void *)signal_handler;
 
         for (i = 1; i < 31; i++) {
+                if(i == SIGWINCH)continue;
                 sigaction(i, &act, 0);
         }
 }

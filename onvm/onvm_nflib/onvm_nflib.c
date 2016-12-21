@@ -50,9 +50,20 @@
 #include "onvm_nflib_internal.h"
 #include "onvm_nflib.h"
 
+
+/*****************************************************************************
+                        HISTOGRAM DETAILS
+*/
+#ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+#ifndef MAX_NF_COMP_COST_CYCLES
+#define MAX_NF_COMP_COST_CYCLES     (10000) //can be const int overridden by NF
+unsigned long max_nf_computation_cost = MAX_NF_COMP_COST_CYCLES;
+#endif //MAX_NF_COMP_COST_CYCLES
+#endif //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+/******************************************************************************/
+
 /************************************API**************************************/
 #define USE_STATIC_IDS
-
 #define RTDSC_CYCLE_COST    (20*2) // profiled  approx. 18~27cycles per call
 
 #ifdef USE_CGROUPS_PER_NF_INSTANCE
@@ -111,15 +122,15 @@ void init_cgroup_info(struct onvm_nf_info *nf_info) {
 
 /******************************Timer Helper functions*******************************/
 #ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
-#define STATS_PERIOD_IN_MS 100
+#define STATS_PERIOD_IN_MS 1
 static void
 stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data) {
 
-        //static unsigned counter = 0;
-        //unsigned lcore_id = rte_lcore_id();
-        //printf("%s() on lcore %u : [%u]\n", __func__, lcore_id, ++counter);
+#ifdef INTERRUPT_SEM
         counter = SAMPLING_RATE;
+#endif //INTERRUPT_SEM
+
         //printf("\n On core [%d] Inside Timer Callback function: %"PRIu64" !!\n", rte_lcore_id(), rte_rdtsc_precise());
         //printf("Echo %d", system("echo > hello_timer.txt"));
         //printf("\n Inside Timer Callback function: %"PRIu64" !!\n", rte_rdtsc_precise());
@@ -254,30 +265,11 @@ onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
                                 rte_lcore_id(), //timer_core
                                 &stats_timer_cb, NULL
                                 );
-        /*
-        if (rte_timer_reset(&nf_info->stats_timer,
-                        (STATS_PERIOD_IN_MS * rte_get_timer_hz()) / 1000,
-                        PERIODICAL,
-                        rte_lcore_id(),
-                        &stats_timer_cb, NULL
-                        ) != 0 )
-                rte_exit(EXIT_FAILURE, "Stats setup failure.\n");
-        printf("\n 0 RTE_TIMER INITIALIZED SUCCESSFULLY!! [ %d] \n", rte_timer_pending(&nf_info->stats_timer));
-        rte_timer_manage();
-        //rte_timer_dump_stats(fdopen(2,"w"));
-        sleep(2);
-        rte_timer_manage();
-        printf("\n 1 RTE_TIMER INITIALIZED CHECK!! [ %d] \n", rte_timer_pending(&nf_info->stats_timer));
-        rte_timer_manage();
-        sleep(1);
-        rte_timer_manage();
-        printf("\n 2 RTE_TIMER INITIALIZED CHECK!! [ %d] \n", rte_timer_pending(&nf_info->stats_timer));
+#endif  //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 
-        */
-
+#ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+        hist_init_v2(&nf_info->ht2);    //hist_init( &ht, MAX_NF_COMP_COST_CYCLES);
 #endif
-
-
         RTE_LOG(INFO, APP, "Finished Process Init.\n");
         return retval_final;
 }
@@ -447,12 +439,7 @@ onvm_nflib_run(
                 #endif  // INTERRUPT_SEM
                 #endif  // defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_2)
 
-                /* try dequeuing max possible packets first, if that fails, get the
-                 * most we can. Loop body should only execute once, maximum
-                while (nb_pkts > 0 &&
-                                unlikely(rte_ring_dequeue_bulk(rx_ring, pkts, nb_pkts) != 0))
-                        nb_pkts = (uint16_t)RTE_MIN(rte_ring_count(rx_ring), PKT_READ_SIZE);
-                */
+
                 nb_pkts = (uint16_t)rte_ring_dequeue_burst(rx_ring, pkts, nb_pkts);
 
                 if(nb_pkts == 0) {
@@ -467,24 +454,6 @@ onvm_nflib_run(
                         meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
 
 
-
-//#if 0
-                        #if (defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_3)) || defined(DUMMY_FT_LOAD_ONLY) //#if defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_3)
-                        struct onvm_flow_entry *flow_entry = NULL;
-                        int ret = onvm_flow_dir_get_pkt(pkts[i], &flow_entry);
-                        //if (likely(ret >= 0 && flow_entry->sc) && unlikely (flow_entry->sc->highest_downstream_nf_index_id && (is_upstream_NF(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index)))) { //if (ret >= 0 && flow_entry->sc) {
-                        if (likely(ret >= 0 && flow_entry->sc)) {
-                                #ifndef DUMMY_FT_LOAD_ONLY
-                                #ifdef INTERRUPT_SEM
-                                while (unlikely (flow_entry->sc->highest_downstream_nf_index_id && (is_upstream_NF(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index)))) {
-                                        onvm_nf_yeild(info);
-                                }
-                                #endif  // INTERRUPT_SEM
-                                #endif  // DUMMY_FT_LOAD_ONLY
-                        }
-                        #endif  //defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_3)
-//#endif // if 0
-
                         #ifdef INTERRUPT_SEM
                         //meta = onvm_get_pkt_meta((struct rte_mbuf*)pkts[i]);
                         if (counter % SAMPLING_RATE == 0) {
@@ -496,21 +465,20 @@ onvm_nflib_run(
                         
                         #ifdef INTERRUPT_SEM
                         if (counter % SAMPLING_RATE == 0) {
-                                //end_tsc = rte_rdtsc();
-                                //tx_stats->comp_cost[info->instance_id] = end_tsc - start_tsc;
                                 tx_stats->comp_cost[info->instance_id] = compute_total_cycles(start_tsc);
-
                                 if (tx_stats->comp_cost[info->instance_id] > RTDSC_CYCLE_COST) {
                                         tx_stats->comp_cost[info->instance_id] -= RTDSC_CYCLE_COST;
                                 }
+
                                 #ifdef USE_CGROUPS_PER_NF_INSTANCE
 
-                                nf_info->comp_cost  = (nf_info->comp_cost == 0)? (tx_stats->comp_cost[info->instance_id]): ((nf_info->comp_cost+ tx_stats->comp_cost[info->instance_id])/2);
-                                /*
-                                if (nf_info->comp_cost > RTDSC_CYCLE_COST) {
-                                        nf_info->comp_cost -= RTDSC_CYCLE_COST;
-                                }
-                                */
+                                #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+                                hist_store_v2(&info->ht2, tx_stats->comp_cost[info->instance_id]);  //hist_store(&ht,tx_stats->comp_cost[info->instance_id]); //tx_stats->comp_cost[info->instance_id] = max_nf_computation_cost;
+                                //avoid updating 'nf_info->comp_cost' as it will be calculated in the weight assignment function
+                                //nf_info->comp_cost  = hist_extract_v2(&nf_info->ht2,VAL_TYPE_RUNNING_AVG);
+                                #endif //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+                                #else   //just use the running average
+                                nf_info->comp_cost  = (nf_info->comp_cost == 0)? (tx_stats->comp_cost[info->instance_id]): ((nf_info->comp_cost+tx_stats->comp_cost[info->instance_id])/2);
                                 #endif //USE_CGROUPS_PER_NF_INSTANCE
 
                                 #ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
@@ -745,6 +713,7 @@ onvm_nflib_handle_signal(int sig)
 #ifdef INTERRUPT_SEM
 static void set_cpu_sched_policy_and_mode(void) {
         return;
+
         struct sched_param param;
         pid_t my_pid = getpid();
         sched_getparam(my_pid, &param);

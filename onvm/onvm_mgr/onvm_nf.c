@@ -79,7 +79,6 @@ void compute_and_assign_nf_cgroup_weight(void) {
                 uint64_t total_load_cost_fct;   //total product of current load and computation cost on core (aggregate demand in total cycles)
         }nf_core_and_cc_info_t;
 
-
         static int update_rate = 0;
         if (update_rate != 10) {
                 update_rate++;
@@ -96,6 +95,12 @@ void compute_and_assign_nf_cgroup_weight(void) {
         //First build the total cost and contention info per core
         for (nf_id=0; nf_id < MAX_CLIENTS; nf_id++) {
                 if (onvm_nf_is_valid(&clients[nf_id])){
+
+                        #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+                        //Get the Median Computation cost, instead of running average; else running average is expected to be set already.
+                        clients[nf_id].info->comp_cost = hist_extract_v2(&clients[nf_id].info->ht2, VAL_TYPE_MEDIAN);
+                        #endif //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+
                         nf_pool_per_core[clients[nf_id].info->core_id].total_comp_cost += clients[nf_id].info->comp_cost;
                         nf_pool_per_core[clients[nf_id].info->core_id].total_nf_count++;
                         nf_pool_per_core[clients[nf_id].info->core_id].total_load += clients[nf_id].info->load;            //clients[nf_id].info->avg_load;
@@ -119,12 +124,12 @@ void compute_and_assign_nf_cgroup_weight(void) {
                         else {
                                 clients[nf_id].info->cpu_share = (uint32_t)DEFAULT_NF_CPU_SHARE;
                         }
-                        /*
+                        #ifdef __DEBUG_LOGS__
                         printf("\n ***** Client [%d] with cost [%d] on core [%d] with total_demand [%d] shared by [%d] NFs, got cpu share [%d]***** \n ", clients[nf_id].info->instance_id, clients[nf_id].info->comp_cost, clients[nf_id].info->core_id,
                                                                                                                                                    nf_pool_per_core[clients[nf_id].info->core_id].total_comp_cost,
                                                                                                                                                    nf_pool_per_core[clients[nf_id].info->core_id].total_nf_count,
                                                                                                                                                    clients[nf_id].info->cpu_share);
-                        */
+                        #endif //__DEBUG_LOGS__
 
 #else
                         uint64_t num = 0;
@@ -140,12 +145,12 @@ void compute_and_assign_nf_cgroup_weight(void) {
                         else {
                                 clients[nf_id].info->cpu_share = (uint32_t)DEFAULT_NF_CPU_SHARE;
                         }
-                        /*
+                        #ifdef __DEBUG_LOGS__
                         printf("\n ***** Client [%d] with cost [%d] and load [%d] on core [%d] with total_demand_comp_cost=%"PRIu64", shared by [%d] NFs, got num=%"PRIu64", cpu share [%d]***** \n ", clients[nf_id].info->instance_id, clients[nf_id].info->comp_cost, clients[nf_id].info->load, clients[nf_id].info->core_id,
                                                                                                                                                    nf_pool_per_core[clients[nf_id].info->core_id].total_load_cost_fct,
                                                                                                                                                    nf_pool_per_core[clients[nf_id].info->core_id].total_nf_count,
                                                                                                                                                    num, clients[nf_id].info->cpu_share);
-                        */
+                        #endif //__DEBUG_LOGS__
 #endif //USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE
 
                         //set_cgroup_nf_cpu_share(clients[nf_id].info->instance_id, clients[nf_id].info->cpu_share);
@@ -156,14 +161,16 @@ void compute_and_assign_nf_cgroup_weight(void) {
 }
 
 void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval) {
-#if defined (USE_CGROUPS_PER_NF_INSTANCE)
+#if defined (USE_CGROUPS_PER_NF_INSTANCE) && defined(INTERRUPT_SEM)
         uint16_t nf_id = 0;
         for (; nf_id < MAX_CLIENTS; nf_id++) {
                 struct client *cl = &clients[nf_id];
                 if (onvm_nf_is_valid(cl)){
-                        cl->info->load      =  (cl->stats.rx - cl->stats.prev_rx + cl->stats.rx_drop - cl->stats.prev_rx_drop); //rte_ring_count(cl->rx_q);
+                        static onvm_stats_snapshot_t st;
+                        get_onvm_nf_stats_snapshot(nf_id,&st,0);
+                        cl->info->load      =   (st.rx_delta + st.rx_drop_delta);//(cl->stats.rx - cl->stats.prev_rx + cl->stats.rx_drop - cl->stats.prev_rx_drop); //rte_ring_count(cl->rx_q);
                         cl->info->avg_load  =  ((cl->info->avg_load == 0) ? (cl->info->load):((cl->info->avg_load + cl->info->load) /2));
-                        cl->info->svc_rate  =  (clients_stats->tx[nf_id] -  clients_stats->prev_tx[nf_id]);
+                        cl->info->svc_rate  =  (st.tx_delta); //(clients_stats->tx[nf_id] -  clients_stats->prev_tx[nf_id]);
                         cl->info->avg_svc   =  ((cl->info->avg_svc == 0) ? (cl->info->svc_rate):((cl->info->avg_svc + cl->info->svc_rate) /2));
                 }
                 else if (cl && cl->info) {

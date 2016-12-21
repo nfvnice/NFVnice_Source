@@ -95,9 +95,8 @@ parse_app_args(int argc, char *argv[], const char *progname) {
                 case 'c':
                         comp_cost_level = strtoul(optarg, NULL, 10);
                         //if (comp_cost_level) dst_flag = 1;
-                        printf("comp_cos_level: %d\n", comp_cost_level); 
+                        printf("comp_cos_level: %d\n", comp_cost_level);
                         break;
-
                 case '?':
                         usage(progname);
                         if (optopt == 'p')

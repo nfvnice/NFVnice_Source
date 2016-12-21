@@ -57,7 +57,7 @@
 //#endif
 #include "common.h"
 /************************************API**************************************/
-
+extern unsigned long max_nf_computation_cost;
 /**
  * Initialize the OpenNetVM container Library.
  * This will setup the DPDK EAL as a secondary process, and notify the host

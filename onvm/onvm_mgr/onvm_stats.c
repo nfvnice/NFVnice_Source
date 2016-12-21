@@ -172,15 +172,41 @@ onvm_stats_display_ports(unsigned difftime) {
 }
 
 
+int get_onvm_nf_stats_snapshot(unsigned nf_index, onvm_stats_snapshot_t *snapshot, unsigned difftime) {
+
+#ifdef INTERRUPT_SEM
+        snapshot->rx_delta = (clients[nf_index].stats.rx - clients[nf_index].stats.prev_rx);
+        snapshot->rx_drop_delta = (clients[nf_index].stats.rx_drop - clients[nf_index].stats.prev_rx_drop);
+        snapshot->tx_delta = (clients_stats->tx[nf_index] - clients_stats->prev_tx[nf_index]);
+        snapshot->tx_drop_delta = (clients_stats->tx_drop[nf_index] - clients_stats->prev_tx_drop[nf_index]);
+
+        if(difftime) {
+                clients[nf_index].stats.prev_rx = clients[nf_index].stats.rx;
+                clients[nf_index].stats.prev_rx_drop = clients[nf_index].stats.rx_drop;
+                clients_stats->prev_tx[nf_index] = clients_stats->tx[nf_index];
+                clients_stats->prev_tx_drop[nf_index] = clients_stats->tx_drop[nf_index];
+
+                snapshot->rx_rate       = snapshot->rx_delta/difftime;
+                snapshot->serv_rate     = snapshot->tx_delta/difftime;
+                snapshot->arrival_rate  = (snapshot->rx_delta + snapshot->rx_drop_delta)/difftime;
+                snapshot->tx_rate       = (snapshot->tx_delta + snapshot->tx_drop_delta)/difftime;
+                snapshot->rx_drop_rate = snapshot->rx_drop_delta/difftime;
+                snapshot->tx_drop_rate = snapshot->tx_drop_delta/difftime;
+        }
+#else
+        snapshot->rx_delta = (clients[nf_index].stats.rx);
+        snapshot->rx_drop_delta = (clients[nf_index].stats.rx_drop);
+        snapshot->tx_delta = (clients_stats->tx[nf_index]);
+        snapshot->tx_drop_delta = (clients_stats->tx_drop[nf_index]);
+#endif
+        return 0;
+}
+
 void
 onvm_stats_display_clients(unsigned difftime) {
         unsigned i;
 
         #ifdef INTERRUPT_SEM
-        uint64_t vol_rate;
-        uint64_t rx_drop_rate;
-        uint64_t serv_rate;
-        uint64_t serv_drop_rate;
         uint64_t rx_qlen;
         uint64_t tx_qlen;
         uint64_t comp_cost;
@@ -220,15 +246,14 @@ onvm_stats_display_clients(unsigned difftime) {
         for (i = 0; i < MAX_CLIENTS; i++) {
                 if (!onvm_nf_is_valid(&clients[i]))
                         continue;
-                const uint64_t rx = clients[i].stats.rx;
-                const uint64_t rx_drop = clients[i].stats.rx_drop;
 
-                const uint64_t tx = clients_stats->tx[i];
+                const uint64_t rx_drop = clients[i].stats.rx_drop;
                 const uint64_t tx_drop = clients_stats->tx_drop[i];
 
 
-
                 #ifndef INTERRUPT_SEM
+                const uint64_t rx = clients[i].stats.rx;
+                const uint64_t tx = clients_stats->tx[i];
                 const uint64_t act_drop = clients[i].stats.act_drop;
                 const uint64_t act_next = clients[i].stats.act_next;
                 const uint64_t act_out = clients[i].stats.act_out;
@@ -246,27 +271,24 @@ onvm_stats_display_clients(unsigned difftime) {
                 #endif
 
                 #ifdef INTERRUPT_SEM
-                /* periodic/rate specific statistics of NF instance */ 
-                const uint64_t prev_rx = clients[i].stats.prev_rx;
-                const uint64_t prev_rx_drop = clients[i].stats.prev_rx_drop;
-                const uint64_t prev_tx = clients_stats->prev_tx[i];
-                const uint64_t prev_tx_drop = clients_stats->prev_tx_drop[i];
+                /* periodic/rate specific statistics of NF instance */
+                static onvm_stats_snapshot_t st = {0,};
+                get_onvm_nf_stats_snapshot(i, &st, difftime);
+
                 const uint64_t avg_wakeups = ( clients[i].stats.wakeup_count -  clients[i].stats.prev_wakeup_count);
                 const uint64_t yields =  (clients_stats->wkup_count[i] - clients_stats->prev_wkup_count[i]);
 
-                vol_rate = (rx - prev_rx) / difftime;
-                rx_drop_rate = (rx_drop - prev_rx_drop) / difftime;
-                serv_rate = (tx - prev_tx) / difftime;
-                serv_drop_rate = (tx_drop - prev_tx_drop) / difftime;
                 rx_qlen = rte_ring_count(clients[i].rx_q);
                 tx_qlen = rte_ring_count(clients[i].tx_q);
                 comp_cost = clients_stats->comp_cost[i];
 
                 if (avg_wakeups > 0 ) {
-                        avg_pkts_per_wakeup = (serv_rate+serv_drop_rate)/avg_wakeups;
-                        good_pkts_per_wakeup = (serv_rate)/avg_wakeups;
-                        if(yields) yield_rate = (serv_rate)/yields;
+                        avg_pkts_per_wakeup = (st.tx_rate)/avg_wakeups;
+                        good_pkts_per_wakeup = (st.serv_rate)/avg_wakeups;
+                        if(yields) yield_rate = (st.serv_rate)/yields;
                 }
+                clients[i].stats.prev_wakeup_count = clients[i].stats.wakeup_count;
+                clients_stats->prev_wkup_count[i] = clients_stats->wkup_count[i];
 
                 printf("Client %2u:[%d, %d],  comp_cost=%"PRIu64", avg_wakeups=%"PRIu64", yields=%"PRIu64", msg_flag(blocked)=%d, \n"
                 "avg_ppw=%"PRIu64", avg_good_ppw=%"PRIu64",  pkts_per_yield=%"PRIu64"\n"
@@ -274,15 +296,8 @@ onvm_stats_display_clients(unsigned difftime) {
                 "tx_rate=%"PRIu64", tx_drop=%"PRIu64", tx_drop_rate=%"PRIu64", tx_qlen=%"PRIu64"\n",
                 clients[i].info->instance_id, i, clients[i].info->service_id, comp_cost, avg_wakeups, yields, rte_atomic16_read(clients[i].shm_server),
                 avg_pkts_per_wakeup, good_pkts_per_wakeup, yield_rate,
-                vol_rate, rx_drop, rx_drop_rate, rx_qlen, serv_rate, tx_drop, serv_drop_rate, tx_qlen);
+                (uint64_t)st.rx_rate, rx_drop, (uint64_t)st.rx_drop_rate, rx_qlen, (uint64_t)st.serv_rate, tx_drop, (uint64_t)st.tx_drop_rate, tx_qlen);
 
-                clients[i].stats.prev_rx = rx; //clients[i].stats.rx;
-                clients[i].stats.prev_rx_drop = rx_drop; //clients[i].stats.rx_drop;
-                clients_stats->prev_tx[i] = tx; //clients_stats->tx[i];
-                clients_stats->prev_tx_drop[i] = tx_drop; //clients_stats->tx_drop[i];
-
-                clients[i].stats.prev_wakeup_count = clients[i].stats.wakeup_count;
-                clients_stats->prev_wkup_count[i] = clients_stats->wkup_count[i];
                 #endif
 
         #ifdef ENABLE_NF_BACKPRESSURE
@@ -303,6 +318,9 @@ onvm_stats_display_clients(unsigned difftime) {
 
         #ifdef USE_CGROUPS_PER_NF_INSTANCE
                 printf("CoreId [%d], cpu_share=[%d], compcost=[%d], load:[%d,%d], svc_rate:[%d,%d] \n", clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc);
+                #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+                printf("Histogram: TtlCnt[%d], Min:[%d], Max:[%d], RAvg:[%d] Median:[%d]  PT25:[%d], PT99:[%d] \n", clients[i].info->ht2.histogram.total_count, clients[i].info->ht2.min_val, clients[i].info->ht2.max_val, clients[i].info->ht2.running_avg, clients[i].info->ht2.median_val, hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_25_PERCENTILE),hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_99_PERCENTILE) );
+                #endif
         #endif //USE_CGROUPS_PER_NF_INSTANCE
                 printf("\n");
 

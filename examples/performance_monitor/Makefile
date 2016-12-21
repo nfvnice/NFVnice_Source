@@ -56,12 +56,14 @@ LDLIBS+= -lpthread
 
 CFLAGS += -I$(ONVM)/onvm_nflib
 CFLAGS += -I$(ONVM)/shared
-LDFLAGS += $(ONVM)/onvm_nflib/onvm_nflib/$(RTE_TARGET)/onvm_nflib.o
-LDFLAGS += $(ONVM)/shared/shared/$(RTE_TARGET)/onvm_pkt_helper.o
-LDFLAGS += $(ONVM)/shared/shared/$(RTE_TARGET)/onvm_sc_common.o
-LDFLAGS += $(ONVM)/shared/shared/$(RTE_TARGET)/onvm_sc_mgr.o
-LDFLAGS += $(ONVM)/shared/shared/$(RTE_TARGET)/onvm_flow_table.o
-LDFLAGS += $(ONVM)/shared/shared/$(RTE_TARGET)/onvm_flow_dir.o
+LDFLAGS += $(ONVM)/onvm_nflib/onvm_nflib/$(RTE_TARGET)/onvm_nflib.a
+#LDFLAGS += $(ONVM)/onvm_nflib/onvm_nflib/$(RTE_TARGET)/onvm_nflib.o
+
+LDFLAGS += $(ONVM)/shared/shared/$(RTE_TARGET)/onvm_shared.a
+#LDFLAGS += $(ONVM)/shared/shared/$(RTE_TARGET)/onvm_pkt_helper.o
+#LDFLAGS += $(ONVM)/shared/shared/$(RTE_TARGET)/onvm_sc_common.o
+#LDFLAGS += $(ONVM)/shared/shared/$(RTE_TARGET)/onvm_flow_table.o
+#LDFLAGS += $(ONVM)/shared/shared/$(RTE_TARGET)/onvm_flow_dir.o
 
 # include $(RTE_SDK)/mk/rte.extapp.mk
 

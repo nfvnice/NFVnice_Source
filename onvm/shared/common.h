@@ -56,6 +56,9 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
+#define MIN(a,b) ((a) < (b)? (a):(b))
+#define MAX(a,b) ((a) > (b)? (a):(b))
+
 /* Enable the ONVM_MGR to act as a 2-port bridge without any NFs */
 //#define ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE    // Work as bridge < without any NFs :: only testing purpose.. >
 //#define SEND_DIRECT_ON_ALT_PORT
@@ -82,6 +85,7 @@
 #define DROP_APPROACH_3_WITH_SYNC       //sub-option for approach 3: Results are good, preferred approach.
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
+
 #define USE_SEMAPHORE           // Use Semaphore for IPC
 //#define USE_MQ                // USe Message Queue for IPC between NFs and NF manager
 //#define USE_FIFO              // Use Named Pipe (FIFO) -- cannot work in our model as Writer cannot be opened in nonblock
@@ -100,6 +104,9 @@
 #ifdef USE_ZMQ
 #include <zmq.h>
 #endif
+
+/* Enable Extra Debug Logs on all components */
+//#define __DEBUG_LOGS__
 
 /* Enable this flag to assign a distinct CGROUP for each NF instance */
 #define USE_CGROUPS_PER_NF_INSTANCE                 // To create CGroup per NF instance
@@ -150,6 +157,10 @@
 #include <rte_timer.h>
 #endif //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 
+#define STORE_HISTOGRAM_OF_NF_COMPUTATION_COST  //Store the Histogram of NF Comp Cost
+#ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+#include "histogram.h"                          //Histogra Library
+#endif //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
 
 #ifdef ENABLE_NF_BACKPRESSURE
 //forward declaration either store reference of onvm_flow_entry or onvm_service_chain (latter may be sufficient)
@@ -289,7 +300,9 @@ struct onvm_nf_info {
         struct rte_timer stats_timer;
 #endif //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 
-
+#ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+        histogram_v2_t ht2;
+#endif  //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
 };
 
 /*
