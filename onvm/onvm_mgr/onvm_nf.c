@@ -168,7 +168,7 @@ void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long int
                 if (onvm_nf_is_valid(cl)){
                         static onvm_stats_snapshot_t st;
                         get_onvm_nf_stats_snapshot(nf_id,&st,0);
-                        cl->info->load      =   (st.rx_delta + st.rx_drop_delta);//(cl->stats.rx - cl->stats.prev_rx + cl->stats.rx_drop - cl->stats.prev_rx_drop); //rte_ring_count(cl->rx_q);
+                        cl->info->load      =  (st.rx_delta + st.rx_drop_delta);//(cl->stats.rx - cl->stats.prev_rx + cl->stats.rx_drop - cl->stats.prev_rx_drop); //rte_ring_count(cl->rx_q);
                         cl->info->avg_load  =  ((cl->info->avg_load == 0) ? (cl->info->load):((cl->info->avg_load + cl->info->load) /2));
                         cl->info->svc_rate  =  (st.tx_delta); //(clients_stats->tx[nf_id] -  clients_stats->prev_tx[nf_id]);
                         cl->info->avg_svc   =  ((cl->info->avg_svc == 0) ? (cl->info->svc_rate):((cl->info->avg_svc + cl->info->svc_rate) /2));

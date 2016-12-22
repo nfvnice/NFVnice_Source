@@ -55,14 +55,14 @@
 
 
 /*********************************Interfaces**********************************/
-void
-register_signal_handler(void);
-
-int
-wakeup_nfs(void *arg);
-
 #ifdef INTERRUPT_SEM
 extern struct wakeup_info *wakeup_infos;
-#endif //INTERRUPT_SEM
 
+void register_signal_handler(void);
+
+int wakeup_nfs(void *arg);
+
+inline void handle_wakeup(struct wakeup_info *wakeup_info);
+
+#endif //INTERRUPT_SEM
 #endif //_ONVM_WAKEMGR_H_

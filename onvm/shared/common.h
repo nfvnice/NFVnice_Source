@@ -55,6 +55,8 @@
 #include <sys/file.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #define MIN(a,b) ((a) < (b)? (a):(b))
 #define MAX(a,b) ((a) > (b)? (a):(b))
@@ -150,6 +152,7 @@
 
 
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
+#define ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 
 /* ENABLE TIMER BASED WEIGHT COMPUTATION IN NF_LIB */
 #define ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION

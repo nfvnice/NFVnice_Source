@@ -58,12 +58,22 @@
 static int onv_pkt_send_on_alt_port(struct thread_info *rx, struct rte_mbuf *pkts[], uint16_t rx_count);
 #endif //ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
 
+typedef struct thread_core_map_t {
+        unsigned rx_th_core[ONVM_NUM_RX_THREADS];
+        unsigned tx_t_core[8];
+#ifdef INTERRUPT_SEM
+        unsigned wk_th_core[ONVM_NUM_WAKEUP_THREADS];
+#endif
+        unsigned mn_th_core;
+}thread_core_map_t;
+static thread_core_map_t thread_core_map;
 
 #ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
 #define NF_STATUS_CHECK_PERIOD_IN_MS    (500)       // 500ms or 0.5seconds
 #define DISPLAY_STATS_PERIOD_IN_MS      (1000)      // 1000ms or Every second
 #define NF_LOAD_EVAL_PERIOD_IN_MS       (1)         // 1ms
-#define USLEEP_INTERVAL_IN_US           (250)       // 500 micro seconds (best precision >100micro)
+#define USLEEP_INTERVAL_IN_US           (50)        // 50 micro seconds (even if set to 50, best precision >100micro)
+#define ARBITER_PERIOD_IN_US            (100)       // 250 micro seconds
 //Note: Running arbiter at 100micro to 250 micro seconds is fine provided we have the buffers available as:
 //RTT (measured with bridge and 1 basic NF) =0.2ms B=10Gbps => B*delay ( 2*RTT*Bw) = 2*200*10^-6 * 10*10^9 = 4Mb = 0.5MB
 //Assuming avg pkt size of 1000 bytes => 500 *10^3/1000 = 500 packets. (~512 packets)
@@ -84,13 +94,20 @@ static nf_stats_time_info_t nf_stat_time;
 struct rte_timer display_stats_timer;
 struct rte_timer nf_status_check_timer;
 struct rte_timer nf_load_eval_timer;
+struct rte_timer main_arbiter_timer;
 
+int initialize_rx_timers(int index, void *data);
+int initialize_tx_timers(int index, void *data);
+
+int initialize_wake_core_timers(int index, void *data);
 int initialize_master_timers(void);
 static void display_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data);
 static void nf_status_check_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data);
 static void nf_load_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
+        __attribute__((unused)) void *ptr_data);
+static void arbiter_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data);
 
 int get_current_time(struct timespec *pTime);
@@ -152,12 +169,46 @@ nf_load_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         return;
 }
 
+static void
+arbiter_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
+        __attribute__((unused)) void *ptr_data) {
+
+        //DO: Must Prioritize the NFs and wakeup the NFs in the order of priority and slack
+
+
+        //printf("\n Inside arbiter_timer_cb() %"PRIu64", on core [%d] \n", rte_rdtsc_precise(), rte_lcore_id());
+        return;
+}
+
+#ifdef INTERRUPT_SEM
+int
+initialize_wake_core_timers(int index, void *data) {
+        //return index;
+
+        rte_timer_init(&main_arbiter_timer);
+        uint64_t ticks = 0;
+        ticks = ((uint64_t)ARBITER_PERIOD_IN_US *(rte_get_timer_hz()/1000000));
+        printf("Wakeup thread core [%d]\n ", thread_core_map.wk_th_core[0]);
+        rte_timer_reset_sync(&main_arbiter_timer,
+                ticks,
+                PERIODICAL,
+                thread_core_map.wk_th_core[index], //rte_lcore_id(),
+                &arbiter_timer_cb, data
+                );
+
+
+        return 0;
+}
+#endif
+
 int
 initialize_master_timers(void) {
 
         rte_timer_init(&nf_status_check_timer);
         rte_timer_init(&display_stats_timer);
         rte_timer_init(&nf_load_eval_timer);
+        rte_timer_init(&main_arbiter_timer);
+
         uint64_t ticks = 0;
 
         ticks = ((uint64_t)NF_STATUS_CHECK_PERIOD_IN_MS *(rte_get_timer_hz()/1000));
@@ -183,6 +234,17 @@ initialize_master_timers(void) {
                 rte_lcore_id(), //timer_core
                 &nf_load_stats_timer_cb, NULL
                 );
+
+        ticks = ((uint64_t)ARBITER_PERIOD_IN_US *(rte_get_timer_hz()/1000000));
+        rte_timer_reset_sync(&main_arbiter_timer,
+                ticks,
+                PERIODICAL,
+                rte_lcore_id(),
+                &arbiter_timer_cb, NULL
+                );
+        //Note: This call effectively nullifies the timer
+        rte_timer_init(&main_arbiter_timer);
+
         return 0;
 }
 #endif //ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
@@ -413,6 +475,7 @@ main(int argc, char *argv[]) {
                                 tx->first_cl);
                         return -1;
                 }
+                thread_core_map.tx_t_core[i]=cur_lcore;
         }
        
         /* Launch RX thread main function for each RX queue on cores */
@@ -430,6 +493,7 @@ main(int argc, char *argv[]) {
                                 rx->queue_id);
                         return -1;
                 }
+                thread_core_map.rx_th_core[i]=cur_lcore;
         }
         
         #ifdef INTERRUPT_SEM
@@ -443,15 +507,20 @@ main(int argc, char *argv[]) {
                 wakeup_infos[i].first_client = RTE_MIN(i * clients_per_wakethread + 1, temp_num_clients);
                 wakeup_infos[i].last_client = RTE_MIN((i+1) * clients_per_wakethread + 1, temp_num_clients);
                 cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
+
+                thread_core_map.wk_th_core[i]=cur_lcore;
+                //initialize_wake_core_timers(i, (void*)&wakeup_infos);
+
                 rte_eal_remote_launch(wakeup_nfs, (void*)&wakeup_infos[i], cur_lcore);
                 //printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
                 RTE_LOG(INFO, APP, "Core %d: Running wakeup thread, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
+
         }
         #endif
 
         /* Master thread handles statistics and NF management */
+        thread_core_map.mn_th_core=rte_lcore_id();
         master_thread_main();
-        
         return 0;
 }
 

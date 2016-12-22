@@ -173,12 +173,11 @@ init(int argc, char *argv[]) {
 
         onvm_flow_dir_init();
 
-#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
+#if defined(ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD) || defined(ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD)
         rte_timer_subsystem_init();
 #endif //ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
         return 0;
 }
-
 
 /*****************************Internal functions******************************/
 

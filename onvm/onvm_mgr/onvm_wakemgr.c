@@ -54,28 +54,70 @@
 
 #ifdef INTERRUPT_SEM
 #include <signal.h>
+
+//#define USE_NF_WAKE_THRESHOLD
+#ifdef USE_NF_WAKE_THRESHOLD
 unsigned nfs_wakethr[MAX_CLIENTS] = {[0 ... MAX_CLIENTS-1] = 1};
-struct wakeup_info *wakeup_infos;
 #endif
 
+struct wakeup_info *wakeup_infos;
+
 /***********************Internal Functions************************************/
-#ifdef INTERRUPT_SEM
 static inline int
 whether_wakeup_client(int instance_id);
 
 static inline void
 wakeup_client(int instance_id, struct wakeup_info *wakeup_info);
-#endif
+
+#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
+#define WAKE_INTERVAL_IN_US     (100)   //100 micro seconds
+#define USLEEP_INTERVAL         (50)    //50 micro seconds
+//Note: sleep of 50us and wake_interval of 100us reduces CPU utilization from 100 to 0.3
+//Ideal: Get rid of wake thread and merge the functionality with the main_thread.
+
+struct rte_timer wake_timer[ONVM_NUM_WAKEUP_THREADS];
+static void wake_timer_cb(struct rte_timer *ptr_timer, void *ptr_data);
+int initialize_wake_timers(void *data);
+#endif //USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
+
+/***********************Timer Functions************************************/
+#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
+static void wake_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer, void *ptr_data) {
+
+        if(ptr_data)
+                handle_wakeup((struct wakeup_info *)ptr_data);
+}
+
+int
+initialize_wake_timers(void *data) {
+        static uint8_t index = 0;
+
+        if(index >= ONVM_NUM_WAKEUP_THREADS) return -1;
+
+        rte_timer_init(&wake_timer[index]);
+
+        uint64_t ticks = 0;
+        ticks = ((uint64_t)WAKE_INTERVAL_IN_US *(rte_get_timer_hz()/1000000));
+
+        rte_timer_reset_sync(&wake_timer[index],
+                ticks,
+                PERIODICAL,
+                rte_lcore_id(),
+                &wake_timer_cb, data
+                );
+
+        index++;
+        return 0;
+}
+#endif //ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
+/***********************Timer Functions************************************/
 
 /***********************Internal Functions************************************/
-
-
-#ifdef INTERRUPT_SEM
 #define WAKEUP_THRESHOLD 1
 static inline int
 whether_wakeup_client(int instance_id)
 {
-        uint16_t cur_entries;
+
         if (clients[instance_id].rx_q == NULL) {
                 return 0;
         }
@@ -97,10 +139,15 @@ whether_wakeup_client(int instance_id)
         #endif //NF_BACKPRESSURE_APPROACH_2
         #endif //ENABLE_NF_BACKPRESSURE
 
+#ifdef USE_NF_WAKE_THRESHOLD
+        uint16_t cur_entries;
         cur_entries = rte_ring_count(clients[instance_id].rx_q);
         if (cur_entries >= nfs_wakethr[instance_id]) {
                 return 1;
         }
+#else
+        if(rte_ring_count(clients[instance_id].rx_q)) return 1;
+#endif
         return 0;
 }
 
@@ -171,52 +218,7 @@ notify_client(int instance_id)
         rte_atomic16_read(clients[instance_id].shm_server);
         #endif
 }
-#ifdef SORT_EFFICEINCY_TET
-static int rdata[MAX_CLIENTS];
-void quickSort( int a[], int l, int r);
-int partition( int a[], int l, int r);
-void quickSort( int a[], int l, int r)
-{
-   int j;
 
-   if( l < r )
-   {
-    // divide and conquer
-        j = partition( a, l, r);
-       quickSort( a, l, j-1);
-       quickSort( a, j+1, r);
-   }
-
-}
-
-int partition( int a[], int l, int r) {
-   int pivot, i, j, t;
-   pivot = a[l];
-   i = l; j = r+1;
-
-   while( 1)
-   {
-    do ++i; while( a[i] <= pivot && i <= r );
-    do --j; while( a[j] > pivot );
-    if( i >= j ) break;
-    t = a[i]; a[i] = a[j]; a[j] = t;
-   }
-   t = a[l]; a[l] = a[j]; a[j] = t;
-   return j;
-}
-void populate_and_sort_rdata(void);
-void populate_and_sort_rdata(void) {
-        unsigned i = 0;
-        for (i=0; i< MAX_CLIENTS; i++) {
-                uint16_t demand = rte_ring_count(clients[i].rx_q);
-                uint16_t offload = rte_ring_count(clients[i].tx_q);
-                uint16_t ccost   = clients[i].info->comp_cost;
-                uint32_t prio = demand*ccost - offload;
-                rdata[i] = prio;
-        }
-        quickSort(rdata, 0, MAX_CLIENTS-1);
-}
-#endif
 
 static inline void
 wakeup_client(int instance_id, struct wakeup_info *wakeup_info)  {
@@ -240,24 +242,27 @@ wakeup_client(int instance_id, struct wakeup_info *wakeup_info)  {
         #endif //ENABLE_NF_BACKPRESSURE
 }
 
+inline void handle_wakeup(struct wakeup_info *wakeup_info) {
+        //wakeup_info->num_wakeups += 1;    //count for debug
+        unsigned i=0;
+        for (i = wakeup_info->first_client; i < wakeup_info->last_client; i++) {
+                wakeup_client(i, wakeup_info);
+        }
+}
+
 int
 wakeup_nfs(void *arg) {
-        struct wakeup_info *wakeup_info = (struct wakeup_info *)arg;
-        unsigned i;
 
-        //return 0;
-        /*
-        if (wakeup_info->first_client == 1) {
-                wakeup_info->first_client += ONVM_SPECIAL_NF;
-        }
-        */
-
+        initialize_wake_timers(arg);
         while (true) {
-                //wakeup_info->num_wakeups += 1;    //count for debug
-                for (i = wakeup_info->first_client; i < wakeup_info->last_client; i++) {
-                        wakeup_client(i, wakeup_info);
-                }
+#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
+                rte_timer_manage();
+                usleep(USLEEP_INTERVAL);
+#else
+                handle_wakeup((struct wakeup_info *)arg);
                 usleep(100);
+#endif //#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
+
         }
 
         return 0;
@@ -336,5 +341,54 @@ register_signal_handler(void) {
                 if(i == SIGWINCH)continue;
                 sigaction(i, &act, 0);
         }
+}
+
+#endif //INTERRUPT_SEM
+
+
+#ifdef SORT_EFFICEINCY_TET
+static int rdata[MAX_CLIENTS];
+void quickSort( int a[], int l, int r);
+int partition( int a[], int l, int r);
+void quickSort( int a[], int l, int r)
+{
+   int j;
+
+   if( l < r )
+   {
+    // divide and conquer
+        j = partition( a, l, r);
+       quickSort( a, l, j-1);
+       quickSort( a, j+1, r);
+   }
+
+}
+
+int partition( int a[], int l, int r) {
+   int pivot, i, j, t;
+   pivot = a[l];
+   i = l; j = r+1;
+
+   while( 1)
+   {
+    do ++i; while( a[i] <= pivot && i <= r );
+    do --j; while( a[j] > pivot );
+    if( i >= j ) break;
+    t = a[i]; a[i] = a[j]; a[j] = t;
+   }
+   t = a[l]; a[l] = a[j]; a[j] = t;
+   return j;
+}
+void populate_and_sort_rdata(void);
+void populate_and_sort_rdata(void) {
+        unsigned i = 0;
+        for (i=0; i< MAX_CLIENTS; i++) {
+                uint16_t demand = rte_ring_count(clients[i].rx_q);
+                uint16_t offload = rte_ring_count(clients[i].tx_q);
+                uint16_t ccost   = clients[i].info->comp_cost;
+                uint32_t prio = demand*ccost - offload;
+                rdata[i] = prio;
+        }
+        quickSort(rdata, 0, MAX_CLIENTS-1);
 }
 #endif

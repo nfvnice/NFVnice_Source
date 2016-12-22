@@ -194,6 +194,7 @@ int get_onvm_nf_stats_snapshot(unsigned nf_index, onvm_stats_snapshot_t *snapsho
                 snapshot->tx_drop_rate = snapshot->tx_drop_delta/difftime;
         }
 #else
+        (void)difftime;
         snapshot->rx_delta = (clients[nf_index].stats.rx);
         snapshot->rx_drop_delta = (clients[nf_index].stats.rx_drop);
         snapshot->tx_delta = (clients_stats->tx[nf_index]);
@@ -317,9 +318,9 @@ onvm_stats_display_clients(unsigned difftime) {
         #endif  //ENABLE_NF_BACKPRESSURE
 
         #ifdef USE_CGROUPS_PER_NF_INSTANCE
-                printf("CoreId [%d], cpu_share=[%d], compcost=[%d], load:[%d,%d], svc_rate:[%d,%d] \n", clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc);
+                printf("Pid:[%d], CoreId:[%d], cpu_share:[%d], compcost:[%d], load:[%d,%d], svc_rate:[%d,%d] prio:[%d,%d,%d] \n", clients[i].info->pid, clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc, sched_getscheduler(clients[i].info->pid), getpriority(PRIO_PROCESS, clients[i].info->pid), nice(0));
                 #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
-                printf("Histogram: TtlCnt[%d], Min:[%d], Max:[%d], RAvg:[%d] Median:[%d]  PT25:[%d], PT99:[%d] \n", clients[i].info->ht2.histogram.total_count, clients[i].info->ht2.min_val, clients[i].info->ht2.max_val, clients[i].info->ht2.running_avg, clients[i].info->ht2.median_val, hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_25_PERCENTILE),hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_99_PERCENTILE) );
+                printf("Histogram: TtlCnt[%d], Min:[%d], Max:[%d], RAvg:[%d] Median:[%d] PT25:[%d], PT99:[%d] \n", clients[i].info->ht2.histogram.total_count, clients[i].info->ht2.min_val, clients[i].info->ht2.max_val, clients[i].info->ht2.running_avg, clients[i].info->ht2.median_val, hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_25_PERCENTILE),hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_99_PERCENTILE) );
                 #endif
         #endif //USE_CGROUPS_PER_NF_INSTANCE
                 printf("\n");
