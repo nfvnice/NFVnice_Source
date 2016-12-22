@@ -62,22 +62,30 @@ uint16_t highest_downstream_nf_service_id=0;
 uint16_t lowest_upstream_to_throttle = 0;
 uint64_t throttle_count = 0;
 #endif // ENABLE_NF_BACKPRESSURE
+//sorted list of NFs based on load requirement on the core
+nfs_per_core_t nf_list_per_core[MAX_CORES_ON_NODE];
 
 void compute_and_assign_nf_cgroup_weight(void);
 void monitor_nf_node_liveliness_via_pid_monitoring(void);
 void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval);
-#define MAX_CORES_ON_NODE (64)
+int nf_sort_func(const void * a, const void *b);
+void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long interval);
+
+
 #define DEFAULT_NF_CPU_SHARE    (1024)
+
+//Data structure to compute nf_load and comp_cost contention on each core
+typedef struct nf_core_and_cc_info {
+        uint32_t total_comp_cost;       //total computation cost on the core (sum of all NFs computation cost)
+        uint32_t total_nf_count;        //total count of the NFs on the core (sum of all NFs)
+        uint32_t total_pkts_served;     //total pkts processed on the core (sum of all NFs packet processed).
+        uint32_t total_load;            //total pkts (avergae) queued up on the core for processing.
+        uint64_t total_load_cost_fct;   //total product of current load and computation cost on core (aggregate demand in total cycles)
+}nf_core_and_cc_info_t;
+nf_core_and_cc_info_t nf_pool_per_core[MAX_CORES_ON_NODE]; // = {{0,0},}; ////nf_core_and_cc_info_t nf_pool_per_core[rte_lcore_count()+1]; // = {{0,0},};
 /********************************Interfaces***********************************/
 void compute_and_assign_nf_cgroup_weight(void) {
 #if defined (USE_CGROUPS_PER_NF_INSTANCE)
-        typedef struct nf_core_and_cc_info {
-                uint32_t total_comp_cost;       //total computation cost on the core (sum of all NFs computation cost)
-                uint32_t total_nf_count;        //total count of the NFs on the core (sum of all NFs)
-                uint32_t total_pkts_served;     //total pkts processed on the core (sum of all NFs packet processed).
-                uint32_t total_load;            //total pkts (avergae) queued up on the core for processing.
-                uint64_t total_load_cost_fct;   //total product of current load and computation cost on core (aggregate demand in total cycles)
-        }nf_core_and_cc_info_t;
 
         static int update_rate = 0;
         if (update_rate != 10) {
@@ -85,9 +93,6 @@ void compute_and_assign_nf_cgroup_weight(void) {
                 return;
         }
         update_rate = 0;
-
-        //nf_core_and_cc_info_t nf_pool_per_core[rte_lcore_count()+1]; // = {{0,0},};
-        nf_core_and_cc_info_t nf_pool_per_core[MAX_CORES_ON_NODE]; // = {{0,0},};
 
         uint16_t nf_id = 0;
         memset(nf_pool_per_core, 0, sizeof(nf_pool_per_core));
@@ -160,6 +165,45 @@ void compute_and_assign_nf_cgroup_weight(void) {
 #endif // #if defined (USE_CGROUPS_PER_NF_INSTANCE)
 }
 
+int nf_sort_func(const void * a, const void *b) {
+        uint32_t nfid1 = *(const uint32_t*)a;
+        uint32_t nfid2 = *(const uint32_t*)b;
+        struct client *cl1 = &clients[nfid1];
+        struct client *cl2 = &clients[nfid2];
+
+        if(!cl1 || !cl2) return 0;
+        if(cl1->info->load < cl2->info->load) return 1;
+        else if (cl1->info->load > cl2->info->load) return (-1);
+        return 0;
+
+}
+
+void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long interval) {
+
+        memset(nf_list_per_core, 0, sizeof(nf_list_per_core));
+        uint16_t nf_id = 0;
+        for (nf_id=0; nf_id < MAX_CLIENTS; nf_id++) {
+                if ((onvm_nf_is_valid(&clients[nf_id])) /* && (clients[nf_id].info->comp_cost)*/) {
+                        nf_list_per_core[clients[nf_id].info->core_id].nf_ids[nf_list_per_core[clients[nf_id].info->core_id].count++] = nf_id;
+
+                }
+        }
+        uint16_t core_id = 0;
+        for(core_id=0; core_id < MAX_CORES_ON_NODE; core_id++) {
+                if(!nf_list_per_core[core_id].count) continue;
+                onvm_sort_generic(nf_list_per_core[core_id].nf_ids, ONVM_SORT_TYPE_CUSTOM, SORT_DESCENDING, nf_list_per_core[core_id].count, sizeof(nf_list_per_core[core_id].nf_ids[0]), nf_sort_func);
+                nf_list_per_core[core_id].sorted=1;
+#if 0
+                {
+                        unsigned x = 0;
+                        printf("\n********** Sorted NFs on Core [%d]: ", core_id);
+                        for (x=0; x< nf_list_per_core[core_id].count; x++) {
+                                printf("[%d],", nf_list_per_core[core_id].nf_ids[x]);
+                        }
+                }
+#endif
+        }
+}
 void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval) {
 #if defined (USE_CGROUPS_PER_NF_INSTANCE) && defined(INTERRUPT_SEM)
         uint16_t nf_id = 0;
@@ -180,6 +224,8 @@ void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long int
                         cl->info->avg_svc   = 0;
                 }
         }
+        //sort and prepare the list of nfs_per_core_per_pool in the decreasing order of priority; use this list to wake up the NFs
+        //setup_nfs_priority_per_core_list(interval);
 #endif
 }
 

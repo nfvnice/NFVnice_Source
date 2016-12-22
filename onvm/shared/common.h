@@ -57,6 +57,7 @@
 #include <sys/msg.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include "onvm_sort.h"
 
 #define MIN(a,b) ((a) < (b)? (a):(b))
 #define MAX(a,b) ((a) > (b)? (a):(b))
@@ -512,6 +513,12 @@ set_cgroup_nf_cpu_share_from_onvm_mgr(uint16_t instance_id, uint32_t share_val) 
 #endif //USE_CGROUPS_PER_NF_INSTANCE
 
 #define RTE_LOGTYPE_APP RTE_LOGTYPE_USER1
+
+
+typedef struct per_core_nf_pool {
+        uint16_t nf_count;
+        uint32_t nf_ids[MAX_CLIENTS];
+}per_core_nf_pool_t;
 
 /******************************** DATA STRUCTURES FOR FIPO SUPPORT *********************************
 *     fipo_buf_node_t:      each rte_buf_node (packet) added to the fipo_per_flow_list -- Need basic Queue add/remove

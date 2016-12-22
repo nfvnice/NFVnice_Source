@@ -50,6 +50,7 @@ LIB    = onvm_shared.a
 # all source are stored in SRCS-y
 SRCS-y := onvm_pkt_helper.c onvm_sc_common.c onvm_sc_mgr.c onvm_flow_table.c onvm_flow_dir.c
 SRCS-y += histogram.c
+SRCS-y += onvm_sort.c
 CFLAGS += -DUSE_HISTOGRAM_AS_LIB
 
 CFLAGS += $(WERROR_FLAGS) -O3

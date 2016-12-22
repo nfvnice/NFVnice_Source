@@ -55,6 +55,15 @@
 extern uint16_t next_instance_id;
 extern struct wakeup_info *wakeup_infos;
 
+#define MAX_CORES_ON_NODE (64)
+//Data structure to sort out all active NFs on each core
+typedef struct nfs_per_core {
+        uint16_t sorted;
+        uint16_t count;
+        uint32_t nf_ids[MAX_CLIENTS];
+}nfs_per_core_t;
+extern nfs_per_core_t nf_list_per_core[MAX_CORES_ON_NODE];
+
 #ifdef ENABLE_NF_BACKPRESSURE
 // Global mode variables (default service chain without flow_Table entry: can support only 1 flow (i.e all flows have same NFs)
 extern uint8_t  global_bkpr_mode;
@@ -115,6 +124,8 @@ onvm_nf_service_to_nf_map(uint16_t service_id, struct rte_mbuf *pkt);
 void
 onvm_nf_stats_update(unsigned long interval);
 
+
+void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long interval);
 /****************************Internal functions*******************************/
 
 

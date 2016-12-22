@@ -84,8 +84,9 @@ int initialize_wake_timers(void *data);
 #ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 static void wake_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer, void *ptr_data) {
 
-        if(ptr_data)
+        if(ptr_data) {
                 handle_wakeup((struct wakeup_info *)ptr_data);
+        }
 }
 
 int
@@ -245,9 +246,21 @@ wakeup_client(int instance_id, struct wakeup_info *wakeup_info)  {
 inline void handle_wakeup(struct wakeup_info *wakeup_info) {
         //wakeup_info->num_wakeups += 1;    //count for debug
         unsigned i=0;
+#if 0
         for (i = wakeup_info->first_client; i < wakeup_info->last_client; i++) {
                 wakeup_client(i, wakeup_info);
         }
+#else
+        setup_nfs_priority_per_core_list(0);
+        for(i=0; i<MAX_CORES_ON_NODE; i++) {
+                if(nf_list_per_core[i].sorted && nf_list_per_core[i].count) {
+                        unsigned nf_id=0;
+                        for(nf_id=0; nf_id < nf_list_per_core[i].count; nf_id++) {
+                                wakeup_client(nf_list_per_core[i].nf_ids[nf_id], wakeup_info);
+                        }
+                }
+        }
+#endif
 }
 
 int

@@ -63,6 +63,7 @@ struct rte_mempool *nf_info_pool;
 struct rte_ring *nf_info_queue;
 uint16_t **services;
 uint16_t *nf_per_service_count;
+
 struct client_tx_stats *clients_stats;
 struct onvm_service_chain *default_chain;
 struct onvm_service_chain **default_sc_p;
