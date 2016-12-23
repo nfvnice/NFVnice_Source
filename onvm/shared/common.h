@@ -62,6 +62,7 @@
 #define MIN(a,b) ((a) < (b)? (a):(b))
 #define MAX(a,b) ((a) > (b)? (a):(b))
 
+#define ARBITER_PERIOD_IN_US            (100)       // 250 micro seconds or 100 micro seconds
 /* Enable the ONVM_MGR to act as a 2-port bridge without any NFs */
 //#define ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE    // Work as bridge < without any NFs :: only testing purpose.. >
 //#define SEND_DIRECT_ON_ALT_PORT
@@ -298,6 +299,8 @@ struct onvm_nf_info {
         uint32_t avg_load;      //indicates the average load on the NF
         uint32_t svc_rate;      //indicates instantaneous service rate of the NF ( = num_of_packets processed in the sampling period)
         uint32_t avg_svc;       //indicates the average service rate of the NF
+        uint32_t drop_rate;     //indicates the drops observed within the sampled period.
+        uint64_t exec_period;   //indicates the number_of_cycles/timeperiod alloted for execution in this epoch == normalized_load*comp_cost -- how to get this metric: (total_cycles_in_epoch)*(total_load_on_core)/(load_of_nf)
 #endif
 
 #ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
@@ -354,9 +357,7 @@ struct onvm_service_chain {
 #else
 #define MP_CLIENT_SEM_NAME "MProc_Client_%u_SEM"
 #endif //USE_MQ
-#define MONITOR                         // Unused remove it
-#define ONVM_NUM_WAKEUP_THREADS 1
-#define CHAIN_LEN 4                     // Duplicate, remove and instead use ONVM_MAX_CHAIN_LENGTH
+#define ONVM_NUM_WAKEUP_THREADS ((int)0)       //1 ( Must remove this as well)
 //1000003 1000033 1000037 1000039 1000081 1000099 1000117 1000121 1000133
 //#define SAMPLING_RATE 1000000           // sampling rate to estimate NFs computation cost
 #define SAMPLING_RATE 1000003           // sampling rate to estimate NFs computation cost
@@ -520,6 +521,47 @@ typedef struct per_core_nf_pool {
         uint32_t nf_ids[MAX_CLIENTS];
 }per_core_nf_pool_t;
 
+#define SECOND_TO_MICRO_SECOND          (1000*1000)
+#define NANO_SECOND_TO_MICRO_SECOND(x)  (double)((x)/(1000))
+#define MICRO_SECOND_TO_SECOND(x)       (double)((x)/(SECOND_TO_MICRO_SECOND))
+#define USE_THIS_CLOCK  CLOCK_MONOTONIC //CLOCK_THREAD_CPUTIME_ID //CLOCK_PROCESS_CPUTIME_ID //CLOCK_MONOTONIC
+typedef struct stats_time_info {
+        uint8_t in_read;
+        struct timespec prev_time;
+        struct timespec cur_time;
+}nf_stats_time_info_t;
+static inline int get_current_time(struct timespec *pTime);
+static inline unsigned long get_difftime_us(struct timespec *start, struct timespec *end);
+static inline int get_current_time(struct timespec *pTime) {
+        if (clock_gettime(USE_THIS_CLOCK, pTime) == -1) {
+              perror("\n clock_gettime");
+              return 1;
+        }
+        return 0;
+}
+static inline unsigned long get_difftime_us(struct timespec *pStart, struct timespec *pEnd) {
+        unsigned long delta = ( ((pEnd->tv_sec - pStart->tv_sec) * SECOND_TO_MICRO_SECOND) +
+                     ((pEnd->tv_nsec - pStart->tv_nsec) /1000) );
+        //printf("Delta [%ld], sec:[%ld]: nanosec [%ld]", delta, (pEnd->tv_sec - pStart->tv_sec), (pEnd->tv_nsec - pStart->tv_nsec));
+        return delta;
+}
+#include <rte_cycles.h>
+typedef struct stats_cycle_info {
+        uint8_t in_read;
+        uint64_t prev_cycles;
+        uint64_t cur_cycles;
+}stats_cycle_info_t;
+static inline uint64_t get_current_cpu_cycles(void);
+static inline uint64_t get_diff_cpu_cycles_in_us(uint64_t start, uint64_t end);
+static inline uint64_t get_current_cpu_cycles(void) {
+        return rte_rdtsc_precise();
+}
+static inline uint64_t get_diff_cpu_cycles_in_us(uint64_t start, uint64_t end) {
+        if(end > start) {
+                return (uint64_t) (((end -start)*SECOND_TO_MICRO_SECOND)/rte_get_tsc_hz());
+        }
+        return 0;
+}
 /******************************** DATA STRUCTURES FOR FIPO SUPPORT *********************************
 *     fipo_buf_node_t:      each rte_buf_node (packet) added to the fipo_per_flow_list -- Need basic Queue add/remove
 *     fipo_per_flow_list:   Ordered list of buffers for each flow   -- Need Queue add/remove

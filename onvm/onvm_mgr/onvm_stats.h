@@ -54,22 +54,27 @@
 
 /*********************************Interfaces**********************************/
 typedef struct onvm_stats_snapshot {
-        uint64_t rx_delta;
-        uint64_t tx_delta;
-        uint64_t rx_drop_delta;
-        uint64_t tx_drop_delta;
-        uint32_t arrival_rate;
-        uint32_t rx_rate;
-        uint32_t serv_rate;
-        uint32_t tx_rate;
-        uint32_t rx_drop_rate;
-        uint32_t tx_drop_rate;
+        uint64_t rx_delta;          // rx packets in sampled interval
+        uint64_t tx_delta;          // tx packets in sampled interval
+        uint64_t rx_drop_delta;     // rx drops in sampled interval
+        uint64_t tx_drop_delta;     // tx drops in sampled interval
+        uint32_t arrival_rate;      // (rx_delta+rx_drops_delta)/interval
+        uint32_t rx_rate;           // (rx_delta)/interval
+        uint32_t serv_rate;         // (tx_rate)/interval)
+        uint32_t tx_rate;           // (tx_rate+tx_drops_delta)/interval)
+        uint32_t rx_drop_rate;      // (rx_drops_delta)/interval)
+        uint32_t tx_drop_rate;      // (tx_drops_delta)/interval)
 }onvm_stats_snapshot_t;
 
 /* Interace to retieve nf stats
  * difftime: if 0 : only read but do not update params and rate else update
  */
 int get_onvm_nf_stats_snapshot(unsigned nf_index, onvm_stats_snapshot_t *snapshot, unsigned difftime);
+
+/* Interace to retieve nf stats
+ * difftime: if 0 : read and update params and cache params locally; else return cached params.
+ */
+int get_onvm_nf_stats_snapshot_v2(unsigned nf_index, onvm_stats_snapshot_t *snapshot, unsigned difftime);
 
 /*
  * Interface called by the ONVM Manager to display all statistics

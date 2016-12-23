@@ -108,8 +108,8 @@
 
 // Note: Based on the approach the tuned values change. For NF Throttling (80/75,20/25) works better, for Packet Throttling (70,50 or 70,40 or 80,40) seems better -- must be tuned and set accordingly.
 #ifdef NF_BACKPRESSURE_APPROACH_1
-#define CLIENT_QUEUE_RING_THRESHOLD (100)
-#define CLIENT_QUEUE_RING_THRESHOLD_GAP (0) //(25)
+#define CLIENT_QUEUE_RING_THRESHOLD (80)
+#define CLIENT_QUEUE_RING_THRESHOLD_GAP (10) //(25)
 #else  // defined NF_BACKPRESSURE_APPROACH_2 or other
 #define CLIENT_QUEUE_RING_THRESHOLD (80)
 #define CLIENT_QUEUE_RING_THRESHOLD_GAP (20)
@@ -134,10 +134,10 @@ typedef struct bottleneck_ft_data {
          struct onvm_flow_entry* bft;   //flow_entry field
 }bottleneck_ft_data_t;
 typedef struct bottleneck_ft_info {
-        uint16_t bft_count; // num of entries in the bft[]
-        uint16_t r_h;       // read_head in the bft[]
-        uint16_t w_h;       // write head in the bft[]
-        uint16_t max_len;   // Max size/count of bft[]
+        uint16_t bft_count;         // num of entries in the bft[]
+        uint16_t r_h;               // read_head in the bft[]
+        uint16_t w_h;               // write head in the bft[]
+        uint16_t max_len;           // Max size/count of bft[]
         //struct onvm_flow_entry* bft[CLIENT_QUEUE_RINGSIZE];
         bottleneck_ft_data_t bft[CLIENT_QUEUE_RINGSIZE*2+1];
 }bottlenect_ft_info_t;

@@ -69,38 +69,26 @@ typedef struct thread_core_map_t {
 static thread_core_map_t thread_core_map;
 
 #ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
+
 #define NF_STATUS_CHECK_PERIOD_IN_MS    (500)       // 500ms or 0.5seconds
 #define DISPLAY_STATS_PERIOD_IN_MS      (1000)      // 1000ms or Every second
 #define NF_LOAD_EVAL_PERIOD_IN_MS       (1)         // 1ms
 #define USLEEP_INTERVAL_IN_US           (50)        // 50 micro seconds (even if set to 50, best precision >100micro)
-#define ARBITER_PERIOD_IN_US            (100)       // 250 micro seconds
+//#define ARBITER_PERIOD_IN_US            (100)       // 250 micro seconds or 100 micro seconds
 //Note: Running arbiter at 100micro to 250 micro seconds is fine provided we have the buffers available as:
 //RTT (measured with bridge and 1 basic NF) =0.2ms B=10Gbps => B*delay ( 2*RTT*Bw) = 2*200*10^-6 * 10*10^9 = 4Mb = 0.5MB
 //Assuming avg pkt size of 1000 bytes => 500 *10^3/1000 = 500 packets. (~512 packets)
 //For smaller pkt size of 64 bytes => 500*10^3/64 = 7812 packets. (~8K packets)
 
-#define SECOND_TO_MICRO_SECOND          (1000*1000)
-#define NANO_SECOND_TO_MICRO_SECOND     (double)(1/1000)
-#define MICRO_SECOND_TO_SECOND          (double)(1/(SECOND_TO_MICRO_SECOND))
-
-#define USE_THIS_CLOCK  CLOCK_MONOTONIC //CLOCK_THREAD_CPUTIME_ID     //CLOCK_PROCESS_CPUTIME_ID //CLOCK_MONOTONIC
-typedef struct nf_stats_time_info {
-        uint8_t in_read;
-        struct timespec prev_time;
-        struct timespec cur_time;
-}nf_stats_time_info_t;
-static nf_stats_time_info_t nf_stat_time;
-
-struct rte_timer display_stats_timer;
-struct rte_timer nf_status_check_timer;
-struct rte_timer nf_load_eval_timer;
-struct rte_timer main_arbiter_timer;
+struct rte_timer display_stats_timer;   //Timer to periodically Display the statistics  (1 second)
+struct rte_timer nf_status_check_timer; //Timer to periodically check new NFs registered or old NFs de-registerd   (0.5 second)
+struct rte_timer nf_load_eval_timer;    //Timer to periodically evaluate the NF Load characteristics    (1ms)
+struct rte_timer main_arbiter_timer;    //Timer to periodically run the Arbiter   (100us to at-most 250 micro seconds)
 
 int initialize_rx_timers(int index, void *data);
 int initialize_tx_timers(int index, void *data);
-
-int initialize_wake_core_timers(int index, void *data);
 int initialize_master_timers(void);
+
 static void display_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data);
 static void nf_status_check_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
@@ -109,27 +97,6 @@ static void nf_load_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr
         __attribute__((unused)) void *ptr_data);
 static void arbiter_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data);
-
-int get_current_time(struct timespec *pTime);
-unsigned long get_difftime_us(struct timespec *start, struct timespec *end);
-
-#endif //ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
-
-#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
-int get_current_time(struct timespec *pTime) {
-        if (clock_gettime(USE_THIS_CLOCK, pTime) == -1) {
-              perror("\n clock_gettime");
-              return 1;
-        }
-        return 0;
-}
-
-unsigned long get_difftime_us(struct timespec *pStart, struct timespec *pEnd) {
-        unsigned long delta = ( ((pEnd->tv_sec - pStart->tv_sec) * SECOND_TO_MICRO_SECOND) +
-                     ((pEnd->tv_nsec - pStart->tv_nsec) /1000) );
-        //printf("Delta [%ld], sec:[%ld]: nanosec [%ld]", delta, (pEnd->tv_sec - pStart->tv_sec), (pEnd->tv_nsec - pStart->tv_nsec));
-        return delta;
-}
 
 static void
 display_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
@@ -151,7 +118,7 @@ nf_status_check_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
 static void
 nf_load_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data) {
-
+        static nf_stats_time_info_t nf_stat_time;
         if(nf_stat_time.in_read == 0) {
                 if( get_current_time(&nf_stat_time.prev_time) == 0) {
                         nf_stat_time.in_read = 1;
@@ -173,33 +140,10 @@ static void
 arbiter_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data) {
 
-        //DO: Must Prioritize the NFs and wakeup the NFs in the order of priority and slack
-
-
+        handle_wakeup(NULL);
         //printf("\n Inside arbiter_timer_cb() %"PRIu64", on core [%d] \n", rte_rdtsc_precise(), rte_lcore_id());
         return;
 }
-
-#ifdef INTERRUPT_SEM
-int
-initialize_wake_core_timers(int index, void *data) {
-        //return index;
-
-        rte_timer_init(&main_arbiter_timer);
-        uint64_t ticks = 0;
-        ticks = ((uint64_t)ARBITER_PERIOD_IN_US *(rte_get_timer_hz()/1000000));
-        printf("Wakeup thread core [%d]\n ", thread_core_map.wk_th_core[0]);
-        rte_timer_reset_sync(&main_arbiter_timer,
-                ticks,
-                PERIODICAL,
-                thread_core_map.wk_th_core[index], //rte_lcore_id(),
-                &arbiter_timer_cb, data
-                );
-
-
-        return 0;
-}
-#endif
 
 int
 initialize_master_timers(void) {
@@ -243,7 +187,7 @@ initialize_master_timers(void) {
                 &arbiter_timer_cb, NULL
                 );
         //Note: This call effectively nullifies the timer
-        rte_timer_init(&main_arbiter_timer);
+        //rte_timer_init(&main_arbiter_timer);
 
         return 0;
 }
@@ -332,20 +276,12 @@ tx_thread_main(void *arg) {
         struct rte_mbuf *pkts[PACKET_READ_SIZE];
         struct thread_info* tx = (struct thread_info*)arg;
 
-        if (tx->first_cl == tx->last_cl - 1) {
-                RTE_LOG(INFO,
-                        APP,
-                        "Core %d: Running TX thread for NF %d\n",
-                        rte_lcore_id(),
-                        tx->first_cl);
-        } else if (tx->first_cl < tx->last_cl) {
-                RTE_LOG(INFO,
-                        APP,
-                        "Core %d: Running TX thread for NFs %d to %d\n",
-                        rte_lcore_id(),
-                        tx->first_cl,
-                        tx->last_cl-1);
-        }
+        RTE_LOG(INFO,
+               APP,
+               "Core %d: Running TX thread for NFs %d to %d\n",
+               rte_lcore_id(),
+               tx->first_cl,
+               tx->last_cl-1);
 
         for (;;) {
                 /* Read packets from the client's tx queue and process them as needed */
@@ -410,15 +346,14 @@ main(int argc, char *argv[]) {
         /* clear statistics */
         onvm_stats_clear_all_clients();
 
-        /* Reserve n cores for: 1 Stats, 1 final Tx out, and ONVM_NUM_RX_THREADS for Rx */
+        /* Reserve n cores for: 1 main thread, ONVM_NUM_RX_THREADS for Rx, ONVM_NUM_WAKEUP_THREADS for wakeup and remaining for Tx */
         cur_lcore = rte_lcore_id();
         rx_lcores = ONVM_NUM_RX_THREADS;
 
+        tx_lcores = rte_lcore_count() - rx_lcores - 1;
         #ifdef INTERRUPT_SEM
         wakeup_lcores = ONVM_NUM_WAKEUP_THREADS;
-        tx_lcores = rte_lcore_count() - rx_lcores - wakeup_lcores - 1 -1;
-        #else
-        tx_lcores = rte_lcore_count() - rx_lcores - 1;
+        tx_lcores -= wakeup_lcores;
         #endif
 
 
@@ -431,7 +366,7 @@ main(int argc, char *argv[]) {
         #ifdef INTERRUPT_SEM
         RTE_LOG(INFO, APP, "%d cores available for handling wakeup\n", wakeup_lcores);        
         #endif 
-        RTE_LOG(INFO, APP, "%d cores available for handling stats\n", 1);
+        RTE_LOG(INFO, APP, "%d cores available for handling stats(main)\n", 1);
 
         /* Evenly assign NFs to TX threads */
 
@@ -449,6 +384,7 @@ main(int argc, char *argv[]) {
                 clients_per_tx = ceil((float)num_clients/tx_lcores);
                 temp_num_clients = (unsigned)num_clients;
         }
+
         //num_clients = temp_num_clients;
         for (i = 0; i < tx_lcores; i++) {
                 struct thread_info *tx = calloc(1, sizeof(struct thread_info));
@@ -457,15 +393,13 @@ main(int argc, char *argv[]) {
                 tx->nf_rx_buf = calloc(MAX_CLIENTS, sizeof(struct packet_buf));
 
 #ifdef ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
-                if ( i == 0) {
-                        tx->first_cl = RTE_MIN(i * clients_per_tx, temp_num_clients);       //changed to read from NF[0]
-                } else {
-                        tx->first_cl = RTE_MIN(i * clients_per_tx + 1, temp_num_clients);
-                }
+                tx->first_cl = RTE_MIN(i * clients_per_tx, temp_num_clients);       //changed to read from NF[0]
 #else
-                tx->first_cl = RTE_MIN(i * clients_per_tx + 1, temp_num_clients);
+                tx->first_cl = RTE_MIN(i * clients_per_tx, temp_num_clients);       //inclusive
+                //tx->first_cl = RTE_MIN(i * clients_per_tx + 1, temp_num_clients);
 #endif  //ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE
-                tx->last_cl = RTE_MIN((i+1) * clients_per_tx + 1, temp_num_clients);
+                tx->last_cl = RTE_MIN((i+1) * clients_per_tx, temp_num_clients);
+                //tx->last_cl = RTE_MIN((i+1) * clients_per_tx + 1, temp_num_clients);
                 cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
                 if (rte_eal_remote_launch(tx_thread_main, (void*)tx,  cur_lcore) == -EBUSY) {
                         RTE_LOG(ERR,
@@ -476,6 +410,7 @@ main(int argc, char *argv[]) {
                         return -1;
                 }
                 thread_core_map.tx_t_core[i]=cur_lcore;
+                RTE_LOG(INFO, APP, "Tx thread [%d] on core [%d] cores for [%d:%d]\n", i+1, cur_lcore, tx->first_cl, tx->last_cl);
         }
        
         /* Launch RX thread main function for each RX queue on cores */
@@ -497,24 +432,26 @@ main(int argc, char *argv[]) {
         }
         
         #ifdef INTERRUPT_SEM
-        int clients_per_wakethread = ceil(temp_num_clients / wakeup_lcores);
-        wakeup_infos = (struct wakeup_info *)calloc(wakeup_lcores, sizeof(struct wakeup_info));
-        if (wakeup_infos == NULL) {
-                printf("can not alloc space for wakeup_info\n");
-                exit(1);
-        }        
-        for (i = 0; i < wakeup_lcores; i++) {
-                wakeup_infos[i].first_client = RTE_MIN(i * clients_per_wakethread + 1, temp_num_clients);
-                wakeup_infos[i].last_client = RTE_MIN((i+1) * clients_per_wakethread + 1, temp_num_clients);
-                cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
+        if(wakeup_lcores) {
+                int clients_per_wakethread = ceil(temp_num_clients / wakeup_lcores);
+                wakeup_infos = (struct wakeup_info *)calloc(wakeup_lcores, sizeof(struct wakeup_info));
+                if (wakeup_infos == NULL) {
+                        printf("can not alloc space for wakeup_info\n");
+                        exit(1);
+                }
+                for (i = 0; i < wakeup_lcores; i++) {
+                        wakeup_infos[i].first_client = RTE_MIN(i * clients_per_wakethread + 1, temp_num_clients);
+                        wakeup_infos[i].last_client = RTE_MIN((i+1) * clients_per_wakethread + 1, temp_num_clients);
+                        cur_lcore = rte_get_next_lcore(cur_lcore, 1, 1);
 
-                thread_core_map.wk_th_core[i]=cur_lcore;
-                //initialize_wake_core_timers(i, (void*)&wakeup_infos);
+                        thread_core_map.wk_th_core[i]=cur_lcore;
+                        //initialize_wake_core_timers(i, (void*)&wakeup_infos); //better to do it inside the registred thread callback function.
 
-                rte_eal_remote_launch(wakeup_nfs, (void*)&wakeup_infos[i], cur_lcore);
-                //printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
-                RTE_LOG(INFO, APP, "Core %d: Running wakeup thread, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
+                        rte_eal_remote_launch(wakeup_nfs, (void*)&wakeup_infos[i], cur_lcore);
+                        //printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
+                        RTE_LOG(INFO, APP, "Core %d: Running wakeup thread, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
 
+                }
         }
         #endif
 

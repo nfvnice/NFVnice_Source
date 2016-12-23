@@ -116,8 +116,8 @@ struct packet_buf {
  */
 struct thread_info {
        unsigned queue_id;
-       unsigned first_cl;
-       unsigned last_cl;
+       unsigned first_cl;   //inclusive (
+       unsigned last_cl;    //exclusive ] so f_cl=1 and l_cl=4 -> 1,2,3 only.
        /* FIXME: This is confusing since it is non-inclusive. It would be
         *        better to have this take the first client and the number
         *        of consecutive clients after it to handle.

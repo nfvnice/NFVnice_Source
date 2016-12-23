@@ -324,7 +324,6 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         dst_instance_id = onvm_nf_service_to_nf_map(dst_service_id, pkt);
         if (dst_instance_id == 0) {
                 onvm_pkt_drop(pkt);
-                //printf("\n\n\n\n ***************************** NO DESTINATION!!!! DROPPING PACKETS!!!! ***************************\n\n\n\n");
                 return;
         }
 
@@ -332,23 +331,7 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         cl = &clients[dst_instance_id];
         if (!onvm_nf_is_valid(cl)) {
                 onvm_pkt_drop(pkt);
-                //printf("\n\n\n\n***************************** INVALID NF STATE!!!! DROPPING PACKETS!!!! ***************************\n\n\n\n");
                 return;
-        }
-
-        if (meta == NULL || flow_entry == NULL) {
-
-#if 0
-                #ifdef ENABLE_NF_BACKPRESSURE
-                if (flow_entry == NULL) {
-                        int ret = get_flow_entry(pkt, &flow_entry);
-                        if (ret < 0) flow_entry = NULL;
-                }
-                if(meta == NULL) {
-                        meta = onvm_get_pkt_meta(pkt);
-                }
-                #endif
-#endif
         }
 
         #ifdef ENABLE_NF_BACKPRESSURE

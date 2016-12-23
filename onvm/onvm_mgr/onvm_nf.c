@@ -63,18 +63,17 @@ uint16_t lowest_upstream_to_throttle = 0;
 uint64_t throttle_count = 0;
 #endif // ENABLE_NF_BACKPRESSURE
 //sorted list of NFs based on load requirement on the core
-nfs_per_core_t nf_list_per_core[MAX_CORES_ON_NODE];
+//nfs_per_core_t nf_list_per_core[MAX_CORES_ON_NODE];
+nf_schedule_info_t nf_sched_param;
 
 void compute_and_assign_nf_cgroup_weight(void);
 void monitor_nf_node_liveliness_via_pid_monitoring(void);
-void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval);
 int nf_sort_func(const void * a, const void *b);
-void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long interval);
 
 
 #define DEFAULT_NF_CPU_SHARE    (1024)
 
-//Data structure to compute nf_load and comp_cost contention on each core
+//Local Data structure to compute nf_load and comp_cost contention on each core
 typedef struct nf_core_and_cc_info {
         uint32_t total_comp_cost;       //total computation cost on the core (sum of all NFs computation cost)
         uint32_t total_nf_count;        //total count of the NFs on the core (sum of all NFs)
@@ -83,9 +82,15 @@ typedef struct nf_core_and_cc_info {
         uint64_t total_load_cost_fct;   //total product of current load and computation cost on core (aggregate demand in total cycles)
 }nf_core_and_cc_info_t;
 nf_core_and_cc_info_t nf_pool_per_core[MAX_CORES_ON_NODE]; // = {{0,0},}; ////nf_core_and_cc_info_t nf_pool_per_core[rte_lcore_count()+1]; // = {{0,0},};
+
 /********************************Interfaces***********************************/
+/*
+ * This function computes and assigns weights to each nfs cgroup based on its contention and requirements
+ * PRerequisite: clients[]->info->comp_cost and  clients[]->info->load should be already updated.  -- updated by extract_nf_load_and_svc_rate_info()
+ */
 void compute_and_assign_nf_cgroup_weight(void) {
 #if defined (USE_CGROUPS_PER_NF_INSTANCE)
+
 
         static int update_rate = 0;
         if (update_rate != 10) {
@@ -93,19 +98,13 @@ void compute_and_assign_nf_cgroup_weight(void) {
                 return;
         }
         update_rate = 0;
-
+        const uint64_t total_cycles_in_epoch = ARBITER_PERIOD_IN_US *(rte_get_timer_hz()/1000000);
         uint16_t nf_id = 0;
         memset(nf_pool_per_core, 0, sizeof(nf_pool_per_core));
 
         //First build the total cost and contention info per core
         for (nf_id=0; nf_id < MAX_CLIENTS; nf_id++) {
                 if (onvm_nf_is_valid(&clients[nf_id])){
-
-                        #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
-                        //Get the Median Computation cost, instead of running average; else running average is expected to be set already.
-                        clients[nf_id].info->comp_cost = hist_extract_v2(&clients[nf_id].info->ht2, VAL_TYPE_MEDIAN);
-                        #endif //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
-
                         nf_pool_per_core[clients[nf_id].info->core_id].total_comp_cost += clients[nf_id].info->comp_cost;
                         nf_pool_per_core[clients[nf_id].info->core_id].total_nf_count++;
                         nf_pool_per_core[clients[nf_id].info->core_id].total_load += clients[nf_id].info->load;            //clients[nf_id].info->avg_load;
@@ -125,9 +124,13 @@ void compute_and_assign_nf_cgroup_weight(void) {
                         if(nf_pool_per_core[clients[nf_id].info->core_id].total_comp_cost) {
                                 clients[nf_id].info->cpu_share = (uint32_t) ((DEFAULT_NF_CPU_SHARE*nf_pool_per_core[clients[nf_id].info->core_id].total_nf_count)*(clients[nf_id].info->comp_cost))
                                                 /((nf_pool_per_core[clients[nf_id].info->core_id].total_comp_cost));
+
+                                clients[nf_id].info->exec_period = ((clients[nf_id].info->comp_cost)*total_cycles_in_epoch)/nf_pool_per_core[clients[nf_id].info->core_id].total_comp_cost; //(total_cycles_in_epoch)*(total_load_on_core)/(load_of_nf)
                         }
                         else {
                                 clients[nf_id].info->cpu_share = (uint32_t)DEFAULT_NF_CPU_SHARE;
+                                clients[nf_id].info->exec_period = 0;
+
                         }
                         #ifdef __DEBUG_LOGS__
                         printf("\n ***** Client [%d] with cost [%d] on core [%d] with total_demand [%d] shared by [%d] NFs, got cpu share [%d]***** \n ", clients[nf_id].info->instance_id, clients[nf_id].info->comp_cost, clients[nf_id].info->core_id,
@@ -143,12 +146,13 @@ void compute_and_assign_nf_cgroup_weight(void) {
 
                                 num = (uint64_t)(nf_pool_per_core[clients[nf_id].info->core_id].total_nf_count)*(DEFAULT_NF_CPU_SHARE)*(clients[nf_id].info->comp_cost)*(clients[nf_id].info->load);
                                 clients[nf_id].info->cpu_share = (uint32_t) (num/nf_pool_per_core[clients[nf_id].info->core_id].total_load_cost_fct);
-
                                 //clients[nf_id].info->cpu_share = ((uint64_t)(((DEFAULT_NF_CPU_SHARE*nf_pool_per_core[clients[nf_id].info->core_id].total_nf_count)*(clients[nf_id].info->comp_cost*clients[nf_id].info->load)))
                                 //                /((nf_pool_per_core[clients[nf_id].info->core_id].total_load_cost_fct)));
+                                clients[nf_id].info->exec_period = ((clients[nf_id].info->comp_cost)*(clients[nf_id].info->load)*total_cycles_in_epoch)/nf_pool_per_core[clients[nf_id].info->core_id].total_load_cost_fct; //(total_cycles_in_epoch)*(total_load_on_core)/(load_of_nf)
                         }
                         else {
                                 clients[nf_id].info->cpu_share = (uint32_t)DEFAULT_NF_CPU_SHARE;
+                                clients[nf_id].info->exec_period = 0;
                         }
                         #ifdef __DEBUG_LOGS__
                         printf("\n ***** Client [%d] with cost [%d] and load [%d] on core [%d] with total_demand_comp_cost=%"PRIu64", shared by [%d] NFs, got num=%"PRIu64", cpu share [%d]***** \n ", clients[nf_id].info->instance_id, clients[nf_id].info->comp_cost, clients[nf_id].info->load, clients[nf_id].info->core_id,
@@ -165,6 +169,38 @@ void compute_and_assign_nf_cgroup_weight(void) {
 #endif // #if defined (USE_CGROUPS_PER_NF_INSTANCE)
 }
 
+
+void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval) {
+#if defined (USE_CGROUPS_PER_NF_INSTANCE) && defined(INTERRUPT_SEM)
+        uint16_t nf_id = 0;
+        for (; nf_id < MAX_CLIENTS; nf_id++) {
+                struct client *cl = &clients[nf_id];
+                if (onvm_nf_is_valid(cl)){
+                        static onvm_stats_snapshot_t st;
+                        get_onvm_nf_stats_snapshot_v2(nf_id,&st,0);
+                        cl->info->load      =  (st.rx_delta + st.rx_drop_delta);//(cl->stats.rx - cl->stats.prev_rx + cl->stats.rx_drop - cl->stats.prev_rx_drop); //rte_ring_count(cl->rx_q);
+                        cl->info->avg_load  =  ((cl->info->avg_load == 0) ? (cl->info->load):((cl->info->avg_load + cl->info->load) /2));
+                        cl->info->svc_rate  =  (st.tx_delta); //(clients_stats->tx[nf_id] -  clients_stats->prev_tx[nf_id]);
+                        cl->info->avg_svc   =  ((cl->info->avg_svc == 0) ? (cl->info->svc_rate):((cl->info->avg_svc + cl->info->svc_rate) /2));
+                        cl->info->drop_rate =  (st.rx_drop_rate);
+
+                        #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+                        //Get the Median Computation cost, instead of running average; else running average is expected to be set already.
+                        cl->info->comp_cost = hist_extract_v2(&cl->info->ht2, VAL_TYPE_MEDIAN);
+                        #endif //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+                }
+                else if (cl && cl->info) {
+                        cl->info->load      = 0;
+                        cl->info->avg_load  = 0;
+                        cl->info->svc_rate  = 0;
+                        cl->info->avg_svc   = 0;
+                }
+        }
+        //sort and prepare the list of nfs_per_core_per_pool in the decreasing order of priority; use this list to wake up the NFs
+        setup_nfs_priority_per_core_list(interval);
+#endif
+}
+
 int nf_sort_func(const void * a, const void *b) {
         uint32_t nfid1 = *(const uint32_t*)a;
         uint32_t nfid2 = *(const uint32_t*)b;
@@ -178,56 +214,35 @@ int nf_sort_func(const void * a, const void *b) {
 
 }
 
+
 void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long interval) {
 
-        memset(nf_list_per_core, 0, sizeof(nf_list_per_core));
+        memset(&nf_sched_param, 0, sizeof(nf_sched_param));
         uint16_t nf_id = 0;
         for (nf_id=0; nf_id < MAX_CLIENTS; nf_id++) {
                 if ((onvm_nf_is_valid(&clients[nf_id])) /* && (clients[nf_id].info->comp_cost)*/) {
-                        nf_list_per_core[clients[nf_id].info->core_id].nf_ids[nf_list_per_core[clients[nf_id].info->core_id].count++] = nf_id;
-
+                        nf_sched_param.nf_list_per_core[clients[nf_id].info->core_id].nf_ids[nf_sched_param.nf_list_per_core[clients[nf_id].info->core_id].count++] = nf_id;
+                        nf_sched_param.nf_list_per_core[clients[nf_id].info->core_id].run_time[nf_id] = clients[nf_id].info->exec_period;
                 }
         }
         uint16_t core_id = 0;
         for(core_id=0; core_id < MAX_CORES_ON_NODE; core_id++) {
-                if(!nf_list_per_core[core_id].count) continue;
-                onvm_sort_generic(nf_list_per_core[core_id].nf_ids, ONVM_SORT_TYPE_CUSTOM, SORT_DESCENDING, nf_list_per_core[core_id].count, sizeof(nf_list_per_core[core_id].nf_ids[0]), nf_sort_func);
-                nf_list_per_core[core_id].sorted=1;
+                if(!nf_sched_param.nf_list_per_core[core_id].count) continue;
+                onvm_sort_generic(nf_sched_param.nf_list_per_core[core_id].nf_ids, ONVM_SORT_TYPE_CUSTOM, SORT_DESCENDING, nf_sched_param.nf_list_per_core[core_id].count, sizeof(nf_sched_param.nf_list_per_core[core_id].nf_ids[0]), nf_sort_func);
+                nf_sched_param.nf_list_per_core[core_id].sorted=1;
 #if 0
                 {
                         unsigned x = 0;
                         printf("\n********** Sorted NFs on Core [%d]: ", core_id);
-                        for (x=0; x< nf_list_per_core[core_id].count; x++) {
-                                printf("[%d],", nf_list_per_core[core_id].nf_ids[x]);
+                        for (x=0; x< nf_sched_param.nf_list_per_core[core_id].count; x++) {
+                                printf("[%d],", nf_sched_param.nf_list_per_core[core_id].nf_ids[x]);
                         }
                 }
 #endif
         }
+        nf_sched_param.sorted=1;
 }
-void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval) {
-#if defined (USE_CGROUPS_PER_NF_INSTANCE) && defined(INTERRUPT_SEM)
-        uint16_t nf_id = 0;
-        for (; nf_id < MAX_CLIENTS; nf_id++) {
-                struct client *cl = &clients[nf_id];
-                if (onvm_nf_is_valid(cl)){
-                        static onvm_stats_snapshot_t st;
-                        get_onvm_nf_stats_snapshot(nf_id,&st,0);
-                        cl->info->load      =  (st.rx_delta + st.rx_drop_delta);//(cl->stats.rx - cl->stats.prev_rx + cl->stats.rx_drop - cl->stats.prev_rx_drop); //rte_ring_count(cl->rx_q);
-                        cl->info->avg_load  =  ((cl->info->avg_load == 0) ? (cl->info->load):((cl->info->avg_load + cl->info->load) /2));
-                        cl->info->svc_rate  =  (st.tx_delta); //(clients_stats->tx[nf_id] -  clients_stats->prev_tx[nf_id]);
-                        cl->info->avg_svc   =  ((cl->info->avg_svc == 0) ? (cl->info->svc_rate):((cl->info->avg_svc + cl->info->svc_rate) /2));
-                }
-                else if (cl && cl->info) {
-                        cl->info->load      = 0;
-                        cl->info->avg_load  = 0;
-                        cl->info->svc_rate  = 0;
-                        cl->info->avg_svc   = 0;
-                }
-        }
-        //sort and prepare the list of nfs_per_core_per_pool in the decreasing order of priority; use this list to wake up the NFs
-        //setup_nfs_priority_per_core_list(interval);
-#endif
-}
+
 
 //#include <sys/types.h>
 //#include <signal.h>
@@ -323,8 +338,9 @@ void
 onvm_nf_stats_update(__attribute__((unused)) unsigned long interval) {
 
 
+        //move this functionality to arbiter instead;
         #if defined (USE_CGROUPS_PER_NF_INSTANCE)
-        extract_nf_load_and_svc_rate_info(interval);
+        //extract_nf_load_and_svc_rate_info(interval);
         #endif
 
         /* Ideal location to re-compute the NF weight */

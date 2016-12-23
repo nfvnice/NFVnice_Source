@@ -58,11 +58,19 @@ extern struct wakeup_info *wakeup_infos;
 #define MAX_CORES_ON_NODE (64)
 //Data structure to sort out all active NFs on each core
 typedef struct nfs_per_core {
-        uint16_t sorted;
-        uint16_t count;
-        uint32_t nf_ids[MAX_CLIENTS];
+        uint16_t sorted;                    //status if the nf_ids list is sorted for wake-up
+        uint16_t count;                     //count of nfs in the list of nf_ids
+        uint32_t nf_ids[MAX_CLIENTS];       //id of the nf <populated in-order and sorted in order needed for wake-up
+        uint64_t run_time[MAX_CLIENTS] ;    //run time of the each of the id, indexed by id itself(not sorted)
 }nfs_per_core_t;
-extern nfs_per_core_t nf_list_per_core[MAX_CORES_ON_NODE];
+
+typedef struct nf_schedule_info {
+        uint16_t sorted;
+        nfs_per_core_t nf_list_per_core[MAX_CORES_ON_NODE];
+}nf_schedule_info_t;
+extern nf_schedule_info_t nf_sched_param;
+//extern nfs_per_core_t nf_list_per_core[MAX_CORES_ON_NODE];
+
 
 #ifdef ENABLE_NF_BACKPRESSURE
 // Global mode variables (default service chain without flow_Table entry: can support only 1 flow (i.e all flows have same NFs)
@@ -125,6 +133,7 @@ void
 onvm_nf_stats_update(unsigned long interval);
 
 
+void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval);
 void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long interval);
 /****************************Internal functions*******************************/
 
