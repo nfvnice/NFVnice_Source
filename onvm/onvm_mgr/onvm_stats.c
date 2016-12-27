@@ -175,28 +175,28 @@ onvm_stats_display_ports(unsigned difftime) {
 int get_onvm_nf_stats_snapshot_v2(unsigned nf_index, onvm_stats_snapshot_t *snapshot, unsigned difftime) {
 
 #ifdef INTERRUPT_SEM
-        static stats_cycle_info_t  interval_cycels;
+        static stats_cycle_info_t  interval_cycels[MAX_CLIENTS];
         static onvm_stats_snapshot_t last_snapshot[MAX_CLIENTS];
 
         //input has time interval defined, then just copy the items stored in last_snapshot
         if(difftime) {
-                if(interval_cycels.cur_cycles) {
+                if(interval_cycels[nf_index].cur_cycles) {
                         *snapshot = last_snapshot[nf_index];
                         return 0;
                 }
                 return 1;
         }
-        if(interval_cycels.in_read == 0) {
-                interval_cycels.prev_cycles = get_current_cpu_cycles();
-                interval_cycels.in_read = 1;
+        if(interval_cycels[nf_index].in_read == 0) {
+                interval_cycels[nf_index].prev_cycles = get_current_cpu_cycles();
+                interval_cycels[nf_index].in_read = 1;
                 //return 1;
         }
         else {
-                interval_cycels.cur_cycles = get_current_cpu_cycles();
-                unsigned long difftime_us = get_diff_cpu_cycles_in_us(interval_cycels.prev_cycles, interval_cycels.cur_cycles);
+                interval_cycels[nf_index].cur_cycles = get_current_cpu_cycles();
+                unsigned long difftime_us = get_diff_cpu_cycles_in_us(interval_cycels[nf_index].prev_cycles, interval_cycels[nf_index].cur_cycles);
                 if(difftime_us) {
                         difftime = difftime_us; //MICRO_SECOND_TO_SECOND(difftime_us);
-                        interval_cycels.prev_cycles = interval_cycels.cur_cycles;
+                        interval_cycels[nf_index].prev_cycles = interval_cycels[nf_index].cur_cycles;
                 }
         }
         snapshot->rx_delta = (clients[nf_index].stats.rx - clients[nf_index].stats.prev_rx);
@@ -394,7 +394,9 @@ onvm_stats_display_clients(unsigned difftime) {
         #endif  //ENABLE_NF_BACKPRESSURE
 
         #ifdef USE_CGROUPS_PER_NF_INSTANCE
-                printf("Pid:[%d], CoreId:[%d], cpu_share:[%d], compcost:[%d], load:[%d,%d], svc_rate:[%d,%d] prio:[%d,%d,%d] \n", clients[i].info->pid, clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc, sched_getscheduler(clients[i].info->pid), getpriority(PRIO_PROCESS, clients[i].info->pid), nice(0));
+                //printf("Pid:[%d], CoreId:[%d], cpu_share:[%d], compcost:[%d], load:[%d,%d], svc_rate:[%d,%d] prio:[%d,%d,%d] \n", clients[i].info->pid, clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc, sched_getscheduler(clients[i].info->pid), getpriority(PRIO_PROCESS, clients[i].info->pid), nice(0));
+                //printf("Pid:[%d], CoreId:[%d], cpu_share:[%d], compcost:[%d], load:[%d,%d], svc_rate:[%d,%d] prio:[%d,%d,%d] bkpr:[%d,%d,%d]\n", clients[i].info->pid, clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc, sched_getscheduler(clients[i].info->pid), getpriority(PRIO_PROCESS, clients[i].info->pid), nice(0), bottleneck_nf_list.nf[clients[i].instance_id].enqueue_status, bottleneck_nf_list.nf[clients[i].instance_id].enqueued_ctr, bottleneck_nf_list.nf[clients[i].instance_id].marked_ctr);
+                printf("Pid:[%d], CoreId:[%d], cpu_share:[%d], compcost:[%d], load:[%d,%d], svc_rate:[%d,%d] prio:[%zu,%d,%d] bkpr:[%d,%d,%d]\n", clients[i].info->pid, clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc, clients[i].info->exec_period, getpriority(PRIO_PROCESS, clients[i].info->pid), nice(0), bottleneck_nf_list.nf[clients[i].instance_id].enqueue_status, bottleneck_nf_list.nf[clients[i].instance_id].enqueued_ctr, bottleneck_nf_list.nf[clients[i].instance_id].marked_ctr);
                 #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
                 printf("Histogram: TtlCnt[%d], Min:[%d], Max:[%d], RAvg:[%d] Median:[%d] PT25:[%d], PT99:[%d] \n", clients[i].info->ht2.histogram.total_count, clients[i].info->ht2.min_val, clients[i].info->ht2.max_val, clients[i].info->ht2.running_avg, clients[i].info->ht2.median_val, hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_25_PERCENTILE),hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_99_PERCENTILE) );
                 #endif

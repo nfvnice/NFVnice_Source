@@ -140,6 +140,7 @@ static void
 arbiter_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data) {
 
+        check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list();
         handle_wakeup(NULL);
         //printf("\n Inside arbiter_timer_cb() %"PRIu64", on core [%d] \n", rte_rdtsc_precise(), rte_lcore_id());
         return;
@@ -179,16 +180,17 @@ initialize_master_timers(void) {
                 &nf_load_stats_timer_cb, NULL
                 );
 
-        ticks = ((uint64_t)ARBITER_PERIOD_IN_US *(rte_get_timer_hz()/1000000));
-        rte_timer_reset_sync(&main_arbiter_timer,
-                ticks,
-                PERIODICAL,
-                rte_lcore_id(),
-                &arbiter_timer_cb, NULL
-                );
-        //Note: This call effectively nullifies the timer
-        //rte_timer_init(&main_arbiter_timer);
-
+        if( 0 == ONVM_NUM_WAKEUP_THREADS) {
+                ticks = ((uint64_t)ARBITER_PERIOD_IN_US *(rte_get_timer_hz()/1000000));
+                rte_timer_reset_sync(&main_arbiter_timer,
+                        ticks,
+                        PERIODICAL,
+                        rte_lcore_id(),
+                        &arbiter_timer_cb, NULL
+                        );
+                //Note: This call effectively nullifies the timer
+                //rte_timer_init(&main_arbiter_timer);
+        }
         return 0;
 }
 #endif //ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD

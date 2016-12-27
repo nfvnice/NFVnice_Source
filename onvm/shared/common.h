@@ -140,7 +140,7 @@
 #define DROP_PKTS_ONLY_AT_BEGGINING             // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF). (Note: Enable)
 #define ENABLE_SAVE_BACKLOG_FT_PER_NF           // save backlog Flow Entries per NF (Note: Enable)
 #define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable)
-#define RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
+//#define RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
 #define BACKPRESSURE_EXTRA_DEBUG_LOGS           // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
 
 //Need Early bind to NF for the chain and determine the bottlneck status: Avoid passing first few packets of a flow till the chain, only to drop them later: Helps for TCP and issue with storing multiple flows at earlier NF
@@ -152,6 +152,8 @@
 //#define ENABLE_NF_BKLOG_BUFFERING   //Extension to Approach 3 wherein each NF can pre-buffer internally the  packets for bottlenecked service chains. (Not Implemented!!)
 //#define DUMMY_FT_LOAD_ONLY //Load Only onvm_ft and Bypass ENABLE_NF_BACKPRESSURE/NF_BACKPRESSURE_APPROACH_3
 
+
+//#define USE_ARBITER_NF_EXEC_PERIOD      //NFLib check for wake;/sleep state and Wakeup thread to put the the NFs to sleep after timer expiry (This feature is not working as expected..)
 
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
@@ -326,10 +328,10 @@ struct onvm_service_chain {
 	uint8_t ref_cnt;
 #ifdef ENABLE_NF_BACKPRESSURE
 	volatile uint8_t highest_downstream_nf_index_id;     // bit index of each NF in the chain that is overflowing
-#ifdef NF_BACKPRESSURE_APPROACH_2
+//#ifdef NF_BACKPRESSURE_APPROACH_2
 	uint8_t nf_instances_mapped; //set when all nf_instances are populated in the below array
 	uint8_t nf_instance_id[ONVM_MAX_CHAIN_LENGTH+1];
-#endif //NF_BACKPRESSURE_APPROACH_2
+//#endif //NF_BACKPRESSURE_APPROACH_2
 #endif //ENABLE_NF_BACKPRESSURE
 };
 
@@ -357,7 +359,7 @@ struct onvm_service_chain {
 #else
 #define MP_CLIENT_SEM_NAME "MProc_Client_%u_SEM"
 #endif //USE_MQ
-#define ONVM_NUM_WAKEUP_THREADS ((int)0)       //1 ( Must remove this as well)
+#define ONVM_NUM_WAKEUP_THREADS ((int)1)       //1 ( Must remove this as well)
 //1000003 1000033 1000037 1000039 1000081 1000099 1000117 1000121 1000133
 //#define SAMPLING_RATE 1000000           // sampling rate to estimate NFs computation cost
 #define SAMPLING_RATE 1000003           // sampling rate to estimate NFs computation cost
@@ -562,6 +564,34 @@ static inline uint64_t get_diff_cpu_cycles_in_us(uint64_t start, uint64_t end) {
         }
         return 0;
 }
+
+typedef struct sc_entries {
+        struct onvm_service_chain *sc;
+        uint16_t sc_count;
+        uint16_t bneck_flag;
+}sc_entries_list;
+
+#define BOTTLENECK_NF_STATUS_WAIT_ENQUEUED   (0x01)
+#define BOTTLENECK_NF_STATUS_DROP_MARKED     (0x02)
+#define BOTTLENECK_NF_STATUS_RESET           (0x00)
+typedef struct bottleneck_nf_entries {
+        struct timespec s_time;
+        uint16_t enqueue_status;
+        uint16_t nf_id;
+        uint16_t enqueued_ctr;
+        uint16_t marked_ctr;
+}bottleneck_nf_entries_t;
+typedef struct bottlenec_nf_info {
+        uint16_t entires;
+        //struct rte_timer nf_timer[MAX_CLIENTS];   // not worth it, as it would still be called at granularity of invoking the rte_timer_manage()
+        bottleneck_nf_entries_t nf[MAX_CLIENTS];
+}bottlenec_nf_info_t;
+bottlenec_nf_info_t bottleneck_nf_list;
+
+#define WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US   (10*SECOND_TO_MICRO_SECOND)
+
+int onvm_mark_all_entries_for_bottleneck(uint16_t nf_id);
+int onvm_clear_all_entries_for_bottleneck(uint16_t nf_id);
 /******************************** DATA STRUCTURES FOR FIPO SUPPORT *********************************
 *     fipo_buf_node_t:      each rte_buf_node (packet) added to the fipo_per_flow_list -- Need basic Queue add/remove
 *     fipo_per_flow_list:   Ordered list of buffers for each flow   -- Need Queue add/remove

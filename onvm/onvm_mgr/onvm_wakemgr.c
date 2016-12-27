@@ -72,8 +72,8 @@ wakeup_client(int instance_id, struct wakeup_info *wakeup_info);
 static inline int
 wakeup_client_internal(int instance_id);
 
-#define WAKE_INTERVAL_IN_US     (100)   //100 micro seconds
-#define USLEEP_INTERVAL         (50)    //50 micro seconds
+#define WAKE_INTERVAL_IN_US     (ARBITER_PERIOD_IN_US)      //100 micro seconds
+#define USLEEP_INTERVAL         (50)                        //50 micro seconds
 //Note: sleep of 50us and wake_interval of 100us reduces CPU utilization from 100 to 0.3
 //Ideal: Get rid of wake thread and merge the functionality with the main_thread.
 
@@ -83,11 +83,28 @@ static void wake_timer_cb(struct rte_timer *ptr_timer, void *ptr_data);
 int initialize_wake_timers(void *data);
 #endif //USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 
+
+typedef struct core_nf_timers {
+        struct rte_timer    timer;
+        uint16_t            timer_status;   //0=OFF, 1=ACTIVE,
+        uint16_t            index;          //index in the sorted list;
+        uint16_t            nf_id;
+        uint16_t            core_id;
+        uint16_t            next_nf_id;
+        uint64_t            exec_period;
+}core_nf_timers_t;
+core_nf_timers_t    core_timers[MAX_CORES_ON_NODE];
+
+int
+initialize_per_core_timers(void);
+static void  arbiter_wakeup_client(uint16_t core_id, uint16_t index);
+int launch_core_nf_timer(uint16_t core_id, uint16_t index, uint16_t nf_id, uint64_t exec_period);
 /***********************Timer Functions************************************/
 #ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 static void wake_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer, void *ptr_data) {
 
         if(ptr_data) {
+                check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list();
                 //handle_wakeup((struct wakeup_info *)ptr_data);
                 handle_wakeup(NULL);
         }
@@ -113,6 +130,80 @@ initialize_wake_timers(void *data) {
 
         index++;
         return 0;
+}
+int
+initialize_per_core_timers (void) {
+        uint16_t core_id = 0;
+        for(core_id=0; core_id < MAX_CORES_ON_NODE; core_id++) {
+                rte_timer_init(&core_timers[core_id].timer);
+                core_timers[core_id].timer_status=0;
+                core_timers[core_id].core_id = core_id;
+                core_timers[core_id].nf_id=0;
+                core_timers[core_id].next_nf_id = 0;
+        }
+        //will be reset and launched at the time of nf_wakeups
+        return 0;
+}
+
+static void per_core_timer_cb(__attribute__((unused)) struct rte_timer *tim, void *arg) {
+
+        core_nf_timers_t *pCoreTimer = (core_nf_timers_t*)arg;
+        if(pCoreTimer ) {
+#ifdef __DEBUG_LOGS__
+                printf("Timer Expired Callback core [%d]  client [%d] at index [%d] for period [%zu]\n ",pCoreTimer->core_id, pCoreTimer->nf_id, pCoreTimer->index, pCoreTimer->exec_period);
+#endif
+                //stop the current client (force sleep the current client)
+                rte_atomic16_set(clients[pCoreTimer->nf_id].shm_server, 1);
+                pCoreTimer->timer_status=0;
+                //wakeup next client
+                arbiter_wakeup_client(pCoreTimer->core_id, ++(pCoreTimer->index));
+        }
+}
+
+int launch_core_nf_timer(uint16_t core_id, uint16_t index, uint16_t nf_id, uint64_t exec_period) {
+        core_timers[core_id].index = index;
+        core_timers[core_id].nf_id = nf_id;
+        core_timers[core_id].core_id = core_id;
+        core_timers[core_id].exec_period = exec_period;
+        if(exec_period) {
+                if(core_timers[core_id].timer_status || rte_timer_pending(&core_timers[core_id].timer)) {
+#ifdef __DEBUG_LOGS__
+                        printf("Force Stopping the timer!\n ");
+#endif
+                        rte_timer_stop(&core_timers[core_id].timer);
+                }
+#ifdef __DEBUG_LOGS__
+                printf("core [%d] Waking client [%d] at index [%d] for period [%zu]\n ",core_id, nf_id, index, exec_period);
+#endif
+                core_timers[core_id].timer_status=1;
+                rte_timer_reset(&core_timers[core_id].timer,
+                        exec_period,
+                        SINGLE,
+                        rte_lcore_id(),
+                        &per_core_timer_cb, &core_timers[core_id]);
+        }//otherwise skip the timer, no need for nf_wakeup_timer
+
+        return 0;
+}
+
+static void  arbiter_wakeup_client(uint16_t core_id, uint16_t index) {
+        //Get the instance_id
+        if(index < nf_sched_param.nf_list_per_core[core_id].count) {
+                uint16_t instance_id = nf_sched_param.nf_list_per_core[core_id].nf_ids[index];
+                uint64_t exec_period = nf_sched_param.nf_list_per_core[core_id].run_time[instance_id];  //remember this indexing by instance_id;
+
+
+                //try to wake_up_client
+                int ret = wakeup_client_internal(instance_id);
+                //if wake_up succeeded then launch timer that can signal it to stop and wakes up the next index in the list
+                if(ret != -1) {
+                        launch_core_nf_timer(core_id, index, instance_id, exec_period);
+                }
+                //skip this and continue with next in the list
+                else {
+
+                }
+        }
 }
 #endif //ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 /***********************Timer Functions************************************/
@@ -299,7 +390,8 @@ inline void handle_wakeup(__attribute__((unused))struct wakeup_info *wakeup_info
          * Finally: wake up the tasks in the identified priority
          * */
         #if defined (USE_CGROUPS_PER_NF_INSTANCE)
-        extract_nf_load_and_svc_rate_info(0);    //setup_nfs_priority_per_core_list(0);
+        extract_nf_load_and_svc_rate_info(0);   //setup_nfs_priority_per_core_list(0);
+
 
         /* Now wake up the NFs as per sorted priority:
          * Next step Handle slack period before wake-up and schedule NFs for wake up; otherwise
@@ -307,10 +399,15 @@ inline void handle_wakeup(__attribute__((unused))struct wakeup_info *wakeup_info
         if(nf_sched_param.sorted) {
                 for(i=0; i<MAX_CORES_ON_NODE; i++) {
                         if(nf_sched_param.nf_list_per_core[i].sorted && nf_sched_param.nf_list_per_core[i].count) {
+#ifndef USE_ARBITER_NF_EXEC_PERIOD
                                 unsigned nf_id=0;
                                 for(nf_id=0; nf_id < nf_sched_param.nf_list_per_core[i].count; nf_id++) {
                                         wakeup_client(nf_sched_param.nf_list_per_core[i].nf_ids[nf_id], NULL /*wakeup_info*/);
                                 }
+#else
+                        arbiter_wakeup_client(i, 0);
+
+#endif  //USE_ARBITER_NF_EXEC_PERIOD
                         }
                 }
         }
@@ -332,7 +429,7 @@ wakeup_nfs(void *arg) {
                 usleep(USLEEP_INTERVAL);
 #else
                 handle_wakeup_old((struct wakeup_info *)arg);
-                usleep(WAKE_INTERVAL_IN_US);
+                //usleep(WAKE_INTERVAL_IN_US);
 #endif //#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 
         }

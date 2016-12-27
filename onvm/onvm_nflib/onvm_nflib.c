@@ -296,7 +296,7 @@ void onvm_nf_yeild(struct onvm_nf_info* info) {
         if ((!ONVM_SPECIAL_NF) || (info->instance_id != 1)) { }
         
         tx_stats->wkup_count[info->instance_id] += 1;
-        rte_atomic16_set(flag_p, 1);
+        rte_atomic16_set(flag_p, 1);  //rte_atomic16_cmpset(flag_p, 0, 1);
         
         #ifdef USE_MQ
         rmsg_len = mq_receive(mutex, msg_t,sizeof(msg_t), (unsigned int *)&msg_prio);
@@ -431,7 +431,7 @@ onvm_nflib_run(
                 int ret_act;
 
                 /* check if signalled to block, then block */
-                #if defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_2)
+                #if defined(ENABLE_NF_BACKPRESSURE) && (defined(NF_BACKPRESSURE_APPROACH_2) || defined(USE_ARBITER_NF_EXEC_PERIOD))
                 #ifdef INTERRUPT_SEM
                 if (rte_atomic16_read(flag_p) ==1) {
                         onvm_nf_yeild(info);

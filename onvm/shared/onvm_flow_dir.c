@@ -261,18 +261,12 @@ onvm_flow_dir_print_stats__old(void) {
         return ;
 }
 
-typedef struct sc_entries {
-        struct onvm_service_chain *sc;
-        uint16_t sc_count;
-        uint16_t bneck_flag;
-}sc_entries_list;
-static sc_entries_list sc_list[SDN_FT_ENTRIES];
-static inline uint32_t get_index_of_sc(struct onvm_service_chain *sc) {
+static inline uint32_t get_index_of_sc(struct onvm_service_chain *sc, sc_entries_list *c_list) {
         uint32_t free_index = SDN_FT_ENTRIES;
         uint32_t i = 0;
         for (i=0; i<SDN_FT_ENTRIES; i++) {
-                if (sc_list[i].sc) {
-                        if(sc_list[i].sc == sc) {
+                if (c_list[i].sc) {
+                        if(c_list[i].sc == sc) {
                                 return i;
                         }
                 }
@@ -282,33 +276,35 @@ static inline uint32_t get_index_of_sc(struct onvm_service_chain *sc) {
         }
         return free_index;
 }
-void
-onvm_flow_dir_print_stats(void) {
 
+uint32_t
+extract_sc_list(uint32_t *bft_count, sc_entries_list *c_list) {
+        uint32_t active_fts = 0, bneck_fts=0;
+        if(!c_list) return -1;
         if(sdn_ft) {
                 int32_t tbl_index = 0;
-                uint32_t active_chains = 0, bneck_chains=0;
-                uint32_t active_fts = 0, bneck_fts=0;
                 uint32_t s_inx = SDN_FT_ENTRIES;
-                for (; tbl_index < SDN_FT_ENTRIES; tbl_index++)
-                {
+
+                memset(c_list,0,sizeof(*c_list));
+
+                for (; tbl_index < SDN_FT_ENTRIES; tbl_index++) {
                         s_inx = SDN_FT_ENTRIES;
                         struct onvm_flow_entry *flow_entry = (struct onvm_flow_entry *)&sdn_ft->data[tbl_index*sdn_ft->entry_size];
                         if (flow_entry && flow_entry->sc && flow_entry->sc->chain_length) {
                                 active_fts+=1;
-                                s_inx = get_index_of_sc(flow_entry->sc);
+                                s_inx = get_index_of_sc(flow_entry->sc, c_list);
                                 if(s_inx < SDN_FT_ENTRIES) {
-                                        sc_list[s_inx].sc = flow_entry->sc;
-                                        sc_list[s_inx].sc_count+=1;
-                                        if(1 == sc_list[s_inx].sc_count) sc_list[s_inx].bneck_flag=0;
+                                        c_list[s_inx].sc = flow_entry->sc;
+                                        c_list[s_inx].sc_count+=1;
+                                        if(1 == c_list[s_inx].sc_count) c_list[s_inx].bneck_flag=0;
                                 }
                         }
                         else continue;
-#ifdef ENABLE_NF_BACKPRESSURE
+                        #ifdef ENABLE_NF_BACKPRESSURE
                         if (flow_entry->sc->highest_downstream_nf_index_id) {
                                 bneck_fts++;
                                 if(s_inx < SDN_FT_ENTRIES) {
-                                        sc_list[s_inx].bneck_flag+=1;
+                                        c_list[s_inx].bneck_flag+=1;
                                 }
                                 //#define LIST_FLOW_ENTRIES
                                 #ifdef LIST_FLOW_ENTRIES
@@ -320,25 +316,39 @@ onvm_flow_dir_print_stats(void) {
                                 printf("\n");
                                 #endif
                         }
-#endif  //ENABLE_NF_BACKPRESSURE
+                        #endif  //ENABLE_NF_BACKPRESSURE
                 }
+        }
+        if(bft_count)*bft_count = bneck_fts;
+         return active_fts;
+
+}
+
+void
+onvm_flow_dir_print_stats(void) {
+
+        if(sdn_ft) {
+                static sc_entries_list sc_l[SDN_FT_ENTRIES];
+                uint32_t active_chains = 0, bneck_chains=0;
+                uint32_t active_fts = 0, bneck_fts=0;
+                uint32_t s_inx = SDN_FT_ENTRIES;
+
+                active_fts = extract_sc_list(&bneck_fts,sc_l);
 
                 for(s_inx=0; s_inx <SDN_FT_ENTRIES; s_inx++) {
-                        if(sc_list[s_inx].sc) {
+                        if(sc_l[s_inx].sc) {
                                 active_chains+=1;
-                                if(sc_list[s_inx].bneck_flag) {
+                                if(sc_l[s_inx].bneck_flag) {
                                         bneck_chains+=1;
 #ifdef ENABLE_NF_BACKPRESSURE
                                         int i =0;
-                                        printf ("(ft_count=%d),, overflowStatus (binx=%d),(nfid=%d), (scl=%d)::", sc_list[s_inx].bneck_flag, sc_list[s_inx].sc->highest_downstream_nf_index_id, sc_list[s_inx].sc->ref_cnt, sc_list[s_inx].sc->chain_length);
-                                        for(i=1;i<=sc_list[s_inx].sc->chain_length;++i)printf("[%d], ",sc_list[s_inx].sc->sc[i].destination);
+                                        printf ("(ft_count=%d),, overflowStatus (binx=%d),(nfid=%d), (scl=%d)::", sc_l[s_inx].bneck_flag, sc_l[s_inx].sc->highest_downstream_nf_index_id, sc_l[s_inx].sc->ref_cnt, sc_l[s_inx].sc->chain_length);
+                                        for(i=1;i<=sc_l[s_inx].sc->chain_length;++i)printf("[%d], ",sc_l[s_inx].sc->sc[i].destination);
                                         printf("\n");
 #endif
                                 }
                         }
                 }
-                memset(sc_list,0,sizeof(sc_list));
-
                 printf("Total Flow entries and chains: [%d, %d], Bottleneck'd Flow entries and Chains: [%d, %d], \n", active_fts, active_chains, bneck_fts, bneck_chains);
         }
 
@@ -364,3 +374,7 @@ onvm_flow_dir_clear_all_entries(void) {
         }
         return 0;
 }
+
+
+
+

@@ -61,11 +61,15 @@ uint16_t downstream_nf_overflow = 0;
 uint16_t highest_downstream_nf_service_id=0;
 uint16_t lowest_upstream_to_throttle = 0;
 uint64_t throttle_count = 0;
+#define EWMA_LOAD_ADECAY (0.5)  //(0.1) or or (0.002) or (.004)
 #endif // ENABLE_NF_BACKPRESSURE
 //sorted list of NFs based on load requirement on the core
 //nfs_per_core_t nf_list_per_core[MAX_CORES_ON_NODE];
 nf_schedule_info_t nf_sched_param;
 
+static inline void assign_nf_cgroup_weight(uint16_t nf_id);
+static inline void assign_all_nf_cgroup_weight(void);
+void compute_nf_exec_period_and_cgroup_weight(void);
 void compute_and_assign_nf_cgroup_weight(void);
 void monitor_nf_node_liveliness_via_pid_monitoring(void);
 int nf_sort_func(const void * a, const void *b);
@@ -81,13 +85,100 @@ typedef struct nf_core_and_cc_info {
         uint32_t total_load;            //total pkts (avergae) queued up on the core for processing.
         uint64_t total_load_cost_fct;   //total product of current load and computation cost on core (aggregate demand in total cycles)
 }nf_core_and_cc_info_t;
-nf_core_and_cc_info_t nf_pool_per_core[MAX_CORES_ON_NODE]; // = {{0,0},}; ////nf_core_and_cc_info_t nf_pool_per_core[rte_lcore_count()+1]; // = {{0,0},};
 
 /********************************Interfaces***********************************/
 /*
  * This function computes and assigns weights to each nfs cgroup based on its contention and requirements
  * PRerequisite: clients[]->info->comp_cost and  clients[]->info->load should be already updated.  -- updated by extract_nf_load_and_svc_rate_info()
  */
+static inline void assign_nf_cgroup_weight(uint16_t nf_id) {
+
+        if ((onvm_nf_is_valid(&clients[nf_id])) && (clients[nf_id].info->comp_cost)) {
+                //set_cgroup_nf_cpu_share(clients[nf_id].info->instance_id, clients[nf_id].info->cpu_share);
+                set_cgroup_nf_cpu_share_from_onvm_mgr(clients[nf_id].info->instance_id, clients[nf_id].info->cpu_share);
+        }
+
+}
+static inline void assign_all_nf_cgroup_weight(void) {
+        uint16_t nf_id = 0;
+        for (nf_id=0; nf_id < MAX_CLIENTS; nf_id++) {
+                assign_nf_cgroup_weight(nf_id);
+        }
+}
+void compute_nf_exec_period_and_cgroup_weight(void) {
+
+#if defined (USE_CGROUPS_PER_NF_INSTANCE)
+
+        const uint64_t total_cycles_in_epoch = ARBITER_PERIOD_IN_US *(rte_get_timer_hz()/1000000);
+        static nf_core_and_cc_info_t nfs_on_core[MAX_CORES_ON_NODE];
+
+        uint16_t nf_id = 0;
+        memset(nfs_on_core, 0, sizeof(nfs_on_core));
+
+        //First build the total cost and contention info per core
+        for (nf_id=0; nf_id < MAX_CLIENTS; nf_id++) {
+                if (onvm_nf_is_valid(&clients[nf_id])){
+                        nfs_on_core[clients[nf_id].info->core_id].total_comp_cost += clients[nf_id].info->comp_cost;
+                        nfs_on_core[clients[nf_id].info->core_id].total_nf_count++;
+                        nfs_on_core[clients[nf_id].info->core_id].total_load += clients[nf_id].info->load;            //clients[nf_id].info->avg_load;
+                        nfs_on_core[clients[nf_id].info->core_id].total_pkts_served += clients[nf_id].info->svc_rate; //clients[nf_id].info->avg_svc;
+                        nfs_on_core[clients[nf_id].info->core_id].total_load_cost_fct += (clients[nf_id].info->comp_cost*clients[nf_id].info->load);
+                }
+        }
+
+        //evaluate and assign the cost of each NF
+        for (nf_id=0; nf_id < MAX_CLIENTS; nf_id++) {
+                if ((onvm_nf_is_valid(&clients[nf_id])) && (clients[nf_id].info->comp_cost)) {
+
+                        // share of NF = 1024* NF_comp_cost/Total_comp_cost
+                        //Note: ideal share of NF is 100%(1024) so for N NFs sharing core => N*100 or (N*1024) then divide the cost proportionally
+#ifndef USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE
+                        //Static accounting based on computation_cost_only
+                        if(nfs_on_core[clients[nf_id].info->core_id].total_comp_cost) {
+                                clients[nf_id].info->cpu_share = (uint32_t) ((DEFAULT_NF_CPU_SHARE*nfs_on_core[clients[nf_id].info->core_id].total_nf_count)*(clients[nf_id].info->comp_cost))
+                                                /((nfs_on_core[clients[nf_id].info->core_id].total_comp_cost));
+
+                                clients[nf_id].info->exec_period = ((clients[nf_id].info->comp_cost)*total_cycles_in_epoch)/nfs_on_core[clients[nf_id].info->core_id].total_comp_cost; //(total_cycles_in_epoch)*(total_load_on_core)/(load_of_nf)
+                        }
+                        else {
+                                clients[nf_id].info->cpu_share = (uint32_t)DEFAULT_NF_CPU_SHARE;
+                                clients[nf_id].info->exec_period = 0;
+
+                        }
+                        #ifdef __DEBUG_LOGS__
+                        printf("\n ***** Client [%d] with cost [%d] on core [%d] with total_demand [%d] shared by [%d] NFs, got cpu share [%d]***** \n ", clients[nf_id].info->instance_id, clients[nf_id].info->comp_cost, clients[nf_id].info->core_id,
+                                                                                                                                                   nfs_on_core[clients[nf_id].info->core_id].total_comp_cost,
+                                                                                                                                                   nfs_on_core[clients[nf_id].info->core_id].total_nf_count,
+                                                                                                                                                   clients[nf_id].info->cpu_share);
+                        #endif //__DEBUG_LOGS__
+
+#else
+                        uint64_t num = 0;
+                        //Dynamic: Based on accounting the product of Load*comp_cost factors. We can define the weights Alpha(\u03b1) and Beta(\u03b2) for apportioning Load and Comp_Costs: (\u03b1*clients[nf_id].info->load)*(\u03b2*clients[nf_id].info->comp_cost) | \u03b2*\u03b1 = 1.
+                        if (nfs_on_core[clients[nf_id].info->core_id].total_load_cost_fct) {
+
+                                num = (uint64_t)(nfs_on_core[clients[nf_id].info->core_id].total_nf_count)*(DEFAULT_NF_CPU_SHARE)*(clients[nf_id].info->comp_cost)*(clients[nf_id].info->load);
+                                clients[nf_id].info->cpu_share = (uint32_t) (num/nfs_on_core[clients[nf_id].info->core_id].total_load_cost_fct);
+                                //clients[nf_id].info->cpu_share = ((uint64_t)(((DEFAULT_NF_CPU_SHARE*nfs_on_core[clients[nf_id].info->core_id].total_nf_count)*(clients[nf_id].info->comp_cost*clients[nf_id].info->load)))
+                                //                /((nfs_on_core[clients[nf_id].info->core_id].total_load_cost_fct)));
+                                clients[nf_id].info->exec_period = ((clients[nf_id].info->comp_cost)*(clients[nf_id].info->load)*total_cycles_in_epoch)/nfs_on_core[clients[nf_id].info->core_id].total_load_cost_fct; //(total_cycles_in_epoch)*(total_load_on_core)/(load_of_nf)
+                        }
+                        else {
+                                clients[nf_id].info->cpu_share = (uint32_t)DEFAULT_NF_CPU_SHARE;
+                                clients[nf_id].info->exec_period = 0;
+                        }
+                        #ifdef __DEBUG_LOGS__
+                        printf("\n ***** Client [%d] with cost [%d] and load [%d] on core [%d] with total_demand_comp_cost=%"PRIu64", shared by [%d] NFs, got num=%"PRIu64", cpu share [%d]***** \n ", clients[nf_id].info->instance_id, clients[nf_id].info->comp_cost, clients[nf_id].info->load, clients[nf_id].info->core_id,
+                                                                                                                                                   nfs_on_core[clients[nf_id].info->core_id].total_load_cost_fct,
+                                                                                                                                                   nfs_on_core[clients[nf_id].info->core_id].total_nf_count,
+                                                                                                                                                   num, clients[nf_id].info->cpu_share);
+                        #endif //__DEBUG_LOGS__
+#endif //USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE
+
+                }
+        }
+#endif // #if defined (USE_CGROUPS_PER_NF_INSTANCE)
+}
 void compute_and_assign_nf_cgroup_weight(void) {
 #if defined (USE_CGROUPS_PER_NF_INSTANCE)
 
@@ -99,6 +190,7 @@ void compute_and_assign_nf_cgroup_weight(void) {
         }
         update_rate = 0;
         const uint64_t total_cycles_in_epoch = ARBITER_PERIOD_IN_US *(rte_get_timer_hz()/1000000);
+        static nf_core_and_cc_info_t nf_pool_per_core[MAX_CORES_ON_NODE]; // = {{0,0},}; ////nf_core_and_cc_info_t nf_pool_per_core[rte_lcore_count()+1]; // = {{0,0},};
         uint16_t nf_id = 0;
         memset(nf_pool_per_core, 0, sizeof(nf_pool_per_core));
 
@@ -179,7 +271,7 @@ void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long int
                         static onvm_stats_snapshot_t st;
                         get_onvm_nf_stats_snapshot_v2(nf_id,&st,0);
                         cl->info->load      =  (st.rx_delta + st.rx_drop_delta);//(cl->stats.rx - cl->stats.prev_rx + cl->stats.rx_drop - cl->stats.prev_rx_drop); //rte_ring_count(cl->rx_q);
-                        cl->info->avg_load  =  ((cl->info->avg_load == 0) ? (cl->info->load):((cl->info->avg_load + cl->info->load) /2));
+                        cl->info->avg_load  =  ((cl->info->avg_load == 0) ? (cl->info->load):((cl->info->avg_load + cl->info->load) /2));   // (((1-EWMA_LOAD_ADECAY)*cl->info->avg_load) + (EWMA_LOAD_ADECAY*cl->info->load))
                         cl->info->svc_rate  =  (st.tx_delta); //(clients_stats->tx[nf_id] -  clients_stats->prev_tx[nf_id]);
                         cl->info->avg_svc   =  ((cl->info->avg_svc == 0) ? (cl->info->svc_rate):((cl->info->avg_svc + cl->info->svc_rate) /2));
                         cl->info->drop_rate =  (st.rx_drop_rate);
@@ -196,6 +288,10 @@ void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long int
                         cl->info->avg_svc   = 0;
                 }
         }
+
+        //compute the execution_period_and_cgroup_weight    -- better to separate the two??
+        compute_nf_exec_period_and_cgroup_weight();
+
         //sort and prepare the list of nfs_per_core_per_pool in the decreasing order of priority; use this list to wake up the NFs
         setup_nfs_priority_per_core_list(interval);
 #endif
@@ -333,7 +429,11 @@ onvm_nf_check_status(void) {
         */
 }
 
-// This function must
+/* This function must update the status params of NF
+ *  1. NF Load characterisitics         (at smaller duration)   -- better to move to Arbiter
+ *  2. NF CGROUP Weight Determination   (at smaller duration)   -- better to move to Arbiter
+ *  3. Assign CGROUP Weight             (at larger duration)    -- handle here
+ */
 void
 onvm_nf_stats_update(__attribute__((unused)) unsigned long interval) {
 
@@ -345,7 +445,11 @@ onvm_nf_stats_update(__attribute__((unused)) unsigned long interval) {
 
         /* Ideal location to re-compute the NF weight */
         #if defined (USE_CGROUPS_PER_NF_INSTANCE) && defined(ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT)
-        compute_and_assign_nf_cgroup_weight();
+        //compute_and_assign_nf_cgroup_weight(); //
+        {
+                //compute_nf_exec_period_and_cgroup_weight(); //must_be_already computed in the arbiter_context; what if arbiter is not running??
+                assign_all_nf_cgroup_weight();
+        }
         #endif //USE_CGROUPS_PER_NF_INSTANCE
 }
 
@@ -466,4 +570,151 @@ onvm_nf_stop(struct onvm_nf_info *nf_info) {
         rte_mempool_put(nf_info_mp, (void*)nf_info);
         printf(" NF reclaimed to NF pool!!! \n ");
         return 0;
+}
+
+
+//Note: This function assumes that the NF mapping is setup in the sc.
+static sc_entries_list sc_list[SDN_FT_ENTRIES];
+int
+onvm_mark_all_entries_for_bottleneck(uint16_t nf_id) {
+        int ret = 0;
+#ifdef ENABLE_NF_BACKPRESSURE
+        uint32_t ttl_chains = extract_sc_list(NULL, sc_list);
+
+        //There must be valid chains
+        if(ttl_chains) {
+                uint32_t s_inx = 0;
+                for(s_inx=0; s_inx <SDN_FT_ENTRIES; s_inx++) {
+                        if(sc_list[s_inx].sc) {
+                                int i =0;
+                                for(i=1;i<=sc_list[s_inx].sc->chain_length;++i) {
+                                        if(nf_id == sc_list[s_inx].sc->nf_instance_id[i]) {
+                                                //mark this sc with this index;;
+                                                if(!(TEST_BIT(sc_list[s_inx].sc->highest_downstream_nf_index_id, i))) {
+                                                        SET_BIT(sc_list[s_inx].sc->highest_downstream_nf_index_id, i);
+                                                        break;
+                                                }
+                                        }
+                                }
+                                #ifdef NF_BACKPRESSURE_APPROACH_2
+                                uint32_t index = (i-1);
+                                //for(; index < meta->chain_index; index++ ) {
+                                for(; index >=1 ; index-- ) {
+                                        clients[sc_list[s_inx].sc->nf_instance_id[index]].throttle_this_upstream_nf=1;
+                                        #ifdef HOP_BY_HOP_BACKPRESSURE
+                                        break;
+                                        #endif //HOP_BY_HOP_BACKPRESSURE
+                                }
+                                #endif  //NF_BACKPRESSURE_APPROACH_2
+
+                        }
+                        else {
+                                break;  //reached end of schains list;
+                        }
+                }
+        }
+#else
+        ret = nf_id;
+#endif
+        return ret;
+}
+int
+onvm_clear_all_entries_for_bottleneck(uint16_t nf_id) {
+        int ret = 0;
+#ifdef ENABLE_NF_BACKPRESSURE
+        uint32_t bneck_chains = 0;
+        uint32_t ttl_chains = extract_sc_list(&bneck_chains, sc_list);
+
+        //There must be chains with bottleneck indications
+        if(ttl_chains && bneck_chains) {
+                uint32_t s_inx = 0;
+                for(s_inx=0; s_inx <SDN_FT_ENTRIES; s_inx++) {
+                        if(NULL == sc_list[s_inx].sc) break;    //reached end of chains list
+                        if(sc_list[s_inx].bneck_flag) {
+                                int i =0;
+                                for(i=1;i<=sc_list[s_inx].sc->chain_length;++i) {
+                                        if(nf_id == sc_list[s_inx].sc->nf_instance_id[i]) {
+                                                //clear this sc with this index;;
+                                                if((TEST_BIT(sc_list[s_inx].sc->highest_downstream_nf_index_id, i))) {
+                                                        CLEAR_BIT(sc_list[s_inx].sc->highest_downstream_nf_index_id, i);
+                                                        break;
+                                                }
+                                        }
+                                }
+                                #ifdef NF_BACKPRESSURE_APPROACH_2
+                                // detect the start nf_index based on new val of highest_downstream_nf_index_id
+                                int nf_index=(sc_list[s_inx].sc->highest_downstream_nf_index_id == 0)? (1): (get_index_of_highest_set_bit(sc_list[s_inx].sc->highest_downstream_nf_index_id));
+                                for(; nf_index < i; nf_index++) {
+                                       clients[sc_list[s_inx].sc->nf_instance_id[nf_index]].throttle_this_upstream_nf=0;
+                                }
+                                #endif  //NF_BACKPRESSURE_APPROACH_2
+                        }
+                }
+        }
+#else
+        ret = nf_id;
+#endif
+
+        return ret;
+}
+
+int enqueu_nf_to_bottleneck_watch_list(uint16_t nf_id) {
+        if(bottleneck_nf_list.nf[nf_id].enqueue_status) return 1;
+        bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_WAIT_ENQUEUED;
+        bottleneck_nf_list.nf[nf_id].nf_id = nf_id;
+        get_current_time(&bottleneck_nf_list.nf[nf_id].s_time);
+        bottleneck_nf_list.nf[nf_id].enqueued_ctr+=1;
+        bottleneck_nf_list.entires++;
+        return 0;
+}
+
+int dequeue_nf_from_bottleneck_watch_list(uint16_t nf_id) {
+        if(!bottleneck_nf_list.nf[nf_id].enqueue_status) return 1;
+        bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_RESET;
+        bottleneck_nf_list.nf[nf_id].nf_id = nf_id;
+        get_current_time(&bottleneck_nf_list.nf[nf_id].s_time);
+        bottleneck_nf_list.entires--;
+        return 0;
+}
+
+int check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list(void) {
+        int ret = 0;
+        uint16_t nf_id = 0;
+        struct timespec now;
+        get_current_time(&now);
+        for(; nf_id < MAX_CLIENTS; nf_id++) {
+                //is in enqueue list but not marked
+                if(BOTTLENECK_NF_STATUS_WAIT_ENQUEUED & bottleneck_nf_list.nf[nf_id].enqueue_status) {
+                        //ring count is still beyond the water mark threshold
+                        if(rte_ring_count(clients[nf_id].rx_q) >= CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
+                                if((WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US) <= get_difftime_us(&bottleneck_nf_list.nf[nf_id].s_time, &now)) {
+                                        onvm_mark_all_entries_for_bottleneck(nf_id);
+                                        bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_DROP_MARKED;
+                                        bottleneck_nf_list.nf[nf_id].marked_ctr+=1;
+                                        #if defined (NF_BACKPRESSURE_APPROACH_1) && defined (BACKPRESSURE_EXTRA_DEBUG_LOGS)
+                                        clients[nf_id].stats.bkpr_count++;
+                                        #endif
+                                }
+                                //else //time has not expired.. continue to monitor..
+                        }
+                        //ring count has dropped
+                        else {
+                                if((WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US) <= get_difftime_us(&bottleneck_nf_list.nf[nf_id].s_time, &now)) {
+                                        dequeue_nf_from_bottleneck_watch_list(nf_id);
+                                        bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_RESET;
+                                }
+                                //else //time has not expired.. continue to monitor..
+                        }
+                }
+                //is in enqueue list and marked
+                else if (BOTTLENECK_NF_STATUS_DROP_MARKED & bottleneck_nf_list.nf[nf_id].enqueue_status) {
+                        if(rte_ring_count(clients[nf_id].rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
+                                onvm_clear_all_entries_for_bottleneck(nf_id);
+                                dequeue_nf_from_bottleneck_watch_list(nf_id);
+                                bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_RESET;
+                        }
+                        //else keep as marked.
+                }
+        }
+        return ret;
 }

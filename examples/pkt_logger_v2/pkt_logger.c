@@ -595,11 +595,42 @@ int log_all_wait_buf_pkts(void) {
         return 0;
 }
 
+#define USE_KEY_MODE_FOR_FLOW_ENTRY
+static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
+static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry) {
+        int ret = -1;
+        if(flow_entry)*flow_entry = NULL;
+#ifdef USE_KEY_MODE_FOR_FLOW_ENTRY
+        struct onvm_ft_ipv4_5tuple fk;
+        if ((ret = onvm_ft_fill_key(&fk, pkt))) {
+                return ret;
+        }
+        ret = onvm_flow_dir_get_key(&fk, flow_entry);
+#else  // #elif defined (USE_KEY_MODE_FOR_FLOW_ENTRY)
+        ret = onvm_flow_dir_get_pkt(pkt, flow_entry);
+#endif
+        return ret;
+}
+uint16_t flow_bypass_list[] = {0,1, 4,5, 8,9, 12,13};
+int check_in_flow_bypass_list(struct rte_mbuf* pkt);
+int check_in_flow_bypass_list(struct rte_mbuf* pkt) {
+        struct onvm_flow_entry *flow_entry = NULL;
+        get_flow_entry(pkt, &flow_entry);
+        if(flow_entry && flow_entry->entry_index) {
+              uint16_t i = 0;
+              for(i=0; i< sizeof(flow_bypass_list)/sizeof(uint16_t); i++) {
+                      if(flow_bypass_list[i] == flow_entry->entry_index) return 1;
+              }
+        }
+        return 0;
+}
 /** Build Some Decision mode ACL logic that conditionally logs pkts from certain flows..
  * In simple case: it could be odd/even flow_entry, some src/dst port or hash.rss
  * **/
 int validate_and_log_the_packet(struct rte_mbuf* pkt) {
-        if (pkt->hash.rss%3 == 0) return 0;
+        //if (pkt->hash.rss%3 == 0) return 0;
+        if(check_in_flow_bypass_list(pkt)) return 0;
+
         return log_the_packet(pkt,PKT_LOG_WAIT_ENQUEUE_ENABLED);
 }
 int log_the_packet(struct rte_mbuf* pkt, pkt_log_mode_e mode) {
@@ -609,7 +640,7 @@ int log_the_packet(struct rte_mbuf* pkt, pkt_log_mode_e mode) {
         if( NULL == pbuf) {
                 if((PKT_LOG_WAIT_ENQUEUE_ENABLED == mode)  && (0 == add_buf_to_wait_pkts(pkt))){
                         return 1;   //indicates the packet is held in the wait_queue and will be released later
-                } //else: enqueue to wiat_bufs has failed, block till bufs are released..
+                } //else: enqueue to wiat_bufs has failed, block till bufs are released or mark this buffer to be dropped and continue..
                 wait_for_buffer_ready(0);
 
                 pbuf = get_buffer_to_log();

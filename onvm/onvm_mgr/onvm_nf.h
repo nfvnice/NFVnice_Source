@@ -135,6 +135,12 @@ onvm_nf_stats_update(unsigned long interval);
 
 void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval);
 void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long interval);
+
+
+/* Enqueue NF to the bottleneck watch list */
+int enqueu_nf_to_bottleneck_watch_list(uint16_t nf_id);
+int dequeue_nf_from_bottleneck_watch_list(uint16_t nf_id);
+int check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list(void);
 /****************************Internal functions*******************************/
 
 

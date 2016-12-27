@@ -264,7 +264,8 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
 #endif //ENABLE_ECN_CE
 #endif
 #ifdef ENABLE_NF_BACKPRESSURE
-                onvm_detect_and_set_back_pressure(thread->nf_rx_buf[client].buffer, thread->nf_rx_buf[client].count, cl);
+                onvm_detect_and_set_back_pressure_v2(cl);//onvm_detect_and_set_back_pressure(thread->nf_rx_buf[client].buffer, thread->nf_rx_buf[client].count, cl);
+
 #endif //ENABLE_NF_BACKPRESSURE
         }
 #endif  //defined(ENABLE_NF_BACKPRESSURE) || defined (ENABLE_ECN_CE)
@@ -339,10 +340,10 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         // second: if approach is throttle by buffer drop, check if this chain needs upstreams to drop and if this one such upstream NF, then drop packet and return.
         if (flow_entry && flow_entry->sc) {
 
-                #ifdef NF_BACKPRESSURE_APPROACH_2
+                //#ifdef NF_BACKPRESSURE_APPROACH_2
                 // this information is needed only for NF based throttling apporach; packet drop approach is more in-line.
                 flow_entry->sc->nf_instance_id[meta->chain_index] = (uint8_t)cl->instance_id;
-                #endif  //NF_BACKPRESSURE_APPROACH_2
+                //#endif  //NF_BACKPRESSURE_APPROACH_2
 
                 #ifdef NF_BACKPRESSURE_APPROACH_1
                 // We want to throttle the packets at the upstream only iff (a) the packet belongs to the service chain whose Downstream NF indicates overflow, (b) this NF is upstream component for the service chain, and not a downstream NF (c) this NF is marked for throttle
@@ -622,6 +623,12 @@ static inline void read_all_ft_frm_cl_bft(struct client *cl) {
 }
 #endif //ENABLE_SAVE_BACKLOG_FT_PER_NF
 
+void onvm_detect_and_set_back_pressure_v2(struct client *cl) {
+        if(!cl || cl->is_bottleneck) return ;
+        cl->is_bottleneck = 1;
+        enqueu_nf_to_bottleneck_watch_list(cl->info->instance_id);
+}
+
 void
 onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struct client *cl) {
         /*** Make sure this function is called only on error status on rx_enqueue() ***/
@@ -705,7 +712,7 @@ onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, stru
         unsigned rx_q_count = rte_ring_count(cl->rx_q);
 
         // check if rx_q_size has decreased to acceptable level
-        if (rx_q_count > CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
+        if (rx_q_count >= CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
 
                 #if defined(RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE) || defined(ENABLE_ECN_CE)
                 if(rx_q_count >=CLIENT_QUEUE_RING_WATER_MARK_SIZE) {

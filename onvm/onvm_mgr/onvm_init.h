@@ -190,6 +190,7 @@ struct client {
         
 #ifdef ENABLE_NF_BACKPRESSURE
 //#if defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
+        uint16_t is_bottleneck;         //status: not marked=0/marked for enqueue=1/enqueued as bottleneck=2
         bottlenect_ft_info_t bft_list;
 #endif //defined (ENABLE_NF_BACKPRESSURE) && defined (NF_BACKPRESSURE_APPROACH_1)
 

@@ -146,6 +146,9 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
  */
 void
 onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struct client *cl);
+
+void onvm_detect_and_set_back_pressure_v2(struct client *cl);
+
 /*****************************Internal functions******************************/
 
 

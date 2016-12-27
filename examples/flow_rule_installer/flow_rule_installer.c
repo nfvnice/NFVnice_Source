@@ -436,7 +436,7 @@ static struct onvm_service_chain* get_sc_and_index_based_on_flow_key(struct onvm
                         gSClist.ref_count_for_sc_flip[index]+=1;
                         gSClist.sc_flip[index]->ref_cnt+=1;
                         printf("\n Returning Flip chain at index:[%d], len:[%d], ref_cnt:[%d, %d], : ", index, gSClist.sc[index]->chain_length, gSClist.sc[index]->ref_cnt, gSClist.ref_count_for_sc[index]);
-                        for(i = 1; i <= gSClist.sc_flip[index]->chain_length; i++) printf(" [%d]", gSClist.sc_flip[index]->sc[i].destination);
+                        for(i = 1; i <= gSClist.sc_flip[index]->chain_length; i++) printf(" [%d]", gSClist.sc_flip[index]->sc[i].destination);printf("\n");
                         #ifdef DEBUG_0
                         onvm_sc_print(gSClist.sc_flip[index]);
                         #endif
@@ -446,7 +446,7 @@ static struct onvm_service_chain* get_sc_and_index_based_on_flow_key(struct onvm
                         gSClist.ref_count_for_sc[index]+=1;
                         gSClist.sc[index]->ref_cnt+=1;
                         printf("\n Returning chain at index:[%d], len:[%d], ref_cnt:[%d, %d], : ", index, gSClist.sc[index]->chain_length, gSClist.sc[index]->ref_cnt, gSClist.ref_count_for_sc[index]);
-                        for(i = 1; i <= gSClist.sc[index]->chain_length; i++) printf(" [%d]", gSClist.sc[index]->sc[i].destination);
+                        for(i = 1; i <= gSClist.sc[index]->chain_length; i++) printf(" [%d]", gSClist.sc[index]->sc[i].destination); //printf("\n");
                         #ifdef DEBUG_0
                         onvm_sc_print(gSClist.sc[index]);
                         #endif
@@ -614,6 +614,7 @@ setup_schain_and_flow_entry_for_flip_key(struct onvm_ft_ipv4_5tuple *fk_in, int 
         //printf("\n Enter in sc_create()! \n");
         #endif
 
+        printf("\n Setting Flip FlowEntry[%zu]:", flow_entry->entry_index);
         flow_entry->sc = NULL; //onvm_sc_create();
         flow_entry->sc = get_sc_and_index_based_on_flow_key(fk,&sc_index,1);
         if (NULL ==  flow_entry->sc) {
@@ -706,6 +707,7 @@ add_flow_key_to_sc_flow_table(struct onvm_ft_ipv4_5tuple *ft)
         //printf("\n Enter in sc_create()! \n");
         #endif
 
+        printf("\n Setting Regular0 FlowEntry[%zu]:", flow_entry->entry_index);
         flow_entry->sc = NULL; //onvm_sc_create();
         int sc_index = -1;
         flow_entry->sc = get_sc_and_index_based_on_flow_key(fk,&sc_index,0);
@@ -975,6 +977,7 @@ static int setup_rule_for_packet(struct rte_mbuf *pkt, struct onvm_pkt_meta* met
                         exit(1);
                 }
                 (void) onvm_flow_dir_reset_entry(flow_entry); //memset(flow_entry, 0, sizeof(struct onvm_flow_entry));
+                printf("\n Setting Regular FlowEntry[%zu]:", flow_entry->entry_index);
                 flow_entry->sc = NULL; //onvm_sc_create();
                 flow_entry->key = fk;
                 int sc_index = -1;
