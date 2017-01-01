@@ -636,6 +636,12 @@ int validate_and_log_the_packet(struct rte_mbuf* pkt) {
 int log_the_packet(struct rte_mbuf* pkt, pkt_log_mode_e mode) {
         int ret = 0;
         static int pkt_count_per_buf = 0;
+
+        //check if there are prior enqueued packets, before loggin this input packet from pkt_handler
+        if(PKT_LOG_WAIT_ENQUEUE_ENABLED == mode) {
+                log_all_wait_buf_pkts();
+        }
+
         pkt_buf_t *pbuf = get_buffer_to_log();
         if( NULL == pbuf) {
                 if((PKT_LOG_WAIT_ENQUEUE_ENABLED == mode)  && (0 == add_buf_to_wait_pkts(pkt))){
@@ -653,7 +659,8 @@ int log_the_packet(struct rte_mbuf* pkt, pkt_log_mode_e mode) {
         }
 
         if(pbuf != NULL) {
-                log_all_wait_buf_pkts();
+                //check if there are prior enqueued packets, before loggin this input packet from pkt_handler
+                //if(PKT_LOG_WAIT_ENQUEUE_ENABLED == mode) log_all_wait_buf_pkts();
 
                 uint64_t pkt_buf_len = MIN((uint64_t)MAX_PKT_HEADER_SIZE, (uint64_t)pkt->buf_len); // Eth(24) + VLAN(4) + IP(20) + TCP(20)/[UDP(8)] header is 68 bytes
                 uint64_t remaining_buf_size = (pbuf->max_size - pbuf->buf_len);
