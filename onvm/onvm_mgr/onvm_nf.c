@@ -614,6 +614,7 @@ onvm_mark_all_entries_for_bottleneck(uint16_t nf_id) {
                 }
         }
 #else
+        sc_list[0].bneck_flag = 0;  //to fix compilation error, better add sc_list inside backpressure define
         ret = nf_id;
 #endif
         return ret;

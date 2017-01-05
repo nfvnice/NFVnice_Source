@@ -139,9 +139,10 @@ nf_load_stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
 static void
 arbiter_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data) {
-
+#ifdef INTERRUPT_SEM
         check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list();
         handle_wakeup(NULL);
+#endif
         //printf("\n Inside arbiter_timer_cb() %"PRIu64", on core [%d] \n", rte_rdtsc_precise(), rte_lcore_id());
         return;
 }

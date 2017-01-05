@@ -334,7 +334,12 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
                 onvm_pkt_drop(pkt);
                 return;
         }
+#ifndef ENABLE_NF_BACKPRESSURE
+        if(meta ||flow_entry) {
+                ; // do nothing :: to avoid compilation error
+        }
 
+#endif
         #ifdef ENABLE_NF_BACKPRESSURE
         // First regardless of the approach, fill in the NF MAP of service chain if not already done
         // second: if approach is throttle by buffer drop, check if this chain needs upstreams to drop and if this one such upstream NF, then drop packet and return.

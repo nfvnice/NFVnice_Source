@@ -112,6 +112,19 @@ static globalArgs_t globals = {
         .sem_block_count=0,
 };
 
+#ifdef SDN_FT_ENTRIES
+#define MAX_FLOW_TABLE_ENTRIES SDN_FT_ENTRIES
+#else
+#define MAX_FLOW_TABLE_ENTRIES 1024
+#endif //SDN_FT_ENTRIES
+
+//To keep track of all packets that are logged and that need not be re-checked again!
+typedef struct flow_logged_data_t {
+        uint32_t cur_entries;
+        uint16_t ft_list[MAX_FLOW_TABLE_ENTRIES];
+}flow_logged_data_t;
+static flow_logged_data_t flow_logged_info;
+
 #define MAX_PKT_BUFFERS (5)
 int pktBufList[MAX_PKT_BUFFERS];
 #define MAX_PKT_BUF_SIZE (64*1024)
@@ -177,6 +190,7 @@ int deinitialize_logger_nf(void);
 pkt_buf_t* get_buffer_to_log(void);
 int write_log_buffer(pkt_buf_t *pbuf);
 int refresh_log_buffer(pkt_buf_t *pbuf);
+int read_log_buffer(pkt_buf_t *pbuf);
 
 int wait_for_buffer_ready(unsigned int timeout_ms);
 int notify_io_write_done(pkt_buf_t *pbuf);
@@ -358,7 +372,7 @@ initialize_log_buffers (void) {
         return ret;
 }
 int initialize_log_file(void) {
-        globals.fd = open(globals.pktlog_file, O_WRONLY|O_CREAT, 0666);
+        globals.fd = open(globals.pktlog_file, O_RDONLY, 0);
         if (-1 == globals.fd) {
                 rte_exit(EXIT_FAILURE, "Cannot create file: %s \n", globals.pktlog_file);
         }
@@ -471,18 +485,43 @@ pkt_buf_t* get_buffer_to_log(void) {
         #endif //#ENABLE_DEBUG_LOGS
         return NULL;
 }
+int read_log_buffer(pkt_buf_t *pbuf) {
+        int ret = 0;
+        pbuf->aiocb->aio_nbytes = (size_t)pbuf->buf_len;
+        pbuf->aiocb->aio_offset = (__off_t)globals.file_offset;
+        //globals.file_offset += pbuf->buf_len; //for now always read from offset 0; size 64 or 68 bytes based of pkt type.
+
+#ifdef USE_SYNC_IO
+        ret = pread(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
+        globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
+        refresh_log_buffer(pbuf);
+        return ret;
+#endif
+        pbuf->req_status = aio_read(pbuf->aiocb);
+        if(-1 == pbuf->req_status) {
+                printf("Error at aio_write(): %s\n", strerror(errno));
+                ret = pbuf->req_status;
+                return refresh_log_buffer(pbuf);
+                //exit(1);
+        }
+        pbuf->state = BUF_SUBMITTED;
+        //globals.cur_buf_index = ((globals.cur_buf_index+1) % (globals.max_bufs));
+        globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
+        return ret;
+}
 int write_log_buffer(pkt_buf_t *pbuf) {
         int ret = 0;
         pbuf->aiocb->aio_nbytes = (size_t)pbuf->buf_len;
         pbuf->aiocb->aio_offset = (__off_t)globals.file_offset;
         globals.file_offset += pbuf->buf_len;
-        pbuf->req_status = aio_write(pbuf->aiocb);
+
 #ifdef USE_SYNC_IO
         ret = pwrite(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
         globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
         refresh_log_buffer(pbuf);
         return ret;
 #endif
+        pbuf->req_status = aio_write(pbuf->aiocb);
         if(-1 == pbuf->req_status) {
                 printf("Error at aio_write(): %s\n", strerror(errno));
                 ret = pbuf->req_status;
@@ -594,17 +633,77 @@ int log_all_wait_buf_pkts(void) {
         }
         return 0;
 }
+#define USE_KEY_MODE_FOR_FLOW_ENTRY
+static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
+static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry) {
+        int ret = -1;
+        if(flow_entry)*flow_entry = NULL;
+#ifdef USE_KEY_MODE_FOR_FLOW_ENTRY
+        struct onvm_ft_ipv4_5tuple fk;
+        if ((ret = onvm_ft_fill_key(&fk, pkt))) {
+                return ret;
+        }
+        ret = onvm_flow_dir_get_key(&fk, flow_entry);
+#else  // #elif defined (USE_KEY_MODE_FOR_FLOW_ENTRY)
+        ret = onvm_flow_dir_get_pkt(pkt, flow_entry);
+#endif
+        return ret;
+}
+
+uint16_t flow_bypass_list[] = {0,1, 4,5, 8,9, 12,13};
+int check_in_flow_bypass_list(struct rte_mbuf* pkt);
+int check_in_flow_bypass_list(struct rte_mbuf* pkt) {
+        struct onvm_flow_entry *flow_entry = NULL;
+        get_flow_entry(pkt, &flow_entry);
+        if(flow_entry && flow_entry->entry_index) {
+              uint16_t i = 0;
+              for(i=0; i< sizeof(flow_bypass_list)/sizeof(uint16_t); i++) {
+                      if(flow_bypass_list[i] == flow_entry->entry_index) return 1;
+              }
+        }
+        return 0;
+}
+int check_in_logged_flow_list(struct rte_mbuf* pkt);
+int check_in_logged_flow_list(struct rte_mbuf* pkt) {
+        struct onvm_flow_entry *flow_entry = NULL;
+        get_flow_entry(pkt, &flow_entry);
+        if(flow_entry && flow_entry->entry_index) {
+              uint16_t i = 0;
+              for(i=0; i< flow_logged_info.cur_entries; i++) {
+                      if(flow_logged_info.ft_list[i] == flow_entry->entry_index) return 1;
+              }
+        }
+        return 0;
+}
+int add_to_logged_flow_list(struct rte_mbuf* pkt);
+int add_to_logged_flow_list(struct rte_mbuf* pkt) {
+        if(MAX_FLOW_TABLE_ENTRIES == flow_logged_info.cur_entries) return 1;
+
+        struct onvm_flow_entry *flow_entry = NULL;
+        get_flow_entry(pkt, &flow_entry);
+        if(flow_entry && flow_entry->entry_index) {
+                flow_logged_info.ft_list[flow_logged_info.cur_entries++] = flow_entry->entry_index;
+        }
+        return 0;
+}
 
 /** Build Some Decision mode ACL logic that conditionally logs pkts from certain flows..
  * In simple case: it could be odd/even flow_entry, some src/dst port or hash.rss
  * **/
 int validate_and_log_the_packet(struct rte_mbuf* pkt) {
-        if (pkt->hash.rss%3 == 0) return 0;
+        //if (pkt->hash.rss%3 == 0) return 0;
+        if(check_in_flow_bypass_list(pkt)) return 0;
+        if(check_in_logged_flow_list(pkt)) return 0;
         return log_the_packet(pkt,PKT_LOG_WAIT_ENQUEUE_ENABLED);
 }
 int log_the_packet(struct rte_mbuf* pkt, pkt_log_mode_e mode) {
         int ret = 0;
-        static int pkt_count_per_buf = 0;
+
+        //check if there are prior enqueued packets, before loggin this input packet from pkt_handler
+        if(PKT_LOG_WAIT_ENQUEUE_ENABLED == mode) {
+                log_all_wait_buf_pkts();
+        }
+
         pkt_buf_t *pbuf = get_buffer_to_log();
         if( NULL == pbuf) {
                 if((PKT_LOG_WAIT_ENQUEUE_ENABLED == mode)  && (0 == add_buf_to_wait_pkts(pkt))){
@@ -624,59 +723,13 @@ int log_the_packet(struct rte_mbuf* pkt, pkt_log_mode_e mode) {
         if(pbuf != NULL) {
                 log_all_wait_buf_pkts();
 
-                uint64_t pkt_buf_len = MIN((uint64_t)MAX_PKT_HEADER_SIZE, (uint64_t)pkt->buf_len); // Eth(24) + VLAN(4) + IP(20) + TCP(20)/[UDP(8)] header is 68 bytes
-                uint64_t remaining_buf_size = (pbuf->max_size - pbuf->buf_len);
-                size_t hdr_len = MIN((uint64_t)remaining_buf_size, (uint64_t)pkt_buf_len); //(pkt->l2_len+pkt->l3_len)
+                pbuf->buf_len = MIN(MAX_PKT_HEADER_SIZE, pkt->buf_len);
 
-                //printf("copying data of len [%d]", (int)hdr_len);
-                //onvm_pkt_print(pkt);
-                //char* inp= (char*)pkt->buf_addr;
-                //char* oup=(char*)((char*)pbuf->buf+pbuf->buf_len);
-                //printf("\n Input:");
-                //for(ret=0; ret < 10; ret++) printf("%d", inp[ret]);
-                //printf("\n Output:");
-
-                //memcpy(((char*)(pbuf->buf)+pbuf->buf_len), pkt->buf_addr, hdr_len);
-                //pbuf->buf_len += hdr_len;
-
-                //for(ret=0; ret < 10; ret++) printf("%d", oup[ret]); ret = 0;
-
-                struct ether_hdr* eth = rte_pktmbuf_mtod(pkt, struct ether_hdr *);
-                struct vlan_hdr* vlan = onvm_pkt_vlan_hdr(pkt);
-                struct ipv4_hdr* ipv4 = onvm_pkt_ipv4_hdr(pkt);//(struct ipv4_hdr*)(rte_pktmbuf_mtod(pkt, uint8_t*) + sizeof(struct ether_hdr));
-                struct tcp_hdr*  tcp  = onvm_pkt_tcp_hdr(pkt);
-                struct udp_hdr*  udp  = onvm_pkt_udp_hdr(pkt);
-                int wlen = 0;
-                if(eth && (sizeof(struct ether_hdr) < (hdr_len - wlen))) {
-                        memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), eth, sizeof(struct ether_hdr) );
-                        wlen += sizeof(struct ether_hdr);
-                }
-                if(vlan && (sizeof(struct vlan_hdr) < (hdr_len - wlen))) {
-                        memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), vlan, sizeof(struct vlan_hdr) );
-                        wlen += sizeof(struct vlan_hdr);
-                }
-                if(ipv4 && (sizeof(struct ipv4_hdr) < (hdr_len - wlen))) {
-                        memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), ipv4, sizeof(struct ipv4_hdr) );
-                        wlen += sizeof(struct ipv4_hdr);
-                }
-                if(tcp && (sizeof(struct tcp_hdr) < (hdr_len - wlen))) {
-                        memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), tcp, sizeof(struct tcp_hdr) );
-                        wlen += sizeof(struct tcp_hdr);
-                }
-                if(udp && (sizeof(struct tcp_hdr) < (hdr_len - wlen))) {
-                        memcpy(((char*)(pbuf->buf)+pbuf->buf_len+wlen), udp, sizeof(struct udp_hdr) );
-                        wlen += sizeof(struct udp_hdr);
-                }
-                pbuf->buf_len += wlen;
-
-                pkt_count_per_buf++;
-                if(hdr_len + pbuf->buf_len > pbuf->max_size) {
-                        #ifdef ENABLE_DEBUG_LOGS
-                        printf("\n Writing [%d] to Log Buffer after [%d] packets\n",pkt->buf_len, pkt_count_per_buf);
-                        #endif //#ifdef ENABLE_DEBUG_LOGS
-                        pkt_count_per_buf = 0;
-                        write_log_buffer(pbuf);
-                }
+                #ifdef ENABLE_DEBUG_LOGS
+                printf("\n reading ACL [%d] to Log Buffer after [%d] packets\n",pkt->buf_len, 1);
+                #endif //#ifdef ENABLE_DEBUG_LOGS
+                read_log_buffer(pbuf);
+                add_to_logged_flow_list(pkt);
         }
 
         return ret;

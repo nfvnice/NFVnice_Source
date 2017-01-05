@@ -359,12 +359,12 @@ struct onvm_service_chain {
 #else
 #define MP_CLIENT_SEM_NAME "MProc_Client_%u_SEM"
 #endif //USE_MQ
-#define ONVM_NUM_WAKEUP_THREADS ((int)1)       //1 ( Must remove this as well)
 //1000003 1000033 1000037 1000039 1000081 1000099 1000117 1000121 1000133
 //#define SAMPLING_RATE 1000000           // sampling rate to estimate NFs computation cost
 #define SAMPLING_RATE 1000003           // sampling rate to estimate NFs computation cost
 #define ONVM_SPECIAL_NF 0               // special NF for flow table entry management
 #endif
+#define ONVM_NUM_WAKEUP_THREADS ((int)1)       //1 ( Must remove this as well)
 
 
 /* common names for NF states */

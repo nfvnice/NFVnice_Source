@@ -450,13 +450,14 @@ int write_log_buffer(pkt_buf_t *pbuf) {
         pbuf->aiocb->aio_nbytes = (size_t)pbuf->buf_len;
         pbuf->aiocb->aio_offset = (__off_t)globals.file_offset;
         globals.file_offset += pbuf->buf_len;
-        pbuf->req_status = aio_write(pbuf->aiocb);
+
 #ifdef USE_SYNC_IO
         ret = pwrite(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
         globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
         refresh_log_buffer(pbuf);
         return ret;
 #endif
+        pbuf->req_status = aio_write(pbuf->aiocb);
         if(-1 == pbuf->req_status) {
                 printf("Error at aio_write(): %s\n", strerror(errno));
                 ret = pbuf->req_status;
