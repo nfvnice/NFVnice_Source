@@ -137,9 +137,9 @@
 //#define NF_BACKPRESSURE_APPROACH_3  //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
 
 // Extensions and sub-options for Back_Pressure handling
-#define DROP_PKTS_ONLY_AT_BEGGINING             // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF). (Note: Enable)
+//#define DROP_PKTS_ONLY_AT_BEGGINING           // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF). (Note: can Enable)
 #define ENABLE_SAVE_BACKLOG_FT_PER_NF           // save backlog Flow Entries per NF (Note: Enable)
-#define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable)
+#define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable, sub define  under ENABLE_SAVE_BACKLOG_FT_PER_NF)
 //#define RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
 #define BACKPRESSURE_EXTRA_DEBUG_LOGS           // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
 
@@ -152,7 +152,8 @@
 //#define ENABLE_NF_BKLOG_BUFFERING   //Extension to Approach 3 wherein each NF can pre-buffer internally the  packets for bottlenecked service chains. (Not Implemented!!)
 //#define DUMMY_FT_LOAD_ONLY //Load Only onvm_ft and Bypass ENABLE_NF_BACKPRESSURE/NF_BACKPRESSURE_APPROACH_3
 
-
+/* Enable the Arbiter Logic to control the NFs scheduling and period on each core */
+//#define ENABLE_ARBITER_MODE
 //#define USE_ARBITER_NF_EXEC_PERIOD      //NFLib check for wake;/sleep state and Wakeup thread to put the the NFs to sleep after timer expiry (This feature is not working as expected..)
 
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
@@ -364,8 +365,13 @@ struct onvm_service_chain {
 #define SAMPLING_RATE 1000003           // sampling rate to estimate NFs computation cost
 #define ONVM_SPECIAL_NF 0               // special NF for flow table entry management
 #endif
-#define ONVM_NUM_WAKEUP_THREADS ((int)1)       //1 ( Must remove this as well)
 
+
+#ifdef ENABLE_ARBITER_MODE
+#define ONVM_NUM_WAKEUP_THREADS ((int)0)       //1 ( Must remove this as well)
+#else
+#define ONVM_NUM_WAKEUP_THREADS ((int)1)       //1 ( Must remove this as well)
+#endif
 
 /* common names for NF states */
 #define _NF_QUEUE_NAME "NF_INFO_QUEUE"
@@ -588,7 +594,7 @@ typedef struct bottlenec_nf_info {
 }bottlenec_nf_info_t;
 bottlenec_nf_info_t bottleneck_nf_list;
 
-#define WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US   (10*SECOND_TO_MICRO_SECOND)
+#define WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US   (1*SECOND_TO_MICRO_SECOND)
 
 int onvm_mark_all_entries_for_bottleneck(uint16_t nf_id);
 int onvm_clear_all_entries_for_bottleneck(uint16_t nf_id);

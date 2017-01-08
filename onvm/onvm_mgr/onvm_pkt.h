@@ -148,7 +148,7 @@ void
 onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struct client *cl);
 
 void onvm_detect_and_set_back_pressure_v2(struct client *cl);
-
+void onvm_check_and_reset_back_pressure_v2(__attribute__((unused)) struct rte_mbuf *pkts[], __attribute__((unused)) uint16_t count, struct client *cl);
 /*****************************Internal functions******************************/
 
 

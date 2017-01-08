@@ -104,7 +104,7 @@ int launch_core_nf_timer(uint16_t core_id, uint16_t index, uint16_t nf_id, uint6
 static void wake_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer, void *ptr_data) {
 
         if(ptr_data) {
-                check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list();
+                //check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list();
                 //handle_wakeup((struct wakeup_info *)ptr_data);
                 handle_wakeup(NULL);
         }
@@ -385,6 +385,7 @@ inline void handle_wakeup(__attribute__((unused))struct wakeup_info *wakeup_info
 
         unsigned i=0;
 
+        //Decouple The evaluation and wakee-up logic : move the code to main thread, which can perform this periodically;
         /* Firs:t extract load charactersitics in this epoch
          * Second: sort and prioritize NFs based on the demand matrix in this epoch
          * Finally: wake up the tasks in the identified priority
@@ -411,26 +412,33 @@ inline void handle_wakeup(__attribute__((unused))struct wakeup_info *wakeup_info
                         }
                 }
         }
+        //in case the data is not ready; wakeup NFs as usual
+        else {
+                handle_wakeup_old(wakeup_info);
+        }
         #else
         handle_wakeup_old(wakeup_info);
         #endif  //USE_CGROUPS_PER_NF_INSTANCE
 }
 
 int
-wakeup_nfs(void *arg) {
+wakemgr_main(void *arg) {
 
 #ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
         initialize_wake_timers(arg);
 #endif
 
         while (true) {
+                //do it more periodically: poll mode (better than 100microsec delay)
+                check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list();
+
 #ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
                 rte_timer_manage();
-                usleep(USLEEP_INTERVAL);
 #else
                 handle_wakeup_old((struct wakeup_info *)arg);
-                //usleep(WAKE_INTERVAL_IN_US);
 #endif //#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
+
+                //usleep(USLEEP_INTERVAL);  ////usleep(WAKE_INTERVAL_IN_US);
 
         }
 

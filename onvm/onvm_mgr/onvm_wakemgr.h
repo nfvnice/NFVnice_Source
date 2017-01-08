@@ -60,7 +60,7 @@ extern struct wakeup_info *wakeup_infos;
 
 void register_signal_handler(void);
 
-int wakeup_nfs(void *arg);
+int wakemgr_main(void *arg);
 
 inline void handle_wakeup(struct wakeup_info *wakeup_info);
 

@@ -307,7 +307,7 @@ tx_thread_main(void *arg) {
                         if (likely(tx_count > 0)) {
 
                                 #ifdef ENABLE_NF_BACKPRESSURE
-                                onvm_check_and_reset_back_pressure(pkts, tx_count, cl);
+                                onvm_check_and_reset_back_pressure_v2(pkts, tx_count, cl); //onvm_check_and_reset_back_pressure(pkts, tx_count, cl);
                                 #endif // ENABLE_NF_BACKPRESSURE
 
                                 onvm_pkt_process_tx_batch(tx, pkts, tx_count, cl);
@@ -450,7 +450,7 @@ main(int argc, char *argv[]) {
                         thread_core_map.wk_th_core[i]=cur_lcore;
                         //initialize_wake_core_timers(i, (void*)&wakeup_infos); //better to do it inside the registred thread callback function.
 
-                        rte_eal_remote_launch(wakeup_nfs, (void*)&wakeup_infos[i], cur_lcore);
+                        rte_eal_remote_launch(wakemgr_main, (void*)&wakeup_infos[i], cur_lcore);
                         //printf("wakeup lcore_id=%d, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
                         RTE_LOG(INFO, APP, "Core %d: Running wakeup thread, first_client=%d, last_client=%d\n", cur_lcore, wakeup_infos[i].first_client, wakeup_infos[i].last_client);
 

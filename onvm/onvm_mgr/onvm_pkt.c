@@ -708,6 +708,34 @@ onvm_detect_and_set_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struc
 }
 
 void
+onvm_check_and_reset_back_pressure_v2(__attribute__((unused)) struct rte_mbuf *pkts[], __attribute__((unused)) uint16_t count, struct client *cl) {
+
+        #ifdef ENABLE_NF_BACKPRESSURE
+        unsigned rx_q_count = rte_ring_count(cl->rx_q);
+
+        // check if rx_q_size has decreased to acceptable level
+        if (rx_q_count >= CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
+
+                #if defined(RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE) || defined(ENABLE_ECN_CE)
+                if(rx_q_count >=CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
+
+                        #ifdef RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE
+                        onvm_detect_and_set_back_pressure_v2(cl);
+                        #endif //RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE
+
+                        #ifdef ENABLE_ECN_CE
+                        onvm_detect_and_set_ecn_ce(pkts, count, cl);
+                        #endif //ENABLE_ECN_CE
+                }
+                #endif //RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE || ENABLE_ECN_CE
+                return;
+        }
+        #endif //ENABLE_NF_BACKPRESSURE
+        return;
+}
+
+
+void
 onvm_check_and_reset_back_pressure(struct rte_mbuf *pkts[], uint16_t count, struct client *cl) {
 
         #ifdef ENABLE_NF_BACKPRESSURE
