@@ -89,8 +89,8 @@
 /***********************************Macros************************************/
 
 
-#define MBUFS_PER_CLIENT 1536 //65536 //10240 //1536
-#define MBUFS_PER_PORT (10240) //2048 //10240 //65536 //10240 //1536
+#define MBUFS_PER_CLIENT 1536 //65536 //10240 //1536                            (use U: 1536, T:1536)
+#define MBUFS_PER_PORT 10240 //(10240) //2048 //10240 //65536 //10240 //1536    (use U: 10240, T:10240)
 #define MBUF_CACHE_SIZE 512
 #define MBUF_OVERHEAD (sizeof(struct rte_mbuf) + RTE_PKTMBUF_HEADROOM)
 #define RX_MBUF_DATA_SIZE 2048
@@ -99,9 +99,9 @@
 #define NF_INFO_SIZE sizeof(struct onvm_nf_info)
 #define NF_INFO_CACHE 8
 
-#define RTE_MP_RX_DESC_DEFAULT 512 //512 //1536 //2048 //1024 //512 (use 1024)
-#define RTE_MP_TX_DESC_DEFAULT 512 //512 //1536 //2048 //1024 //512 (use 1024)
-#define CLIENT_QUEUE_RINGSIZE (512)  //128 //4096  //4096 //128   (use 4096)
+#define RTE_MP_RX_DESC_DEFAULT 1024 //(1024) //512 //512 //1536 //2048 //1024 //512 (use U:1024, T:512)
+#define RTE_MP_TX_DESC_DEFAULT 1024 //(1024) //512 //512 //1536 //2048 //1024 //512 (use U:1024, T:512)
+#define CLIENT_QUEUE_RINGSIZE 4096 //(4096) //(512)  //128 //4096  //4096 //128   (use U:4096, T:512)
 
 //For TCP UDP use 70,40
 //For TCP TCP, IO use 80 20
@@ -109,7 +109,7 @@
 // Note: Based on the approach the tuned values change. For NF Throttling (80/75,20/25) works better, for Packet Throttling (70,50 or 70,40 or 80,40) seems better -- must be tuned and set accordingly.
 #ifdef NF_BACKPRESSURE_APPROACH_1
 #define CLIENT_QUEUE_RING_THRESHOLD (80)
-#define CLIENT_QUEUE_RING_THRESHOLD_GAP (10) //(25)
+#define CLIENT_QUEUE_RING_THRESHOLD_GAP (20) //(25)
 #else  // defined NF_BACKPRESSURE_APPROACH_2 or other
 #define CLIENT_QUEUE_RING_THRESHOLD (80)
 #define CLIENT_QUEUE_RING_THRESHOLD_GAP (20)

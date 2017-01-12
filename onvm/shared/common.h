@@ -64,7 +64,7 @@
 
 #define ARBITER_PERIOD_IN_US            (100)       // 250 micro seconds or 100 micro seconds
 /* Enable the ONVM_MGR to act as a 2-port bridge without any NFs */
-//#define ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE    // Work as bridge < without any NFs :: only testing purpose.. >
+#define ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE    // Work as bridge < without any NFs :: only testing purpose.. >
 //#define SEND_DIRECT_ON_ALT_PORT
 //#define DELAY_BEFORE_SEND
 //#define DELAY_PER_PKT (5) //20micro seconds
@@ -81,11 +81,11 @@
 
 /* Note: Make the PACKET_READ_SIZE defined in onvm_mgr.h same as PKT_READ_SIZE defined in onvm_nflib_internal.h, better get rid of latter */
 #define PRE_PROCESS_DROP_ON_RX  // Feature flag for addressing NF Local Back-pressure:: To lookup NF Tx queue occupancy and drop packets pro-actively before pushing to NFs Rx Ring.
-//#define DROP_APPROACH_1       // (cleaned out) Handle inside NF_LIB:: After dequeue from NFs Rx ring, check for Tx Ring size and drop pkts before pushing packet to the NFs processing function. < Too late, only avoids packet processing by NF:: Discontinued.. Results are OK, but not preferred approach>
-//#define DROP_APPROACH_2       // (cleaned out) Handle in onvm_mgr:: After segregation of Rx/Tx buffers to specific NF: Drop the packet before pushing the packets to the NFs Rx Ring buffer. < Early decision. Must also account for packets that could be currently under processing. < Results OK, but not preferred approach>
+////#define DROP_APPROACH_1       // (cleaned out) Handle inside NF_LIB:: After dequeue from NFs Rx ring, check for Tx Ring size and drop pkts before pushing packet to the NFs processing function. < Too late, only avoids packet processing by NF:: Discontinued.. Results are OK, but not preferred approach>
+////#define DROP_APPROACH_2       // (cleaned out) Handle in onvm_mgr:: After segregation of Rx/Tx buffers to specific NF: Drop the packet before pushing the packets to the NFs Rx Ring buffer. < Early decision. Must also account for packets that could be currently under processing. < Results OK, but not preferred approach>
 #define DROP_APPROACH_3         // Handle inside NF_LIB:: Make the NF to block until it cannot push the packets to the Tx Ring, Subsequent packets will be dropped in onvm_mgr context by Rx/Tx Threads < 3 options: Poll till Tx is free, Yield or Block on Semaphore>
-//#define DROP_APPROACH_3_WITH_YIELD    //sub-option for approach 3: Results are good, but could result in lots of un-necessary context switches as one block might result in multiple yields. Thrpt is on par with block-approach.
-//#define DROP_APPROACH_3_WITH_POLL     // (cleaned out) sub-option for approach 3: Results are good, but accounts to CPU wastage and hence not preferred.
+////#define DROP_APPROACH_3_WITH_YIELD    //sub-option for approach 3: Results are good, but could result in lots of un-necessary context switches as one block might result in multiple yields. Thrpt is on par with block-approach.
+////#define DROP_APPROACH_3_WITH_POLL     // (cleaned out) sub-option for approach 3: Results are good, but accounts to CPU wastage and hence not preferred.
 #define DROP_APPROACH_3_WITH_SYNC       //sub-option for approach 3: Results are good, preferred approach.
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
@@ -121,6 +121,7 @@
  * Note: This is one of the likely cause of Out-of_order packets in the OpenNetVM (with Bridge) case: */
 #define DO_NOT_DROP_PKTS_ON_FLUSH_FOR_BOTTLENECK_NF   //Disable drop of existing packets -- may have caveats on when next flush would operate on that Tx/Rx buffer..
                                                         //Repercussions in onvm_pkt.c: onvm_pkt_enqueue_nf() to handle overflow and stop putting packet in full buffer and drop new ones instead.
+                                                        //Observation: Good for TCP use cases, but with PktGen,Moongen dents line rate approx 0.3Mpps slow down
 
 /* Enable watermark level NFs Tx and Rx Rings */
 #define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
@@ -128,7 +129,7 @@
 /* Enable ECN CE FLAG : Feature Flag to enable marking ECN_CE flag on the flows that pass through the NFs with Rx Ring buffers exceeding the watermark level.
  * Dependency: Must have ENABLE_RING_WATERMARK feature defined. and HIGH and LOW Thresholds to be set. otherwise, marking may not happen at all.. Ideally, marking should be done after dequeue from Tx, to mark if Rx is overbudget..
  * On similar lines, even the back-pressure marking must be done for all flows after dequeue from the Tx Ring.. */
-//#define ENABLE_ECN_CE
+#define ENABLE_ECN_CE
 
 /* Enable back-pressure handling to throttle NFs upstream */
 #define ENABLE_NF_BACKPRESSURE
@@ -138,10 +139,10 @@
 
 // Extensions and sub-options for Back_Pressure handling
 //#define DROP_PKTS_ONLY_AT_BEGGINING           // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF). (Note: can Enable)
-#define ENABLE_SAVE_BACKLOG_FT_PER_NF           // save backlog Flow Entries per NF (Note: Enable)
-#define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable, sub define  under ENABLE_SAVE_BACKLOG_FT_PER_NF)
+//#define ENABLE_SAVE_BACKLOG_FT_PER_NF           // save backlog Flow Entries per NF (Note: Enable)
+//#define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable, sub define  under ENABLE_SAVE_BACKLOG_FT_PER_NF)
 //#define RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
-#define BACKPRESSURE_EXTRA_DEBUG_LOGS           // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
+//#define BACKPRESSURE_EXTRA_DEBUG_LOGS           // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
 
 //Need Early bind to NF for the chain and determine the bottlneck status: Avoid passing first few packets of a flow till the chain, only to drop them later: Helps for TCP and issue with storing multiple flows at earlier NF
 //#define ENABLE_EARLY_NF_BIND
@@ -163,9 +164,10 @@
 #define ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 #if defined(ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION) || defined (ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD)
 #include <rte_timer.h>
+#define STATS_PERIOD_IN_MS 1       //(use 1 or 10 or 100ms)
 #endif //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 
-#define STORE_HISTOGRAM_OF_NF_COMPUTATION_COST  //Store the Histogram of NF Comp Cost
+#define STORE_HISTOGRAM_OF_NF_COMPUTATION_COST  //Store the Histogram of NF Comp Cost   (in critical path, costing around 0.3 to 0.6Mpps)
 #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
 #include "histogram.h"                          //Histogra Library
 #endif //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
@@ -291,12 +293,12 @@ struct onvm_nf_info {
         const char *tag;
 
         pid_t pid;
+        uint32_t comp_cost;     //indicates the computation cost of NF in num_of_cycles
 
 #if defined (USE_CGROUPS_PER_NF_INSTANCE)
         //char cgroup_name[256];
         uint32_t cpu_share;     //indicates current share of NFs cpu
         uint32_t core_id;       //indicates the core ID the NF is running on
-        uint32_t comp_cost;     //indicates the computation cost of NF in num_of_cycles
         uint32_t comp_pkts;     //[usage: TBD] indicates the number of pkts processed by NF over specific sampling period (demand (new pkts arrival) = Rx, better? or serviced (new pkts sent out) = Tx better?)
         uint32_t load;          //indicates instantaneous load on the NF ( = num_of_packets on the rx_queue + pkts dropped on Rx)
         uint32_t avg_load;      //indicates the average load on the NF
@@ -313,6 +315,10 @@ struct onvm_nf_info {
 #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
         histogram_v2_t ht2;
 #endif  //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+
+#ifdef ENABLE_ECN_CE
+        histogram_v2_t ht2_q;
+#endif  //ENABLE_ECN_CE
 };
 
 /*
@@ -523,11 +529,12 @@ set_cgroup_nf_cpu_share_from_onvm_mgr(uint16_t instance_id, uint32_t share_val) 
 
 #define RTE_LOGTYPE_APP RTE_LOGTYPE_USER1
 
-
+#ifdef ENABLE_NF_BACKPRESSURE
 typedef struct per_core_nf_pool {
         uint16_t nf_count;
         uint32_t nf_ids[MAX_CLIENTS];
 }per_core_nf_pool_t;
+#endif //ENABLE_NF_BACKPRESSURE
 
 #define SECOND_TO_MICRO_SECOND          (1000*1000)
 #define NANO_SECOND_TO_MICRO_SECOND(x)  (double)((x)/(1000))
@@ -571,6 +578,7 @@ static inline uint64_t get_diff_cpu_cycles_in_us(uint64_t start, uint64_t end) {
         return 0;
 }
 
+#ifdef ENABLE_NF_BACKPRESSURE
 typedef struct sc_entries {
         struct onvm_service_chain *sc;
         uint16_t sc_count;
@@ -593,11 +601,14 @@ typedef struct bottlenec_nf_info {
         bottleneck_nf_entries_t nf[MAX_CLIENTS];
 }bottlenec_nf_info_t;
 bottlenec_nf_info_t bottleneck_nf_list;
+#endif //ENABLE_NF_BACKPRESSURE
 
-#define WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US   (1*SECOND_TO_MICRO_SECOND)
+#define WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US   (0*SECOND_TO_MICRO_SECOND)
 
 int onvm_mark_all_entries_for_bottleneck(uint16_t nf_id);
 int onvm_clear_all_entries_for_bottleneck(uint16_t nf_id);
+
+#ifdef ENABLE_NF_BACKPRESSURE
 /******************************** DATA STRUCTURES FOR FIPO SUPPORT *********************************
 *     fipo_buf_node_t:      each rte_buf_node (packet) added to the fipo_per_flow_list -- Need basic Queue add/remove
 *     fipo_per_flow_list:   Ordered list of buffers for each flow   -- Need Queue add/remove
@@ -627,5 +638,6 @@ typedef struct nf_flow_list {
         fipo_per_flow_list *head;
         fipo_per_flow_list *tail;
 }nf_flow_list_t;
+#endif //ENABLE_NF_BACKPRESSURE
 
 #endif  // _COMMON_H_

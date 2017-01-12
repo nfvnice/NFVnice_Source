@@ -366,7 +366,9 @@ init_shm_rings(void) {
         if (services == NULL || nf_per_service_count == NULL)
                 rte_exit(EXIT_FAILURE, "Cannot allocate memory for service to NF mapping\n");
 
+        unsigned r_size = ringsize;
         for (i = 0; i < MAX_CLIENTS; i++) {
+                r_size = ((i==0)?(ringsize*2):(ringsize));
                 /* Create an RX queue for each client */
                 socket_id = rte_socket_id();
                 rq_name = get_rx_queue_name(i);
@@ -377,7 +379,8 @@ init_shm_rings(void) {
                                 //RING_F_SP_ENQ|RING_F_SC_DEQ);     /* single prod, single cons */
                                 RING_F_SC_DEQ);                 /* multi prod, single cons (Enqueue can be by either Rx/Tx Threads, but dequeue only by NF thread)*/
                 clients[i].tx_q = rte_ring_create(tq_name,
-                                ringsize, socket_id,
+                                r_size, //ringsize,
+                                socket_id,
                                 RING_F_SP_ENQ|RING_F_SC_DEQ);      /* single prod, single cons (Enqueue only by NF Thread, and dequeue only by dedicated Tx thread) */
                                 //RING_F_SC_DEQ);                 /* multi prod, single cons */
                                 //but it should be RING_F_SP_ENQ

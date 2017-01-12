@@ -44,7 +44,7 @@
 #include "common.h"
 #include "onvm_flow_table.h"
 
-#define SDN_FT_ENTRIES  (1024*10*10) //(1024*4)
+#define SDN_FT_ENTRIES  (1024) //(1024*10*10) //(1024*4)
 
 extern struct onvm_ft *sdn_ft;
 extern struct onvm_ft **sdn_ft_p;
@@ -82,5 +82,7 @@ int onvm_flow_dir_clear_all_entries(void);
 int onvm_flow_dir_reset_entry(struct onvm_flow_entry *flow_entry);
 void onvm_flow_dir_set_index(void);
 
+#ifdef ENABLE_NF_BACKPRESSURE
 uint32_t extract_sc_list(uint32_t *bft_count, sc_entries_list *c_list);
+#endif
 #endif // _ONVM_FLOW_DIR_H_

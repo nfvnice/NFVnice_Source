@@ -261,6 +261,7 @@ onvm_flow_dir_print_stats__old(void) {
         return ;
 }
 
+#ifdef ENABLE_NF_BACKPRESSURE
 static inline uint32_t get_index_of_sc(struct onvm_service_chain *sc, sc_entries_list *c_list) {
         uint32_t free_index = SDN_FT_ENTRIES;
         uint32_t i = 0;
@@ -323,10 +324,10 @@ extract_sc_list(uint32_t *bft_count, sc_entries_list *c_list) {
          return active_fts;
 
 }
-
+#endif //ENABLE_NF_BACKPRESSURE
 void
 onvm_flow_dir_print_stats(void) {
-
+#ifdef ENABLE_NF_BACKPRESSURE
         if(sdn_ft) {
                 static sc_entries_list sc_l[SDN_FT_ENTRIES];
                 uint32_t active_chains = 0, bneck_chains=0;
@@ -351,7 +352,7 @@ onvm_flow_dir_print_stats(void) {
                 }
                 printf("Total Flow entries and chains: [%d, %d], Bottleneck'd Flow entries and Chains: [%d, %d], \n", active_fts, active_chains, bneck_fts, bneck_chains);
         }
-
+#endif //ENABLE_NF_BACKPRESSURE
         return ;
 }
 

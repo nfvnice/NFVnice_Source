@@ -6,6 +6,8 @@
 #define MAX(a,b) ((a) > (b)? (a):(b))
 #define MIN0(a,b) ((a==0)?(b):MIN(a,b))
 #define RUN_AVG(a,b) ((a==0)?(b):((a+b)/2))
+#define EWMA_ALPHA  (0.25)
+#define EWMA_AVG(a,b) ((a==0)?(b):( ( (a*(1-EWMA_ALPHA)) + (b*EWMA_ALPHA)/2) ))
 //#define __DEBUG_LOGS__
 
 void hist_init(volatile struct histogram *h, uint32_t max, uint32_t min) {
@@ -281,6 +283,7 @@ void hist_store_v2(histogram_v2_t *h, uint32_t val) {
         h->max_val = MAX(h->max_val,val);
         h->min_val = MIN0(h->min_val,val);
         h->running_avg = RUN_AVG(h->running_avg,val);
+        h->ewma_avg = EWMA_AVG(h->ewma_avg, val);
 
         if(h->cur_index == MAX_HISTOGRAM_SAMPLES) {
                 hist_compute_v2(h);

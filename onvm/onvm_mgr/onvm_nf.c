@@ -73,7 +73,8 @@ void compute_nf_exec_period_and_cgroup_weight(void);
 void compute_and_assign_nf_cgroup_weight(void);
 void monitor_nf_node_liveliness_via_pid_monitoring(void);
 int nf_sort_func(const void * a, const void *b);
-
+inline void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval);
+inline void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long interval);
 
 #define DEFAULT_NF_CPU_SHARE    (1024)
 
@@ -92,11 +93,14 @@ typedef struct nf_core_and_cc_info {
  * PRerequisite: clients[]->info->comp_cost and  clients[]->info->load should be already updated.  -- updated by extract_nf_load_and_svc_rate_info()
  */
 static inline void assign_nf_cgroup_weight(uint16_t nf_id) {
-
+        #ifdef USE_CGROUPS_PER_NF_INSTANCE
         if ((onvm_nf_is_valid(&clients[nf_id])) && (clients[nf_id].info->comp_cost)) {
                 //set_cgroup_nf_cpu_share(clients[nf_id].info->instance_id, clients[nf_id].info->cpu_share);
                 set_cgroup_nf_cpu_share_from_onvm_mgr(clients[nf_id].info->instance_id, clients[nf_id].info->cpu_share);
         }
+        #else
+        if(nf_id) nf_id = 0;
+        #endif //USE_CGROUPS_PER_NF_INSTANCE
 
 }
 static inline void assign_all_nf_cgroup_weight(void) {
@@ -262,7 +266,7 @@ void compute_and_assign_nf_cgroup_weight(void) {
 }
 
 
-void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval) {
+inline void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval) {
 #if defined (USE_CGROUPS_PER_NF_INSTANCE) && defined(INTERRUPT_SEM)
         uint16_t nf_id = 0;
         for (; nf_id < MAX_CLIENTS; nf_id++) {
@@ -297,6 +301,21 @@ void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long int
 #endif
 }
 
+/* API to comptute_and_order_the_nfs based on aggr load (arrival rate * comp.cost):: supercedes extract_nf_load_and_svc_rate_info()
+ * Note: This must be called by any/only 1 thread on a periodic basis.
+ */
+void compute_and_order_nf_wake_priority(void) {
+        //Decouple The evaluation and wakee-up logic : move the code to main thread, which can perform this periodically;
+        /* Firs:t extract load charactersitics in this epoch
+         * Second: sort and prioritize NFs based on the demand matrix in this epoch
+         * Finally: wake up the tasks in the identified priority
+         * */
+        #if defined (USE_CGROUPS_PER_NF_INSTANCE)
+        extract_nf_load_and_svc_rate_info(0);   //setup_nfs_priority_per_core_list(0);
+        #endif  //USE_CGROUPS_PER_NF_INSTANCE
+        return;
+}
+
 int nf_sort_func(const void * a, const void *b) {
         uint32_t nfid1 = *(const uint32_t*)a;
         uint32_t nfid2 = *(const uint32_t*)b;
@@ -304,15 +323,19 @@ int nf_sort_func(const void * a, const void *b) {
         struct client *cl2 = &clients[nfid2];
 
         if(!cl1 || !cl2) return 0;
+
+        #if defined (USE_CGROUPS_PER_NF_INSTANCE)
         if(cl1->info->load < cl2->info->load) return 1;
         else if (cl1->info->load > cl2->info->load) return (-1);
+        #endif //USE_CGROUPS_PER_NF_INSTANCE
+
         return 0;
 
 }
 
 
 void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long interval) {
-
+        #ifdef USE_CGROUPS_PER_NF_INSTANCE
         memset(&nf_sched_param, 0, sizeof(nf_sched_param));
         uint16_t nf_id = 0;
         for (nf_id=0; nf_id < MAX_CLIENTS; nf_id++) {
@@ -337,6 +360,7 @@ void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long inte
 #endif
         }
         nf_sched_param.sorted=1;
+        #endif //USE_CGROUPS_PER_NF_INSTANCE
 }
 
 
@@ -573,8 +597,10 @@ onvm_nf_stop(struct onvm_nf_info *nf_info) {
 }
 
 
-//Note: This function assumes that the NF mapping is setup in the sc.
+//Note: This function assumes that the NF mapping is setup in the sc and 2) TODO: Enable for Global (default chain mode).
+#ifdef ENABLE_NF_BACKPRESSURE
 static sc_entries_list sc_list[SDN_FT_ENTRIES];
+#endif //ENABLE_NF_BACKPRESSURE
 int
 onvm_mark_all_entries_for_bottleneck(uint16_t nf_id) {
         int ret = 0;
@@ -614,7 +640,7 @@ onvm_mark_all_entries_for_bottleneck(uint16_t nf_id) {
                 }
         }
 #else
-        sc_list[0].bneck_flag = 0;  //to fix compilation error, better add sc_list inside backpressure define
+        //sc_list[0].bneck_flag = 0;  //to fix compilation error, better add sc_list inside backpressure define
         ret = nf_id;
 #endif
         return ret;
@@ -660,6 +686,7 @@ onvm_clear_all_entries_for_bottleneck(uint16_t nf_id) {
 }
 
 int enqueu_nf_to_bottleneck_watch_list(uint16_t nf_id) {
+#ifdef ENABLE_NF_BACKPRESSURE
         if(bottleneck_nf_list.nf[nf_id].enqueue_status) return 1;
         bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_WAIT_ENQUEUED;
         bottleneck_nf_list.nf[nf_id].nf_id = nf_id;
@@ -667,18 +694,26 @@ int enqueu_nf_to_bottleneck_watch_list(uint16_t nf_id) {
         bottleneck_nf_list.nf[nf_id].enqueued_ctr+=1;
         bottleneck_nf_list.entires++;
         return 0;
+#else
+        return nf_id;
+#endif  //ENABLE_NF_BACKPRESSURE
 }
 
 int dequeue_nf_from_bottleneck_watch_list(uint16_t nf_id) {
+#ifdef ENABLE_NF_BACKPRESSURE
         if(!bottleneck_nf_list.nf[nf_id].enqueue_status) return 1;
         bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_RESET;
         bottleneck_nf_list.nf[nf_id].nf_id = nf_id;
         get_current_time(&bottleneck_nf_list.nf[nf_id].s_time);
         bottleneck_nf_list.entires--;
         return 0;
+#else
+        return nf_id;
+#endif //ENABLE_NF_BACKPRESSURE
 }
 
 int check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list(void) {
+#ifdef ENABLE_NF_BACKPRESSURE
         int ret = 0;
         uint16_t nf_id = 0;
         struct timespec now;
@@ -688,9 +723,9 @@ int check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list(void) {
                 if(BOTTLENECK_NF_STATUS_WAIT_ENQUEUED & bottleneck_nf_list.nf[nf_id].enqueue_status) {
                         //ring count is still beyond the water mark threshold
                         if(rte_ring_count(clients[nf_id].rx_q) >= CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
-                                if((WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US) <= get_difftime_us(&bottleneck_nf_list.nf[nf_id].s_time, &now)) {
-                                        onvm_mark_all_entries_for_bottleneck(nf_id);
+                                if((0 == WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US)||((WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US) <= get_difftime_us(&bottleneck_nf_list.nf[nf_id].s_time, &now))) {
                                         bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_DROP_MARKED;
+                                        onvm_mark_all_entries_for_bottleneck(nf_id);
                                         bottleneck_nf_list.nf[nf_id].marked_ctr+=1;
                                         #if defined (NF_BACKPRESSURE_APPROACH_1) && defined (BACKPRESSURE_EXTRA_DEBUG_LOGS)
                                         clients[nf_id].stats.bkpr_count++;
@@ -700,7 +735,7 @@ int check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list(void) {
                         }
                         //ring count has dropped
                         else {
-                                if((WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US) <= get_difftime_us(&bottleneck_nf_list.nf[nf_id].s_time, &now)) {
+                                if((0 == WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US)||((WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US) <= get_difftime_us(&bottleneck_nf_list.nf[nf_id].s_time, &now))) {
                                         dequeue_nf_from_bottleneck_watch_list(nf_id);
                                         bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_RESET;
                                 }
@@ -718,4 +753,7 @@ int check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list(void) {
                 }
         }
         return ret;
+#else
+        return 0;
+#endif //ENABLE_NF_BACKPRESSURE
 }

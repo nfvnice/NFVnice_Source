@@ -61,9 +61,9 @@ CFLAGS += -I$(SRCDIR)/../shared
 #LDFLAGS += $(SRCDIR)/../shared/shared/$(RTE_TARGET)/onvm_sc_common.o
 #LDFLAGS += $(SRCDIR)/../shared/shared/$(RTE_TARGET)/onvm_sc_mgr.o
 
-LDFLAGS += -L/usr/local/lib
-LDLIBS+= -lzmq
-LDFLAGS += ./libzmq.a
+#LDFLAGS += -L/usr/local/lib
+#LDLIBS+= -lzmq
+#LDFLAGS += ./libzmq.a
 
 #include $(RTE_SDK)/mk/rte.extobj.mk
 include $(RTE_SDK)/mk/rte.extlib.mk

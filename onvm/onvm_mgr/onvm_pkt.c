@@ -54,9 +54,9 @@
 
 //pthread_mutex_t mymutex = PTHREAD_MUTEX_INITIALIZER;
 /**********************************Interfaces*********************************/
-#define USE_KEY_MODE_FOR_FLOW_ENTRY
-static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
-static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry) {
+//#define USE_KEY_MODE_FOR_FLOW_ENTRY       //Note: Enabling this flag is costing upto 4Mpps (reason: softrss() call)
+static inline int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
+static inline int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry) {
         int ret = -1;
         if(flow_entry)*flow_entry = NULL;
 #ifdef USE_KEY_MODE_FOR_FLOW_ENTRY
@@ -724,7 +724,9 @@ onvm_check_and_reset_back_pressure_v2(__attribute__((unused)) struct rte_mbuf *p
                         #endif //RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE
 
                         #ifdef ENABLE_ECN_CE
-                        onvm_detect_and_set_ecn_ce(pkts, count, cl);
+                        if(cl->info->ht2_q.ewma_avg >= CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
+                                onvm_detect_and_set_ecn_ce(pkts, count, cl);
+                        }
                         #endif //ENABLE_ECN_CE
                 }
                 #endif //RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE || ENABLE_ECN_CE

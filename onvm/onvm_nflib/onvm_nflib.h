@@ -109,6 +109,10 @@ int
 onvm_nflib_return_pkt(struct rte_mbuf* pkt);
 
 
+/* Function to perform Packet drop */
+int
+onvm_nflib_drop_pkt(struct rte_mbuf* pkt);
+
 /**
  * Stop this NF
  * Sets the info to be not running and exits this process gracefully

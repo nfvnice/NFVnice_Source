@@ -42,6 +42,7 @@ typedef struct histogram_v2 {
         uint32_t min_val;       //min value in the val[]
         uint32_t max_val;       //max value in the val[]
         uint32_t running_avg;   //running avergage of all values inserted in the histogram
+        uint32_t ewma_avg;      //EWMA at alpha = 0.25
 
         histogram_t histogram;  //actual histogram
         uint8_t is_initialized; //flag status indicating histogram created or not

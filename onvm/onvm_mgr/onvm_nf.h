@@ -133,8 +133,8 @@ void
 onvm_nf_stats_update(unsigned long interval);
 
 
-void extract_nf_load_and_svc_rate_info(__attribute__((unused)) unsigned long interval);
-void setup_nfs_priority_per_core_list(__attribute__((unused)) unsigned long interval);
+void compute_and_order_nf_wake_priority(void);
+
 
 
 /* Enqueue NF to the bottleneck watch list */

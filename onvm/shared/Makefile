@@ -57,9 +57,9 @@ CFLAGS += -DUSE_HISTOGRAM_AS_LIB
 CFLAGS += $(WERROR_FLAGS) -O3
 CFLAGS += -I$(SRCDIR)/../shared
 
-LDFLAGS += -L/usr/local/lib
-LDLIBS+= -lzmq
-#LDFLAGS += ./libzmq.a
+#LDFLAGS += -L/usr/local/lib
+#LDLIBS+= -lzmq
+##LDFLAGS += ./libzmq.a
 
 #include $(RTE_SDK)/mk/rte.extobj.mk
 include $(RTE_SDK)/mk/rte.extlib.mk

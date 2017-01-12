@@ -296,8 +296,47 @@ onvm_stats_display_clients(unsigned difftime) {
         /* unsigned sleep_time = 1; // This info is not availble anymore: 
                 // must move entire wakeup to separate new function  onvm_stats_display_client_wakeup_info(difftime)
         */
+        printf("INTERRUPT_SEM MODE!");
+
+        #if defined (USE_CGROUPS_PER_NF_INSTANCE)
+        printf(" CGROUP_ENABLED:");
+                #if defined (ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT)
+                printf(" With Dynamic Weight ");
+                #endif
+                #if defined (USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE)
+                printf(" and With Dynamic Load ");
+                #endif
         #else
-        printf ("diff_time= 0x%4x", difftime);       
+        printf(" CGROUP DISABLED!");
+        #endif
+
+        #if defined(ENABLE_NF_BACKPRESSURE)
+        printf(" BACKPRESURE ON: ");
+                #if defined (NF_BACKPRESSURE_APPROACH_1)
+                printf("APPROACH #1");
+                #endif
+                #if defined (NF_BACKPRESSURE_APPROACH_2)
+                printf("APPROACH #2");
+                #endif
+
+        #else
+        printf(" BACKPRESSURE OFF!");
+        #endif
+
+        #if defined (ENABLE_ECN_CE)
+        printf(" ECN MARKING ON!");
+        #else
+        printf(" ECN MARKING OFF!");
+        #endif
+
+        #if defined (STORE_HISTOGRAM_OF_NF_COMPUTATION_COST)
+        printf(" HISTOGRAM ON!");
+        #else
+        printf(" HISTOGRAM OFF!");
+        #endif
+
+        #else
+        printf ("POLL MODE! diff_time=0x%4x", difftime);
         #endif
 
         #ifdef INTERRUPT_SEM
@@ -396,9 +435,13 @@ onvm_stats_display_clients(unsigned difftime) {
         #ifdef USE_CGROUPS_PER_NF_INSTANCE
                 //printf("Pid:[%d], CoreId:[%d], cpu_share:[%d], compcost:[%d], load:[%d,%d], svc_rate:[%d,%d] prio:[%d,%d,%d] \n", clients[i].info->pid, clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc, sched_getscheduler(clients[i].info->pid), getpriority(PRIO_PROCESS, clients[i].info->pid), nice(0));
                 //printf("Pid:[%d], CoreId:[%d], cpu_share:[%d], compcost:[%d], load:[%d,%d], svc_rate:[%d,%d] prio:[%d,%d,%d] bkpr:[%d,%d,%d]\n", clients[i].info->pid, clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc, sched_getscheduler(clients[i].info->pid), getpriority(PRIO_PROCESS, clients[i].info->pid), nice(0), bottleneck_nf_list.nf[clients[i].instance_id].enqueue_status, bottleneck_nf_list.nf[clients[i].instance_id].enqueued_ctr, bottleneck_nf_list.nf[clients[i].instance_id].marked_ctr);
-                printf("Pid:[%d], CoreId:[%d], cpu_share:[%d], compcost:[%d], load:[%d,%d], svc_rate:[%d,%d] prio:[%zu,%d,%d] bkpr:[%d,%d,%d]\n", clients[i].info->pid, clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc, clients[i].info->exec_period, getpriority(PRIO_PROCESS, clients[i].info->pid), nice(0), bottleneck_nf_list.nf[clients[i].instance_id].enqueue_status, bottleneck_nf_list.nf[clients[i].instance_id].enqueued_ctr, bottleneck_nf_list.nf[clients[i].instance_id].marked_ctr);
+                printf("Pid:[%d], CoreId:[%d], cpu_share:[%d], compcost:[%d], load:[%d,%d], svc_rate:[%d,%d] prio:[%zu,%d,%d] ", clients[i].info->pid, clients[i].info->core_id, clients[i].info->cpu_share, clients[i].info->comp_cost, clients[i].info->load, clients[i].info->avg_load, clients[i].info->svc_rate, clients[i].info->avg_svc, clients[i].info->exec_period, getpriority(PRIO_PROCESS, clients[i].info->pid), nice(0));
+                #ifdef ENABLE_NF_BACKPRESSURE
+                printf("bkpr:[%d,%d,%d]", bottleneck_nf_list.nf[clients[i].instance_id].enqueue_status, bottleneck_nf_list.nf[clients[i].instance_id].enqueued_ctr, bottleneck_nf_list.nf[clients[i].instance_id].marked_ctr);
+                #endif
+
                 #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
-                printf("Histogram: TtlCnt[%d], Min:[%d], Max:[%d], RAvg:[%d] Median:[%d] PT25:[%d], PT99:[%d] \n", clients[i].info->ht2.histogram.total_count, clients[i].info->ht2.min_val, clients[i].info->ht2.max_val, clients[i].info->ht2.running_avg, clients[i].info->ht2.median_val, hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_25_PERCENTILE),hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_99_PERCENTILE) );
+                printf("\n Histogram: TtlCnt[%d], Min:[%d], Max:[%d], RAvg:[%d] Median:[%d] PT25:[%d], PT99:[%d] \n", clients[i].info->ht2.histogram.total_count, clients[i].info->ht2.min_val, clients[i].info->ht2.max_val, clients[i].info->ht2.running_avg, clients[i].info->ht2.median_val, hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_25_PERCENTILE),hist_percentile(&clients[i].info->ht2.histogram, VAL_TYPE_99_PERCENTILE) );
                 #endif
         #endif //USE_CGROUPS_PER_NF_INSTANCE
                 printf("\n");

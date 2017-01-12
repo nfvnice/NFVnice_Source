@@ -140,8 +140,10 @@ static void
 arbiter_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data) {
 #ifdef INTERRUPT_SEM
-        check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list();
+        check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list();  // this sets time bound of arbiter timer interval
+        compute_and_order_nf_wake_priority();
         handle_wakeup(NULL);
+
 #endif
         //printf("\n Inside arbiter_timer_cb() %"PRIu64", on core [%d] \n", rte_rdtsc_precise(), rte_lcore_id());
         return;
@@ -487,7 +489,8 @@ int send_direct_on_alt_port(struct rte_mbuf *pkts[], uint16_t rx_count) {
         usleep(DELAY_PER_PKT*count_0);
 #endif
         if(count_0) {
-                sent_0 = rte_eth_tx_burst(0,
+                uint8_t port_id = 0;
+                sent_0 = rte_eth_tx_burst(port_id,
                                         0,//tx->queue_id,
                                         pkts_0,
                                         count_0);
@@ -503,7 +506,9 @@ int send_direct_on_alt_port(struct rte_mbuf *pkts[], uint16_t rx_count) {
         usleep(DELAY_PER_PKT*count_1);
 #endif
         if(count_1) {
-                sent_1 = rte_eth_tx_burst(1,
+                uint8_t port_id = 0;
+                if(ports->num_ports > 1 ) port_id=1;
+                sent_1 = rte_eth_tx_burst(port_id,
                                         0,//tx->queue_id,
                                         pkts_1,
                                         count_1);
@@ -538,7 +543,10 @@ static int onv_pkt_send_on_alt_port(struct thread_info *rx, struct rte_mbuf *pkt
                meta->chain_index = 0;
                pkt = (struct rte_mbuf*)pkts[i];
                 if (pkt->port == 0) {
-                        meta->destination = 1;
+                        meta->destination = 0;
+                        if(ports->num_ports > 1 ) {
+                                meta->destination = 1;
+                        }
                 }
                 else {
                         meta->destination = 0;

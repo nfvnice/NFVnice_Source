@@ -54,7 +54,7 @@
 
 #ifdef INTERRUPT_SEM
 #include <signal.h>
-
+#include <rte_timer.h>
 //#define USE_NF_WAKE_THRESHOLD
 #ifdef USE_NF_WAKE_THRESHOLD
 unsigned nfs_wakethr[MAX_CLIENTS] = {[0 ... MAX_CLIENTS-1] = 1};
@@ -65,7 +65,7 @@ struct wakeup_info *wakeup_infos;
 /***********************Internal Functions************************************/
 static inline int
 whether_wakeup_client(int instance_id);
-
+static inline void handle_wakeup_ordered(__attribute__((unused))struct wakeup_info *wakeup_info);
 static inline void handle_wakeup_old(struct wakeup_info *wakeup_info);
 static inline void
 wakeup_client(int instance_id, struct wakeup_info *wakeup_info);
@@ -95,18 +95,22 @@ typedef struct core_nf_timers {
 }core_nf_timers_t;
 core_nf_timers_t    core_timers[MAX_CORES_ON_NODE];
 
+#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 int
 initialize_per_core_timers(void);
 static void  arbiter_wakeup_client(uint16_t core_id, uint16_t index);
 int launch_core_nf_timer(uint16_t core_id, uint16_t index, uint16_t nf_id, uint64_t exec_period);
+#endif //ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 /***********************Timer Functions************************************/
 #ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 static void wake_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer, void *ptr_data) {
 
         if(ptr_data) {
+                //Ensure, it is called by only 1 wake thread; preferably tag first wake thread to do it in case of multiple wake threads..
+                compute_and_order_nf_wake_priority();
+                //logic changed to evaluate only the nf load, comp.cost and wakeup ordering; Handle actual wakeup in the main thread (poll mode)
                 //check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list();
-                //handle_wakeup((struct wakeup_info *)ptr_data);
-                handle_wakeup(NULL);
+                //handle_wakeup(NULL); //handle_wakeup((struct wakeup_info *)ptr_data);
         }
 }
 
@@ -381,44 +385,39 @@ static inline void handle_wakeup_old(struct wakeup_info *wakeup_info) {
                 wakeup_client(i, wakeup_info);
         }
 }
-inline void handle_wakeup(__attribute__((unused))struct wakeup_info *wakeup_info) {
+static inline void handle_wakeup_ordered(__attribute__((unused))struct wakeup_info *wakeup_info) {
 
-        unsigned i=0;
-
-        //Decouple The evaluation and wakee-up logic : move the code to main thread, which can perform this periodically;
-        /* Firs:t extract load charactersitics in this epoch
-         * Second: sort and prioritize NFs based on the demand matrix in this epoch
-         * Finally: wake up the tasks in the identified priority
-         * */
         #if defined (USE_CGROUPS_PER_NF_INSTANCE)
-        extract_nf_load_and_svc_rate_info(0);   //setup_nfs_priority_per_core_list(0);
-
-
         /* Now wake up the NFs as per sorted priority:
          * Next step Handle slack period before wake-up and schedule NFs for wake up; otherwise
          * we are at the mercy of OS Scheduler to schedule the NFs in each core */
+        unsigned i=0;
         if(nf_sched_param.sorted) {
                 for(i=0; i<MAX_CORES_ON_NODE; i++) {
                         if(nf_sched_param.nf_list_per_core[i].sorted && nf_sched_param.nf_list_per_core[i].count) {
-#ifndef USE_ARBITER_NF_EXEC_PERIOD
+                                #ifndef USE_ARBITER_NF_EXEC_PERIOD
                                 unsigned nf_id=0;
                                 for(nf_id=0; nf_id < nf_sched_param.nf_list_per_core[i].count; nf_id++) {
                                         wakeup_client(nf_sched_param.nf_list_per_core[i].nf_ids[nf_id], NULL /*wakeup_info*/);
                                 }
-#else
-                        arbiter_wakeup_client(i, 0);
-
-#endif  //USE_ARBITER_NF_EXEC_PERIOD
+                                #else
+                                arbiter_wakeup_client(i, 0);
+                                #endif  //USE_ARBITER_NF_EXEC_PERIOD
                         }
                 }
         }
         //in case the data is not ready; wakeup NFs as usual
         else {
-                handle_wakeup_old(wakeup_info);
+                if(wakeup_info) handle_wakeup_old(wakeup_info);
         }
         #else
         handle_wakeup_old(wakeup_info);
         #endif  //USE_CGROUPS_PER_NF_INSTANCE
+}
+
+inline void handle_wakeup(__attribute__((unused))struct wakeup_info *wakeup_info) {
+        handle_wakeup_ordered(wakeup_info);
+        return;
 }
 
 int
@@ -434,10 +433,8 @@ wakemgr_main(void *arg) {
 
 #ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
                 rte_timer_manage();
-#else
-                handle_wakeup_old((struct wakeup_info *)arg);
 #endif //#ifdef ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
-
+                handle_wakeup((struct wakeup_info *)arg); //handle_wakeup_old((struct wakeup_info *)arg);
                 //usleep(USLEEP_INTERVAL);  ////usleep(WAKE_INTERVAL_IN_US);
 
         }

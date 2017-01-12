@@ -54,12 +54,7 @@
 /*****************************************************************************
                         HISTOGRAM DETAILS
 */
-#ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
-#ifndef MAX_NF_COMP_COST_CYCLES
-#define MAX_NF_COMP_COST_CYCLES     (10000) //can be const int overridden by NF
-unsigned long max_nf_computation_cost = MAX_NF_COMP_COST_CYCLES;
-#endif //MAX_NF_COMP_COST_CYCLES
-#endif //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+
 /******************************************************************************/
 
 /************************************API**************************************/
@@ -122,7 +117,7 @@ void init_cgroup_info(struct onvm_nf_info *nf_info) {
 
 /******************************Timer Helper functions*******************************/
 #ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
-#define STATS_PERIOD_IN_MS 1
+
 static void
 stats_timer_cb(__attribute__((unused)) struct rte_timer *ptr_timer,
         __attribute__((unused)) void *ptr_data) {
@@ -269,6 +264,10 @@ onvm_nflib_init(int argc, char *argv[], const char *nf_tag) {
 
 #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
         hist_init_v2(&nf_info->ht2);    //hist_init( &ht, MAX_NF_COMP_COST_CYCLES);
+#endif
+
+#ifdef ENABLE_ECN_CE
+        hist_init_v2(&nf_info->ht2_q);    //hist_init( &ht, MAX_NF_COMP_COST_CYCLES);
 #endif
         RTE_LOG(INFO, APP, "Finished Process Init.\n");
         return retval_final;
@@ -484,6 +483,10 @@ onvm_nflib_run(
                                 #ifdef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
                                 counter = 1;
                                 #endif  //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+
+                                #ifdef ENABLE_ECN_CE
+                                hist_store_v2(&info->ht2_q, rte_ring_count(rx_ring));
+                                #endif
                         }
 
                         #ifndef ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
@@ -581,6 +584,12 @@ onvm_nflib_stop(void) {
         rte_exit(EXIT_SUCCESS, "Done.");
 }
 
+int
+onvm_nflib_drop_pkt(struct rte_mbuf* pkt) {
+        rte_pktmbuf_free(pkt);
+        tx_stats->tx_drop[nf_info->instance_id]++;
+        return 0;
+}
 
 /******************************Helper functions*******************************/
 static struct onvm_nf_info *
