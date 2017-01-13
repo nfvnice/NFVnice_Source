@@ -454,6 +454,9 @@ static void signal_handler(int sig, siginfo_t *info, void *secret) {
         }
         if(sig == SIGWINCH) return;
 
+        signal(sig,SIG_DFL);
+        if(sig == SIGFPE) return;
+
         if (sig <= 15) {
                 for (i = 1; i < MAX_CLIENTS; i++) {
 
@@ -513,6 +516,7 @@ register_signal_handler(void) {
 
         for (i = 1; i < 31; i++) {
                 if(i == SIGWINCH)continue;
+                //if(i==SIGFPE)continue;
                 sigaction(i, &act, 0);
         }
 }

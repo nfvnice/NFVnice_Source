@@ -264,7 +264,11 @@ onvm_pkt_flush_nf_queue(struct thread_info *thread, uint16_t client) {
 #endif //ENABLE_ECN_CE
 #endif
 #ifdef ENABLE_NF_BACKPRESSURE
-                onvm_detect_and_set_back_pressure_v2(cl);//onvm_detect_and_set_back_pressure(thread->nf_rx_buf[client].buffer, thread->nf_rx_buf[client].count, cl);
+                #ifdef USE_BKPR_V2_IN_TIMER_MODE
+                onvm_detect_and_set_back_pressure_v2(cl);
+                #else
+                onvm_detect_and_set_back_pressure(thread->nf_rx_buf[client].buffer, thread->nf_rx_buf[client].count, cl);
+                #endif //USE_BKPR_V2_IN_TIMER_MODE
 
 #endif //ENABLE_NF_BACKPRESSURE
         }

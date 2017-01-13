@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "histogram.h"
 
 #define MIN(a,b) ((a) < (b)? (a):(b))
@@ -19,6 +20,12 @@ void hist_init(volatile struct histogram *h, uint32_t max, uint32_t min) {
         min = MIN(max,min);
         h->bucket_size = (max-min) / HIST_BUCKETS;
 
+        if(0 == h->bucket_size) {
+                printf("Invalid Bucket Size! min[%d], max[%d]", min,max);
+                max = min + 2*HIST_BUCKETS;
+                h->bucket_size = 2;
+                //exit(0);
+        }
         h->max = max;
         h->min = min;
 
@@ -34,6 +41,8 @@ void hist_clear(volatile struct histogram *h) {
 }
 
 void hist_store(volatile struct histogram *h, uint32_t val) {
+
+        if(h && h->bucket_size == 0) return ;
         /* Store val into a histogram array.
          * Track the min and max value seen.
          */
@@ -294,6 +303,7 @@ void hist_store_v2(histogram_v2_t *h, uint32_t val) {
 void hist_compute_v2(histogram_v2_t *h) {
         if(!h) return;
         if((0 == h->is_initialized) && (MIN_SAMPLES_FOR_HISTOGRAM > h->cur_index)) return;
+        if(0 == h->max_val || 0 == h->min_val) return;
         if(0 == h->is_initialized) {
                 hist_init(&h->histogram,h->max_val+h->min_val/2, h->min_val);
                 h->is_initialized = 1;

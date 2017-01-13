@@ -309,7 +309,11 @@ tx_thread_main(void *arg) {
                         if (likely(tx_count > 0)) {
 
                                 #ifdef ENABLE_NF_BACKPRESSURE
-                                onvm_check_and_reset_back_pressure_v2(pkts, tx_count, cl); //onvm_check_and_reset_back_pressure(pkts, tx_count, cl);
+                                #ifdef USE_BKPR_V2_IN_TIMER_MODE
+                                onvm_check_and_reset_back_pressure_v2(pkts, tx_count, cl);
+                                #else
+                                onvm_check_and_reset_back_pressure(pkts, tx_count, cl);
+                                #endif //USE_BKPR_V2_IN_TIMER_MODE
                                 #endif // ENABLE_NF_BACKPRESSURE
 
                                 onvm_pkt_process_tx_batch(tx, pkts, tx_count, cl);

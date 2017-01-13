@@ -119,7 +119,7 @@
 
 /* For Bottleneck on Rx Ring; whether or not to Drop packets from Rx/Tx buf during flush_operation
  * Note: This is one of the likely cause of Out-of_order packets in the OpenNetVM (with Bridge) case: */
-#define DO_NOT_DROP_PKTS_ON_FLUSH_FOR_BOTTLENECK_NF   //Disable drop of existing packets -- may have caveats on when next flush would operate on that Tx/Rx buffer..
+//#define DO_NOT_DROP_PKTS_ON_FLUSH_FOR_BOTTLENECK_NF   //Disable drop of existing packets -- may have caveats on when next flush would operate on that Tx/Rx buffer..
                                                         //Repercussions in onvm_pkt.c: onvm_pkt_enqueue_nf() to handle overflow and stop putting packet in full buffer and drop new ones instead.
                                                         //Observation: Good for TCP use cases, but with PktGen,Moongen dents line rate approx 0.3Mpps slow down
 
@@ -132,26 +132,34 @@
 #define ENABLE_ECN_CE
 
 /* Enable back-pressure handling to throttle NFs upstream */
-#define ENABLE_NF_BACKPRESSURE
-#define NF_BACKPRESSURE_APPROACH_1  //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
-//#define NF_BACKPRESSURE_APPROACH_2  //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
-//#define NF_BACKPRESSURE_APPROACH_3  //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
+//#define ENABLE_NF_BACKPRESSURE
+#ifdef ENABLE_NF_BACKPRESSURE
+#define NF_BACKPRESSURE_APPROACH_1    //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
+//#define NF_BACKPRESSURE_APPROACH_2      //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
+//#define NF_BACKPRESSURE_APPROACH_3    //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
 
 // Extensions and sub-options for Back_Pressure handling
 //#define DROP_PKTS_ONLY_AT_BEGGINING           // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF). (Note: can Enable)
-//#define ENABLE_SAVE_BACKLOG_FT_PER_NF           // save backlog Flow Entries per NF (Note: Enable)
-//#define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable, sub define  under ENABLE_SAVE_BACKLOG_FT_PER_NF)
+
+//#define USE_BKPR_V2_IN_TIMER_MODE       //Use this flag if the Timer Thread can perform the Backpressure setting
+#ifndef USE_BKPR_V2_IN_TIMER_MODE
+#define ENABLE_SAVE_BACKLOG_FT_PER_NF           // save backlog Flow Entries per NF (Note: Enable)
+#define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable, sub define  under ENABLE_SAVE_BACKLOG_FT_PER_NF)
+#endif //USE_BKPR_V2_IN_TIMER_MODE
+
 //#define RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
 //#define BACKPRESSURE_EXTRA_DEBUG_LOGS           // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
 
 //Need Early bind to NF for the chain and determine the bottlneck status: Avoid passing first few packets of a flow till the chain, only to drop them later: Helps for TCP and issue with storing multiple flows at earlier NF
 //#define ENABLE_EARLY_NF_BIND
 
-
 //other test-variants and disregarded options: not to be used!!
 //#define HOP_BY_HOP_BACKPRESSURE     //Option to enable [ON] = HOP by HOP propagation of back-pressure vs [OFF] = direct First NF to N-1 Discard(Drop)/block.
 //#define ENABLE_NF_BKLOG_BUFFERING   //Extension to Approach 3 wherein each NF can pre-buffer internally the  packets for bottlenecked service chains. (Not Implemented!!)
 //#define DUMMY_FT_LOAD_ONLY //Load Only onvm_ft and Bypass ENABLE_NF_BACKPRESSURE/NF_BACKPRESSURE_APPROACH_3
+
+#endif //ENABLE_NF_BACKPRESSURE
+
 
 /* Enable the Arbiter Logic to control the NFs scheduling and period on each core */
 //#define ENABLE_ARBITER_MODE
@@ -159,6 +167,10 @@
 
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
+
+
+
+
 
 /* ENABLE TIMER BASED WEIGHT COMPUTATION IN NF_LIB */
 #define ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION

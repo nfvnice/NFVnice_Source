@@ -713,7 +713,7 @@ int dequeue_nf_from_bottleneck_watch_list(uint16_t nf_id) {
 }
 
 int check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list(void) {
-#ifdef ENABLE_NF_BACKPRESSURE
+#if defined(ENABLE_NF_BACKPRESSURE) && defined(USE_BKPR_V2_IN_TIMER_MODE)
         int ret = 0;
         uint16_t nf_id = 0;
         struct timespec now;
