@@ -389,7 +389,11 @@ onvm_stats_display_clients(unsigned difftime) {
                 /* periodic/rate specific statistics of NF instance */
                 static onvm_stats_snapshot_t st = {0,};
                 //get_onvm_nf_stats_snapshot(i, &st, difftime*SECOND_TO_MICRO_SECOND);
+#ifndef USE_CGROUPS_PER_NF_INSTANCE
+                get_onvm_nf_stats_snapshot_v2(i, &st, 0);
+#else
                 if(get_onvm_nf_stats_snapshot_v2(i, &st, difftime*SECOND_TO_MICRO_SECOND)) continue;
+#endif
 
                 const uint64_t avg_wakeups = ( clients[i].stats.wakeup_count -  clients[i].stats.prev_wakeup_count);
                 const uint64_t yields =  (clients_stats->wkup_count[i] - clients_stats->prev_wkup_count[i]);

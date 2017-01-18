@@ -80,13 +80,14 @@
 #define ONVM_NF_ACTION_OUT 3    // send the packet out the NIC port set in the argument field
 
 /* Note: Make the PACKET_READ_SIZE defined in onvm_mgr.h same as PKT_READ_SIZE defined in onvm_nflib_internal.h, better get rid of latter */
-#define PRE_PROCESS_DROP_ON_RX  // Feature flag for addressing NF Local Back-pressure:: To lookup NF Tx queue occupancy and drop packets pro-actively before pushing to NFs Rx Ring.
+// enable: PRE_PROCESS_DROP_ON_RX, DROP_APPROACH_3,DROP_APPROACH_3_WITH_SYNC
+//#define PRE_PROCESS_DROP_ON_RX  // Feature flag for addressing NF Local Back-pressure:: To lookup NF Tx queue occupancy and drop packets pro-actively before pushing to NFs Rx Ring.
 ////#define DROP_APPROACH_1       // (cleaned out) Handle inside NF_LIB:: After dequeue from NFs Rx ring, check for Tx Ring size and drop pkts before pushing packet to the NFs processing function. < Too late, only avoids packet processing by NF:: Discontinued.. Results are OK, but not preferred approach>
 ////#define DROP_APPROACH_2       // (cleaned out) Handle in onvm_mgr:: After segregation of Rx/Tx buffers to specific NF: Drop the packet before pushing the packets to the NFs Rx Ring buffer. < Early decision. Must also account for packets that could be currently under processing. < Results OK, but not preferred approach>
-#define DROP_APPROACH_3         // Handle inside NF_LIB:: Make the NF to block until it cannot push the packets to the Tx Ring, Subsequent packets will be dropped in onvm_mgr context by Rx/Tx Threads < 3 options: Poll till Tx is free, Yield or Block on Semaphore>
+//#define DROP_APPROACH_3         // Handle inside NF_LIB:: Make the NF to block until it cannot push the packets to the Tx Ring, Subsequent packets will be dropped in onvm_mgr context by Rx/Tx Threads < 3 options: Poll till Tx is free, Yield or Block on Semaphore>
 ////#define DROP_APPROACH_3_WITH_YIELD    //sub-option for approach 3: Results are good, but could result in lots of un-necessary context switches as one block might result in multiple yields. Thrpt is on par with block-approach.
 ////#define DROP_APPROACH_3_WITH_POLL     // (cleaned out) sub-option for approach 3: Results are good, but accounts to CPU wastage and hence not preferred.
-#define DROP_APPROACH_3_WITH_SYNC       //sub-option for approach 3: Results are good, preferred approach.
+//#define DROP_APPROACH_3_WITH_SYNC       //sub-option for approach 3: Results are good, preferred approach.
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
 
@@ -113,9 +114,10 @@
 //#define __DEBUG_LOGS__
 
 /* Enable this flag to assign a distinct CGROUP for each NF instance */
-#define USE_CGROUPS_PER_NF_INSTANCE                 // To create CGroup per NF instance
-#define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT     // To dynamically evaluate and periodically adjust weight on NFs cpu share
-#define USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE       // Enable Load*comp_cost
+// enable: All 3 (USE_CGROUPS_PER_NF_INSTANCE, ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT,USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE)
+//#define USE_CGROUPS_PER_NF_INSTANCE                 // To create CGroup per NF instance
+//#define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT     // To dynamically evaluate and periodically adjust weight on NFs cpu share
+//#define USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE       // Enable Load*comp_cost
 
 /* For Bottleneck on Rx Ring; whether or not to Drop packets from Rx/Tx buf during flush_operation
  * Note: This is one of the likely cause of Out-of_order packets in the OpenNetVM (with Bridge) case: */
@@ -124,12 +126,15 @@
                                                         //Observation: Good for TCP use cases, but with PktGen,Moongen dents line rate approx 0.3Mpps slow down
 
 /* Enable watermark level NFs Tx and Rx Rings */
-#define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
+// enable: ENABLE_RING_WATERMARK
+//#define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
 
 /* Enable ECN CE FLAG : Feature Flag to enable marking ECN_CE flag on the flows that pass through the NFs with Rx Ring buffers exceeding the watermark level.
  * Dependency: Must have ENABLE_RING_WATERMARK feature defined. and HIGH and LOW Thresholds to be set. otherwise, marking may not happen at all.. Ideally, marking should be done after dequeue from Tx, to mark if Rx is overbudget..
  * On similar lines, even the back-pressure marking must be done for all flows after dequeue from the Tx Ring.. */
-#define ENABLE_ECN_CE
+// enable: ENABLE_RING_WATERMARK
+//#define ENABLE_ECN_CE
+
 
 /* Enable back-pressure handling to throttle NFs upstream */
 //#define ENABLE_NF_BACKPRESSURE
@@ -164,7 +169,7 @@
 /* Enable the Arbiter Logic to control the NFs scheduling and period on each core */
 //#define ENABLE_ARBITER_MODE
 //#define USE_ARBITER_NF_EXEC_PERIOD      //NFLib check for wake;/sleep state and Wakeup thread to put the the NFs to sleep after timer expiry (This feature is not working as expected..)
-
+//enable: ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD, ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 
@@ -173,13 +178,15 @@
 
 
 /* ENABLE TIMER BASED WEIGHT COMPUTATION IN NF_LIB */
-#define ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+//enable: ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+//#define ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 #if defined(ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION) || defined (ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD)
 #include <rte_timer.h>
 #define STATS_PERIOD_IN_MS 1       //(use 1 or 10 or 100ms)
 #endif //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 
-#define STORE_HISTOGRAM_OF_NF_COMPUTATION_COST  //Store the Histogram of NF Comp Cost   (in critical path, costing around 0.3 to 0.6Mpps)
+//enable: STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
+//#define STORE_HISTOGRAM_OF_NF_COMPUTATION_COST  //Store the Histogram of NF Comp Cost   (in critical path, costing around 0.3 to 0.6Mpps)
 #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
 #include "histogram.h"                          //Histogra Library
 #endif //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
