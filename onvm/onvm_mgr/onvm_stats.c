@@ -424,7 +424,7 @@ onvm_stats_display_clients(unsigned difftime) {
                 //printf("rx_overflow=[%d], ThrottleNF_Flag=[%d], Highest_DS_SID=[%d] NF_Throttle_count=[%"PRIu64"], \n", clients[i].rx_buffer_overflow, clients[i].throttle_this_upstream_nf, clients[i].highest_downstream_nf_index_id, clients[i].throttle_count);
                 //#ifdef NF_BACKPRESSURE_APPROACH_1
                 #if defined (NF_BACKPRESSURE_APPROACH_1) && defined (BACKPRESSURE_EXTRA_DEBUG_LOGS)
-                printf("bottleneck_flows=[%d], bkpr_count [%d], max_rx_q_len=[%d], max_tx_q_len=[%d], bkpr_drop=%"PRIu64", bkpr_drop_rate=%"PRIu64"\n",clients[i].bft_list.bft_count, clients[i].stats.bkpr_count,clients[i].stats.max_rx_q_len, clients[i].stats.max_tx_q_len, clients[i].stats.bkpr_drop,(clients[i].stats.bkpr_drop - clients[i].stats.prev_bkpr_drop)/ difftime);
+                printf(" bottlenec_status=[%d], bottleneck_flows=[%d], bkpr_count [%d], max_rx_q_len=[%d], max_tx_q_len=[%d], bkpr_drop=%"PRIu64", bkpr_drop_rate=%"PRIu64"\n",clients[i].is_bottleneck, clients[i].bft_list.bft_count, clients[i].stats.bkpr_count,clients[i].stats.max_rx_q_len, clients[i].stats.max_tx_q_len, clients[i].stats.bkpr_drop,(clients[i].stats.bkpr_drop - clients[i].stats.prev_bkpr_drop)/ difftime);
                 clients[i].stats.prev_bkpr_drop = clients[i].stats.bkpr_drop;
                 clients[i].stats.max_rx_q_len=0;
                 clients[i].stats.max_tx_q_len=0;

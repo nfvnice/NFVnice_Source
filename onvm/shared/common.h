@@ -81,13 +81,13 @@
 
 /* Note: Make the PACKET_READ_SIZE defined in onvm_mgr.h same as PKT_READ_SIZE defined in onvm_nflib_internal.h, better get rid of latter */
 // enable: PRE_PROCESS_DROP_ON_RX, DROP_APPROACH_3,DROP_APPROACH_3_WITH_SYNC
-//#define PRE_PROCESS_DROP_ON_RX  // Feature flag for addressing NF Local Back-pressure:: To lookup NF Tx queue occupancy and drop packets pro-actively before pushing to NFs Rx Ring.
+#define PRE_PROCESS_DROP_ON_RX  // Feature flag for addressing NF Local Back-pressure:: To lookup NF Tx queue occupancy and drop packets pro-actively before pushing to NFs Rx Ring.
 ////#define DROP_APPROACH_1       // (cleaned out) Handle inside NF_LIB:: After dequeue from NFs Rx ring, check for Tx Ring size and drop pkts before pushing packet to the NFs processing function. < Too late, only avoids packet processing by NF:: Discontinued.. Results are OK, but not preferred approach>
 ////#define DROP_APPROACH_2       // (cleaned out) Handle in onvm_mgr:: After segregation of Rx/Tx buffers to specific NF: Drop the packet before pushing the packets to the NFs Rx Ring buffer. < Early decision. Must also account for packets that could be currently under processing. < Results OK, but not preferred approach>
-//#define DROP_APPROACH_3         // Handle inside NF_LIB:: Make the NF to block until it cannot push the packets to the Tx Ring, Subsequent packets will be dropped in onvm_mgr context by Rx/Tx Threads < 3 options: Poll till Tx is free, Yield or Block on Semaphore>
+#define DROP_APPROACH_3         // Handle inside NF_LIB:: Make the NF to block until it cannot push the packets to the Tx Ring, Subsequent packets will be dropped in onvm_mgr context by Rx/Tx Threads < 3 options: Poll till Tx is free, Yield or Block on Semaphore>
 ////#define DROP_APPROACH_3_WITH_YIELD    //sub-option for approach 3: Results are good, but could result in lots of un-necessary context switches as one block might result in multiple yields. Thrpt is on par with block-approach.
 ////#define DROP_APPROACH_3_WITH_POLL     // (cleaned out) sub-option for approach 3: Results are good, but accounts to CPU wastage and hence not preferred.
-//#define DROP_APPROACH_3_WITH_SYNC       //sub-option for approach 3: Results are good, preferred approach.
+#define DROP_APPROACH_3_WITH_SYNC       //sub-option for approach 3: Results are good, preferred approach.
 
 #define INTERRUPT_SEM           // To enable NF thread interrupt mode wake.  Better to move it as option in Makefile
 
@@ -115,9 +115,9 @@
 
 /* Enable this flag to assign a distinct CGROUP for each NF instance */
 // enable: All 3 (USE_CGROUPS_PER_NF_INSTANCE, ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT,USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE)
-//#define USE_CGROUPS_PER_NF_INSTANCE                 // To create CGroup per NF instance
-//#define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT     // To dynamically evaluate and periodically adjust weight on NFs cpu share
-//#define USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE       // Enable Load*comp_cost
+#define USE_CGROUPS_PER_NF_INSTANCE                 // To create CGroup per NF instance
+#define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT     // To dynamically evaluate and periodically adjust weight on NFs cpu share
+////#define USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE       // Enable Load*comp_cost (Helpful for TCP but not so for UDP (pktgen Moongen)
 
 /* For Bottleneck on Rx Ring; whether or not to Drop packets from Rx/Tx buf during flush_operation
  * Note: This is one of the likely cause of Out-of_order packets in the OpenNetVM (with Bridge) case: */
@@ -132,12 +132,12 @@
 /* Enable ECN CE FLAG : Feature Flag to enable marking ECN_CE flag on the flows that pass through the NFs with Rx Ring buffers exceeding the watermark level.
  * Dependency: Must have ENABLE_RING_WATERMARK feature defined. and HIGH and LOW Thresholds to be set. otherwise, marking may not happen at all.. Ideally, marking should be done after dequeue from Tx, to mark if Rx is overbudget..
  * On similar lines, even the back-pressure marking must be done for all flows after dequeue from the Tx Ring.. */
-// enable: ENABLE_RING_WATERMARK
+// enable: ENABLE_ECN_CE
 //#define ENABLE_ECN_CE
 
 
 /* Enable back-pressure handling to throttle NFs upstream */
-//#define ENABLE_NF_BACKPRESSURE
+#define ENABLE_NF_BACKPRESSURE
 #ifdef ENABLE_NF_BACKPRESSURE
 #define NF_BACKPRESSURE_APPROACH_1    //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
 //#define NF_BACKPRESSURE_APPROACH_2      //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
@@ -146,14 +146,14 @@
 // Extensions and sub-options for Back_Pressure handling
 //#define DROP_PKTS_ONLY_AT_BEGGINING           // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF). (Note: can Enable)
 
-//#define USE_BKPR_V2_IN_TIMER_MODE       //Use this flag if the Timer Thread can perform the Backpressure setting
-#ifndef USE_BKPR_V2_IN_TIMER_MODE
+#define USE_BKPR_V2_IN_TIMER_MODE       //Use this flag if the Timer Thread can perform the Backpressure setting
+#if !defined(USE_BKPR_V2_IN_TIMER_MODE) && defined(NF_BACKPRESSURE_APPROACH_1)
 #define ENABLE_SAVE_BACKLOG_FT_PER_NF           // save backlog Flow Entries per NF (Note: Enable)
 #define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable, sub define  under ENABLE_SAVE_BACKLOG_FT_PER_NF)
 #endif //USE_BKPR_V2_IN_TIMER_MODE
 
-//#define RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
-//#define BACKPRESSURE_EXTRA_DEBUG_LOGS           // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
+#define RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
+#define BACKPRESSURE_EXTRA_DEBUG_LOGS           // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
 
 //Need Early bind to NF for the chain and determine the bottlneck status: Avoid passing first few packets of a flow till the chain, only to drop them later: Helps for TCP and issue with storing multiple flows at earlier NF
 //#define ENABLE_EARLY_NF_BIND
@@ -179,14 +179,14 @@
 
 /* ENABLE TIMER BASED WEIGHT COMPUTATION IN NF_LIB */
 //enable: ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
-//#define ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
+#define ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 #if defined(ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION) || defined (ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD)
 #include <rte_timer.h>
 #define STATS_PERIOD_IN_MS 1       //(use 1 or 10 or 100ms)
 #endif //ENABLE_TIMER_BASED_NF_CYCLE_COMPUTATION
 
 //enable: STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
-//#define STORE_HISTOGRAM_OF_NF_COMPUTATION_COST  //Store the Histogram of NF Comp Cost   (in critical path, costing around 0.3 to 0.6Mpps)
+#define STORE_HISTOGRAM_OF_NF_COMPUTATION_COST  //Store the Histogram of NF Comp Cost   (in critical path, costing around 0.3 to 0.6Mpps)
 #ifdef STORE_HISTOGRAM_OF_NF_COMPUTATION_COST
 #include "histogram.h"                          //Histogra Library
 #endif //STORE_HISTOGRAM_OF_NF_COMPUTATION_COST

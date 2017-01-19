@@ -605,6 +605,16 @@ int
 onvm_mark_all_entries_for_bottleneck(uint16_t nf_id) {
         int ret = 0;
 #ifdef ENABLE_NF_BACKPRESSURE
+
+        /*** Note: adding this global is expensive (around 1.5Mpps drop) and better to remove the default chain Backpressure feature.. or do int inside default chain usage some way */
+        /** global single chain scenario:: Note: This only works for the default chain case where service ID of chain is always in increasing order **/
+        if(global_bkpr_mode) {
+                downstream_nf_overflow = 1;
+                SET_BIT(highest_downstream_nf_service_id, clients[nf_id].info->service_id);//highest_downstream_nf_service_id = cl->info->service_id;
+                return 0;
+        }
+
+
         uint32_t ttl_chains = extract_sc_list(NULL, sc_list);
 
         //There must be valid chains
@@ -649,6 +659,28 @@ int
 onvm_clear_all_entries_for_bottleneck(uint16_t nf_id) {
         int ret = 0;
 #ifdef ENABLE_NF_BACKPRESSURE
+
+        /*** Note: adding this global is expensive (around 1.5Mpps drop) and better to remove the default chain Backpressure feature.. or do int inside default chain usage some way */
+        /** global single chain scenario:: Note: This only works for the default chain case where service ID of chain is always in increasing order **/
+        if(global_bkpr_mode) {
+                if (downstream_nf_overflow) {
+                        struct client *cl = &clients[nf_id];
+                        // If service id is of any downstream that is/are bottlenecked then "move the lowest literally to next higher number" and when it is same as highsest reset bottlenext flag to zero
+                        //  if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
+                        //if(rte_ring_count(cl->rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE)
+                        {
+                                if (TEST_BIT(highest_downstream_nf_service_id, cl->info->service_id)) { //if (cl->info->service_id == highest_downstream_nf_service_id) {
+                                        CLEAR_BIT(highest_downstream_nf_service_id, cl->info->service_id);
+                                        if (highest_downstream_nf_service_id == 0) {
+                                                downstream_nf_overflow = 0;
+                                        }
+                                }
+                        }
+                }
+                return 0;
+        }
+
+
         uint32_t bneck_chains = 0;
         uint32_t ttl_chains = extract_sc_list(&bneck_chains, sc_list);
 
@@ -719,8 +751,20 @@ int check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list(void) {
         struct timespec now;
         get_current_time(&now);
         for(; nf_id < MAX_CLIENTS; nf_id++) {
+
+                if(BOTTLENECK_NF_STATUS_RESET == bottleneck_nf_list.nf[nf_id].enqueue_status) continue;
+                //is in enqueue list and marked
+                else if (BOTTLENECK_NF_STATUS_DROP_MARKED & bottleneck_nf_list.nf[nf_id].enqueue_status) {
+                        if(rte_ring_count(clients[nf_id].rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
+                                onvm_clear_all_entries_for_bottleneck(nf_id);
+                                dequeue_nf_from_bottleneck_watch_list(nf_id);
+                                bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_RESET;
+                                clients[nf_id].is_bottleneck = 0;
+                        }
+                        //else keep as marked.
+                }
                 //is in enqueue list but not marked
-                if(BOTTLENECK_NF_STATUS_WAIT_ENQUEUED & bottleneck_nf_list.nf[nf_id].enqueue_status) {
+                else if(BOTTLENECK_NF_STATUS_WAIT_ENQUEUED & bottleneck_nf_list.nf[nf_id].enqueue_status) {
                         //ring count is still beyond the water mark threshold
                         if(rte_ring_count(clients[nf_id].rx_q) >= CLIENT_QUEUE_RING_WATER_MARK_SIZE) {
                                 if((0 == WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US)||((WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US) <= get_difftime_us(&bottleneck_nf_list.nf[nf_id].s_time, &now))) {
@@ -734,23 +778,16 @@ int check_and_enqueue_or_dequeue_nfs_from_bottleneck_watch_list(void) {
                                 //else //time has not expired.. continue to monitor..
                         }
                         //ring count has dropped
-                        else {
+                        else  if(rte_ring_count(clients[nf_id].rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
                                 if((0 == WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US)||((WAIT_TIME_BEFORE_MARKING_OVERFLOW_IN_US) <= get_difftime_us(&bottleneck_nf_list.nf[nf_id].s_time, &now))) {
                                         dequeue_nf_from_bottleneck_watch_list(nf_id);
                                         bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_RESET;
+                                        clients[nf_id].is_bottleneck = 0;
                                 }
                                 //else //time has not expired.. continue to monitor..
                         }
                 }
-                //is in enqueue list and marked
-                else if (BOTTLENECK_NF_STATUS_DROP_MARKED & bottleneck_nf_list.nf[nf_id].enqueue_status) {
-                        if(rte_ring_count(clients[nf_id].rx_q) < CLIENT_QUEUE_RING_LOW_WATER_MARK_SIZE) {
-                                onvm_clear_all_entries_for_bottleneck(nf_id);
-                                dequeue_nf_from_bottleneck_watch_list(nf_id);
-                                bottleneck_nf_list.nf[nf_id].enqueue_status = BOTTLENECK_NF_STATUS_RESET;
-                        }
-                        //else keep as marked.
-                }
+
         }
         return ret;
 #else

@@ -6,7 +6,7 @@ svc_id=2
 dst_id=3
 inst_id=2
 cost=4
-cost=0
+cost=2
 ./og.sh $core_id $svc_id $dst_id $inst_id $cost &
   sleep 2
 
@@ -16,7 +16,7 @@ svc_id=3
 dst_id=4
 inst_id=6
 cost=6
-cost=2
+cost=0
 ./og.sh $core_id $svc_id $dst_id $inst_id $cost &
   sleep 2
 
