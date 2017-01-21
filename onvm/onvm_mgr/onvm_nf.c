@@ -606,6 +606,7 @@ onvm_mark_all_entries_for_bottleneck(uint16_t nf_id) {
         int ret = 0;
 #ifdef ENABLE_NF_BACKPRESSURE
 
+#ifdef ENABLE_GLOBAL_BACKPRESSURE
         /*** Note: adding this global is expensive (around 1.5Mpps drop) and better to remove the default chain Backpressure feature.. or do int inside default chain usage some way */
         /** global single chain scenario:: Note: This only works for the default chain case where service ID of chain is always in increasing order **/
         if(global_bkpr_mode) {
@@ -613,7 +614,7 @@ onvm_mark_all_entries_for_bottleneck(uint16_t nf_id) {
                 SET_BIT(highest_downstream_nf_service_id, clients[nf_id].info->service_id);//highest_downstream_nf_service_id = cl->info->service_id;
                 return 0;
         }
-
+#endif //ENABLE_GLOBAL_BACKPRESSURE
 
         uint32_t ttl_chains = extract_sc_list(NULL, sc_list);
 
@@ -660,6 +661,7 @@ onvm_clear_all_entries_for_bottleneck(uint16_t nf_id) {
         int ret = 0;
 #ifdef ENABLE_NF_BACKPRESSURE
 
+#ifdef ENABLE_GLOBAL_BACKPRESSURE
         /*** Note: adding this global is expensive (around 1.5Mpps drop) and better to remove the default chain Backpressure feature.. or do int inside default chain usage some way */
         /** global single chain scenario:: Note: This only works for the default chain case where service ID of chain is always in increasing order **/
         if(global_bkpr_mode) {
@@ -679,7 +681,7 @@ onvm_clear_all_entries_for_bottleneck(uint16_t nf_id) {
                 }
                 return 0;
         }
-
+#endif //ENABLE_GLOBAL_BACKPRESSURE
 
         uint32_t bneck_chains = 0;
         uint32_t ttl_chains = extract_sc_list(&bneck_chains, sc_list);

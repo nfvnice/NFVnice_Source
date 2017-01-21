@@ -65,7 +65,7 @@
 #define ARBITER_PERIOD_IN_US            (100)       // 250 micro seconds or 100 micro seconds
 /* Enable the ONVM_MGR to act as a 2-port bridge without any NFs */
 #define ONVM_MGR_ACT_AS_2PORT_FWD_BRIDGE    // Work as bridge < without any NFs :: only testing purpose.. >
-//#define SEND_DIRECT_ON_ALT_PORT
+#define SEND_DIRECT_ON_ALT_PORT
 //#define DELAY_BEFORE_SEND
 //#define DELAY_PER_PKT (5) //20micro seconds
 
@@ -117,7 +117,7 @@
 // enable: All 3 (USE_CGROUPS_PER_NF_INSTANCE, ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT,USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE)
 #define USE_CGROUPS_PER_NF_INSTANCE                 // To create CGroup per NF instance
 #define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT     // To dynamically evaluate and periodically adjust weight on NFs cpu share
-////#define USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE       // Enable Load*comp_cost (Helpful for TCP but not so for UDP (pktgen Moongen)
+#define USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE       // Enable Load*comp_cost (Helpful for TCP but not so for UDP (pktgen Moongen)
 
 /* For Bottleneck on Rx Ring; whether or not to Drop packets from Rx/Tx buf during flush_operation
  * Note: This is one of the likely cause of Out-of_order packets in the OpenNetVM (with Bridge) case: */
@@ -137,8 +137,11 @@
 
 
 /* Enable back-pressure handling to throttle NFs upstream */
-#define ENABLE_NF_BACKPRESSURE
+//#define ENABLE_NF_BACKPRESSURE
+
 #ifdef ENABLE_NF_BACKPRESSURE
+//#define ENABLE_GLOBAL_BACKPRESSURE  //Enable this if want to test with default chain and choose one of the below backpressure modes
+
 #define NF_BACKPRESSURE_APPROACH_1    //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
 //#define NF_BACKPRESSURE_APPROACH_2      //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
 //#define NF_BACKPRESSURE_APPROACH_3    //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
@@ -172,9 +175,6 @@
 //enable: ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD, ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_MAIN_THREAD
 #define ENABLE_USE_RTE_TIMER_MODE_FOR_WAKE_THREAD
-
-
-
 
 
 /* ENABLE TIMER BASED WEIGHT COMPUTATION IN NF_LIB */
