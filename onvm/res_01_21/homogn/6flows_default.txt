@@ -1,0 +1,340 @@
+****************************************************
+<START> For Scheduler type = r   <START> 
+class= -r 
+prio= -p 50 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m monitor
+Skip Kernel Process: kernel
+Changing Process:  -r   -p 50  11701
+Changing Process:  -r   -p 50  11719
+Changing Process:  -r   -p 50  11724
+Changing Process:  -r   -p 50  11729
+Changing Process:  -r   -p 50  11734
+Linux 3.19.0-39-lowlatency (flashstack-3) 	01/21/2017 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041647     0     11719   31.86    0.00    0.00   31.86     8      0.00      0.00 5266072   3756   0.00     136      32    262.83      3.54  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041647     0     11724   35.40    0.00    0.00   35.40     8      0.00      0.00 5266072   3756   0.00     136      32    262.83      4.42  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041647     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32    263.72      2.65  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041647     0     11734   75.22   14.16    0.00   89.38    12      0.00      0.00 5266076   3752   0.00     136      32  61868.14      0.88  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041648     0     11719   32.00    0.00    0.00   32.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041648     0     11724   36.00    0.00    0.00   36.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041648     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041648     0     11734   79.00   12.00    0.00   91.00    12      0.00      0.00 5266076   3752   0.00     136      32  59500.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041649     0     11719   31.00    0.00    0.00   31.00     8      0.00      0.00 5266072   3756   0.00     136      32    265.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041649     0     11724   36.00    0.00    0.00   36.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      4.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041649     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      4.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041649     0     11734   79.00   11.00    0.00   90.00    12      0.00      0.00 5266076   3752   0.00     136      32  59296.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041650     0     11719   32.00    0.00    0.00   32.00     8      0.00      0.00 5266072   3756   0.00     136      32    263.00      4.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041650     0     11724   36.00    0.00    0.00   36.00     8      0.00      0.00 5266072   3756   0.00     136      32    263.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041650     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32    263.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041650     0     11734   77.00   12.00    0.00   89.00    12      0.00      0.00 5266076   3752   0.00     136      32  68433.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041651     0     11719   32.00    0.00    0.00   32.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041651     0     11724   35.00    0.00    0.00   35.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      5.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041651     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041651     0     11734   80.00   11.00    0.00   91.00    12      0.00      0.00 5266076   3752   0.00     136      32  61329.00      1.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041652     0     11719   32.00    0.00    0.00   32.00     8      0.00      0.00 5266072   3756   0.00     136      32    251.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041652     0     11724   36.00    1.00    0.00   37.00     8      0.00      0.00 5266072   3756   0.00     136      32    251.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041652     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32    252.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041652     0     11734   77.00   13.00    0.00   90.00    12      0.00      0.00 5266076   3752   0.00     136      32  61320.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041653     0     11719   32.00    1.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041653     0     11724   36.00    0.00    0.00   36.00     8      0.00      0.00 5266072   3756   0.00     136      32    263.00      4.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041653     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32    263.00      4.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041653     0     11734   80.00   10.00    0.00   90.00    12      0.00      0.00 5266076   3752   0.00     136      32  59557.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041654     0     11719   32.00    0.00    0.00   32.00     8      0.00      0.00 5266072   3756   0.00     136      32    263.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041654     0     11724   36.00    0.00    0.00   36.00     8      0.00      0.00 5266072   3756   0.00     136      32    262.00      4.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041654     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041654     0     11734   77.00   13.00    0.00   90.00    12      0.00      0.00 5266076   3752   0.00     136      32  65919.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041655     0     11719   32.00    0.00    0.00   32.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      5.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041655     0     11724   35.00    0.00    0.00   35.00     8      0.00      0.00 5266072   3756   0.00     136      32    265.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041655     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32    264.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041655     0     11734   81.00    9.00    0.00   90.00    12      0.00      0.00 5266076   3752   0.00     136      32  61205.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.924870      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+               803      context-switches          #    0.803 K/sec                    ( +-  0.56% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 0      page-faults               #    0.000 K/sec                  
+     3,089,715,554      cycles                    #    3.087 GHz                      ( +-  0.00% ) [28.46%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     5,971,669,644      instructions              #    1.93  insns per cycle          ( +-  0.28% ) [35.64%]
+     1,032,172,476      branches                  # 1031.219 M/sec                    ( +-  0.26% ) [35.74%]
+           252,434      branch-misses             #    0.02% of all branches          ( +-  0.30% ) [35.84%]
+       971,372,484      L1-dcache-loads           #  970.475 M/sec                    ( +-  0.24% ) [35.94%]
+        16,554,154      L1-dcache-load-misses     #    1.70% of all L1-dcache hits    ( +-  0.19% ) [35.94%]
+         8,196,319      LLC-loads                 #    8.189 M/sec                    ( +-  0.19% ) [28.75%]
+             9,447      LLC-load-misses           #    0.12% of all LL-cache hits     ( +- 15.64% ) [28.72%]
+                 0      L1-icache-loads           #    0.000 K/sec                  
+           164,773      L1-icache-load-misses     #    0.165 M/sec                    ( +-  1.08% ) [28.62%]
+       970,756,804      dTLB-loads                #  969.860 M/sec                    ( +-  0.23% ) [28.52%]
+            14,113      dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +-  1.40% ) [28.42%]
+           635,120      iTLB-loads                #    0.635 M/sec                    ( +-  0.78% ) [28.35%]
+            10,311      iTLB-load-misses          #    1.62% of all iTLB cache hits   ( +-  1.49% ) [28.36%]
+                 0      L1-dcache-prefetches      #    0.000 K/sec                  
+                 0      L1-dcache-prefetch-misses #    0.000 K/sec                   [28.36%]
+
+       1.000893619 seconds time elapsed                                          ( +-  0.00% )
+
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041656     0     11719   31.00    0.00    0.00   31.00     8      0.00      0.00 5266072   3756   0.00     136      32    266.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041656     0     11724   36.00    0.00    0.00   36.00     8      0.00      0.00 5266072   3756   0.00     136      32    265.00      4.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041656     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32    266.00      3.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041656     0     11734   78.00   13.00    0.00   91.00    12      0.00      0.00 5266076   3752   0.00     136      32  59637.00      0.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ <END> For Scheduler type = r  <END>
+****************************************************
+****************************************************
+<START> For Scheduler type = c   <START> 
+class= -o 
+prio= -p 0 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m monitor
+Skip Kernel Process: kernel
+Changing Process:  -o   -p 0  11701
+Changing Process:  -o   -p 0  11719
+Changing Process:  -o   -p 0  11724
+Changing Process:  -o   -p 0  11729
+Changing Process:  -o   -p 0  11734
+Linux 3.19.0-39-lowlatency (flashstack-3) 	01/21/2017 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041667     0     11719   33.93    0.00    0.00   33.93     8      0.00      0.00 5266072   3756   0.00     136      32      1.79    338.39  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041667     0     11724   33.04    0.00    0.00   33.04     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    342.86  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041667     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    335.71  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041667     0     11734   83.04    8.93    0.00   91.96    12      0.00      0.00 5266076   3752   0.00     136      32  47746.43    705.36  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041668     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    332.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041668     0     11724   34.00    0.00    0.00   34.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041668     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    340.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041668     0     11734   82.00    9.00    0.00   91.00    12      0.00      0.00 5266076   3752   0.00     136      32  46408.00    697.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041669     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    340.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041669     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    341.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041669     0     11729    0.00    0.00    0.00    0.00     8      6.00      0.00 5266072   3756   0.00     136      32      0.00    337.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041669     0     11734   81.00   11.00    0.00   92.00    12      0.00      0.00 5266076   3752   0.00     136      32  47000.00    750.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041670     0     11719   34.00    0.00    0.00   34.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    332.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041670     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    334.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041670     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041670     0     11734   78.00   11.00    0.00   89.00    12      0.00      0.00 5266076   3752   0.00     136      32  54927.00    659.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041671     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    340.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041671     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    343.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041671     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    341.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041671     0     11734   82.00   11.00    0.00   93.00    12      0.00      0.00 5266076   3752   0.00     136      32  47679.00    714.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041672     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      1.00    332.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041672     0     11724   34.00    0.00    0.00   34.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    334.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041672     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041672     0     11734   83.00    8.00    0.00   91.00    12      0.00      0.00 5266076   3752   0.00     136      32  47028.00    660.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041673     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      1.00    341.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041673     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    341.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041673     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      1.00    342.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041673     0     11734   80.00   11.00    0.00   91.00    12      0.00      0.00 5266076   3752   0.00     136      32  47467.00    673.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041674     0     11719   34.00    0.00    0.00   34.00     8      0.00      0.00 5266072   3756   0.00     136      32      3.00    331.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041674     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    336.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041674     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    334.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041674     0     11734   82.00    8.00    0.00   90.00    12      0.00      0.00 5266076   3752   0.00     136      32  55088.00    746.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041675     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    334.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041675     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    341.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041675     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    342.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041675     0     11734   81.00   11.00    0.00   92.00    12      0.00      0.00 5266076   3752   0.00     136      32  47806.00    709.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.884616      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+             2,029      context-switches          #    0.002 M/sec                    ( +-  0.39% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 1      page-faults               #    0.001 K/sec                    ( +-100.00% )
+     3,089,385,898      cycles                    #    3.087 GHz                      ( +-  0.00% ) [28.45%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     6,056,285,242      instructions              #    1.96  insns per cycle          ( +-  0.04% ) [35.64%]
+     1,046,936,929      branches                  # 1046.012 M/sec                    ( +-  0.03% ) [35.74%]
+           251,021      branch-misses             #    0.02% of all branches          ( +-  1.23% ) [35.84%]
+       985,529,047      L1-dcache-loads           #  984.658 M/sec                    ( +-  0.03% ) [35.94%]
+        16,826,830      L1-dcache-load-misses     #    1.71% of all L1-dcache hits    ( +-  0.05% ) [35.94%]
+         8,376,582      LLC-loads                 #    8.369 M/sec                    ( +-  0.06% ) [28.76%]
+             8,705      LLC-load-misses           #    0.10% of all LL-cache hits     ( +-  2.23% ) [28.72%]
+                 0      L1-icache-loads           #    0.000 K/sec                  
+           261,572      L1-icache-load-misses     #    0.261 M/sec                    ( +-  0.51% ) [28.62%]
+       985,203,438      dTLB-loads                #  984.333 M/sec                    ( +-  0.03% ) [28.52%]
+            16,437      dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +-  1.08% ) [28.42%]
+           543,802      iTLB-loads                #    0.543 M/sec                    ( +-  2.53% ) [28.36%]
+            11,600      iTLB-load-misses          #    2.13% of all iTLB cache hits   ( +-  2.03% ) [28.35%]
+                 0      L1-dcache-prefetches      #    0.000 K/sec                  
+                 0      L1-dcache-prefetch-misses #    0.000 K/sec                   [28.36%]
+
+       1.000865843 seconds time elapsed                                          ( +-  0.00% )
+
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041676     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    339.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041676     0     11724   34.00    0.00    0.00   34.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    334.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041676     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041676     0     11734   84.00    7.00    0.00   91.00    12      0.00      0.00 5266076   3752   0.00     136      32  47182.00    693.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ <END> For Scheduler type = c  <END>
+****************************************************
+****************************************************
+<START> For Scheduler type = b   <START> 
+class= -b 
+prio= -p 0 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m monitor
+Skip Kernel Process: kernel
+Changing Process:  -b   -p 0  11701
+Changing Process:  -b   -p 0  11719
+Changing Process:  -b   -p 0  11724
+Changing Process:  -b   -p 0  11729
+Changing Process:  -b   -p 0  11734
+Linux 3.19.0-39-lowlatency (flashstack-3) 	01/21/2017 	_x86_64_	(56 CPU)
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041687     0     11719   33.04    0.00    0.00   33.04     8      0.00      0.00 5266072   3756   0.00     136      32      0.89    338.39  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041687     0     11724   33.04    0.00    0.00   33.04     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    342.86  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041687     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    334.82  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041687     0     11734   83.93    8.04    0.00   91.96    12      0.00      0.00 5266076   3752   0.00     136      32  47815.18    735.71  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041688     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      1.00    332.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041688     0     11724   34.00    0.00    0.00   34.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041688     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    339.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041688     0     11734   81.00   10.00    0.00   91.00    12      0.00      0.00 5266076   3752   0.00     136      32  46935.00    659.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041689     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      1.00    341.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041689     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    343.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041689     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      1.00    335.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041689     0     11734   79.00   13.00    0.00   92.00    12      0.00      0.00 5266076   3752   0.00     136      32  47092.00    563.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041690     0     11719   34.00    0.00    0.00   34.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    332.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041690     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041690     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    340.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041690     0     11734   78.00   12.00    0.00   90.00    12      0.00      0.00 5266076   3752   0.00     136      32  55276.00    714.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041691     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      1.00    342.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041691     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    340.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041691     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    336.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041691     0     11734   80.00   11.00    0.00   91.00    12      0.00      0.00 5266076   3752   0.00     136      32  47242.00    714.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041692     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      2.00    332.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041692     0     11724   34.00    0.00    0.00   34.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    336.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041692     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041692     0     11734   83.00    9.00    0.00   92.00    12      0.00      0.00 5266076   3752   0.00     136      32  47186.00    736.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041693     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    339.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041693     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    343.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041693     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    342.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041693     0     11734   82.00   10.00    0.00   92.00    12      0.00      0.00 5266076   3752   0.00     136      32  47224.00    696.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041694     0     11719   34.00    0.00    0.00   34.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041694     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041694     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041694     0     11734   76.00   14.00    0.00   90.00    12      0.00      0.00 5266076   3752   0.00     136      32  55243.00    715.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041695     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    341.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041695     0     11724   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    342.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041695     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    342.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041695     0     11734   80.00   11.00    0.00   91.00    12      0.00      0.00 5266076   3752   0.00     136      32  47167.00    649.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+
+ Performance counter stats for 'CPU(s) 8' (10 runs):
+
+       1000.882041      task-clock (msec)         #    1.000 CPUs utilized            ( +-  0.00% ) [100.00%]
+             2,030      context-switches          #    0.002 M/sec                    ( +-  0.35% ) [100.00%]
+                 0      cpu-migrations            #    0.000 K/sec                   [100.00%]
+                 0      page-faults               #    0.000 K/sec                  
+     3,089,437,663      cycles                    #    3.087 GHz                      ( +-  0.00% ) [28.45%]
+                 0      stalled-cycles-frontend   #    0.00% frontend cycles idle   
+                 0      stalled-cycles-backend    #    0.00% backend  cycles idle   
+     6,056,296,786      instructions              #    1.96  insns per cycle          ( +-  0.04% ) [35.64%]
+     1,046,853,853      branches                  # 1045.931 M/sec                    ( +-  0.02% ) [35.74%]
+           251,893      branch-misses             #    0.02% of all branches          ( +-  1.00% ) [35.84%]
+       985,406,219      L1-dcache-loads           #  984.538 M/sec                    ( +-  0.02% ) [35.94%]
+        16,818,136      L1-dcache-load-misses     #    1.71% of all L1-dcache hits    ( +-  0.04% ) [35.94%]
+         8,371,289      LLC-loads                 #    8.364 M/sec                    ( +-  0.05% ) [28.76%]
+             8,784      LLC-load-misses           #    0.10% of all LL-cache hits     ( +-  2.48% ) [28.72%]
+                 0      L1-icache-loads           #    0.000 K/sec                  
+           262,119      L1-icache-load-misses     #    0.262 M/sec                    ( +-  0.72% ) [28.62%]
+       984,926,797      dTLB-loads                #  984.059 M/sec                    ( +-  0.02% ) [28.52%]
+            15,651      dTLB-load-misses          #    0.00% of all dTLB cache hits   ( +-  2.11% ) [28.42%]
+           523,875      iTLB-loads                #    0.523 M/sec                    ( +-  1.02% ) [28.36%]
+            12,190      iTLB-load-misses          #    2.33% of all iTLB cache hits   ( +-  0.70% ) [28.36%]
+                 0      L1-dcache-prefetches      #    0.000 K/sec                  
+                 0      L1-dcache-prefetch-misses #    0.000 K/sec                   [28.35%]
+
+       1.000858936 seconds time elapsed                                          ( +-  0.00% )
+
+
+#      Time   UID       PID    %usr %system  %guest    %CPU   CPU  minflt/s  majflt/s     VSZ    RSS   %MEM StkSize  StkRef   cswch/s nvcswch/s  Command
+ 1485041696     0     11719   33.00    0.00    0.00   33.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 2 -n 2 -- -d 5 -c 2 
+ 1485041696     0     11724   34.00    0.00    0.00   34.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    333.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 3 -n 6 -- -d 5 -c 2 
+ 1485041696     0     11729    0.00    0.00    0.00    0.00     8      0.00      0.00 5266072   3756   0.00     136      32      0.00    334.00  ./build/basic_nf -l 8 -n 3 --proc-type=secondary -- -r 4 -n 10 -- -d 5 -c 2 
+ 1485041696     0     11734   81.00   11.00    0.00   92.00    12      0.00      0.00 5266076   3752   0.00     136      32  47212.00    678.00  ./build/monitor -l 12 -n 3 --proc-type=secondary -- -r 5 -n 14 
+ <END> For Scheduler type = b  <END>
+****************************************************
+reset to CFS Scheduler
+class= -o 
+prio= -p 0 
+                     USER        PID ACCESS COMMAND
+/mnt/huge:           root      mount /mnt/huge
+                     root      ....m onvm_mgr
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m basic_nf
+                     root      ....m monitor
+Skip Kernel Process: kernel
+Changing Process:  -o   -p 0  11701
+Changing Process:  -o   -p 0  11719
+Changing Process:  -o   -p 0  11724
+Changing Process:  -o   -p 0  11729
+Changing Process:  -o   -p 0  11734

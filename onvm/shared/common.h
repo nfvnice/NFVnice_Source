@@ -117,7 +117,7 @@
 // enable: All 3 (USE_CGROUPS_PER_NF_INSTANCE, ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT,USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE)
 #define USE_CGROUPS_PER_NF_INSTANCE                 // To create CGroup per NF instance
 #define ENABLE_DYNAMIC_CGROUP_WEIGHT_ADJUSTMENT     // To dynamically evaluate and periodically adjust weight on NFs cpu share
-#define USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE       // Enable Load*comp_cost (Helpful for TCP but not so for UDP (pktgen Moongen)
+//#define USE_DYNAMIC_LOAD_FACTOR_FOR_CPU_SHARE       // Enable Load*comp_cost (Helpful for TCP but not so for UDP (pktgen Moongen)
 
 /* For Bottleneck on Rx Ring; whether or not to Drop packets from Rx/Tx buf during flush_operation
  * Note: This is one of the likely cause of Out-of_order packets in the OpenNetVM (with Bridge) case: */

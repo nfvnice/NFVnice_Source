@@ -148,6 +148,7 @@ do_additional_stat_display(void) {
  */
 static void
 do_stats_display(struct rte_mbuf* pkt) {
+#ifdef PRINT_PKT_SUMMARY
         const char clr[] = { 27, '[', '2', 'J', '\0' };
         const char topLeft[] = { 27, '[', '1', ';', '1', 'H', '\0' };
         static int pkt_process = 0;
@@ -172,6 +173,10 @@ do_stats_display(struct rte_mbuf* pkt) {
         } else {
                 printf("No IP4 header found\n");
         }
+#else
+        if(pkt){}
+        printf("\n");
+#endif
         do_additional_stat_display();
 }
 
