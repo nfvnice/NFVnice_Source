@@ -5,21 +5,26 @@
 i=0
 for sched in r c r b
 do
-	if [ $ gt 1 ] then
-		./tune_rt_sched.sh 1
-	else
-		./tune_rt_sched.sh 100
-	fi
         echo "****************************************************"
         echo "<START> For Scheduler type = $sched   <START> "
+	if [ $i -gt 1 ]; then
+		echo "Tuning RR to 1ms"
+		./tune_rt_sched.sh 1
+	else
+		echo "For RR with 100ms"
+		./tune_rt_sched.sh 100
+	fi
+	
+	((i++))
         ./set_sched_type.sh $sched
         sleep 5
         #pidstat -C "aes|bridge|forward|monitor|basic|speed|perf|pidstat" -lrsuwh 1 5 &        
-        pidstat -C "aes|bridge|forward|monitor|basic|speed|flow|chain" -lrsuwh 1 10 &        
-        perf sched record --cpu=8 sleep 5
+        pidstat -C "aes|bridge|forward|monitor|basic|speed|flow|chain" -lrsuwh 1 10 & 
+	sleep 1       
+	perf stat --cpu=8  -d -d -d -r 10 sleep 1
+        perf sched record --cpu=8 sleep 2
 	perf sched latency -s max
  
-	perf stat --cpu=8  -d -d -d -r 10 sleep 1
         sleep 3
         echo " <END> For Scheduler type = $sched  <END>"
         sleep 2

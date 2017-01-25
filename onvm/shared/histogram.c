@@ -307,6 +307,12 @@ void hist_compute_v2(histogram_v2_t *h) {
         if(0 == h->is_initialized) {
                 hist_init(&h->histogram,h->max_val+h->min_val/2, h->min_val);
                 h->is_initialized = 1;
+        } else {
+               /* if(( h->max_val && h->max_val > (1.5*h->histogram.max_val) )|| (h->min_val && h->min_val < (0.5*h->histogram.min_val))) {
+                        hist_init(&h->histogram,h->max_val+h->min_val/2, h->min_val);
+                        h->is_initialized = 1;
+                }
+                */
         }
         uint32_t i=0;
         for(i=0; i< h->cur_index; i++) {

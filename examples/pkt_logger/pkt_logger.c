@@ -662,10 +662,10 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
         int ret=0;
         ret = log_the_packet(pkt);
         //For time being act as bridge:
-#define ACT_AS_BRIDGE
+//#define ACT_AS_BRIDGE
 #ifdef ACT_AS_BRIDGE
         if (pkt->port == 0) {
-                meta->destination = 1;
+                meta->destination = 0;
         }
         else {
                 meta->destination = 0;

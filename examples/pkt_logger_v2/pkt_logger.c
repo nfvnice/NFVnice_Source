@@ -100,10 +100,10 @@ static const char *optString = "d:p:s:r:b:m:M";
 static globalArgs_t globals = {
         .destination = 0,
         .print_delay = 1, //1000000,
-        .pktlog_file = "logger_pkt.txt", // "/dev/null", // "pkt_logger.txt", //
+        .pktlog_file = "/dev/null", // "logger_pkt.txt", // "/dev/null", // "pkt_logger.txt", //
         .read_file = "ipv4rules.txt",
         .base_ip_addr   = "10.0.0.1",
-        .max_bufs   = 1, //1,
+        .max_bufs   = 2, //1,
         .buf_size   = 128, //4096, //128
         .fd = -1,
         .file_offset = 0,
@@ -596,7 +596,7 @@ int log_all_wait_buf_pkts(void) {
         return 0;
 }
 
-#define USE_KEY_MODE_FOR_FLOW_ENTRY
+//#define USE_KEY_MODE_FOR_FLOW_ENTRY
 static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
 static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry) {
         int ret = -1;

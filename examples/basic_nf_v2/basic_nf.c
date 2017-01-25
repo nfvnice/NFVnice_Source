@@ -113,6 +113,32 @@ parse_app_args(int argc, char *argv[], const char *progname) {
         }
         return optind;
 }
+#define LOG_TO_FILE
+#ifdef LOG_TO_FILE
+#define NF_LOG_FILE_NAME "nf_%u"
+static inline const char * get_log_file_name(unsigned id) {
+        static char buffer[255];
+        snprintf(buffer, sizeof(buffer) - 1, NF_LOG_FILE_NAME, id);
+        return buffer;
+}
+//static int fd = open(GET_FILE_NAME(nf_info->instance_id),"w");
+static FILE *fp = NULL;
+inline void open_log_fd(void);
+inline void open_log_fd(void) {
+        if (fp == NULL)
+                if((fp = fopen((const char*)get_log_file_name(nf_info->instance_id), "w"))) {
+                        return ; //fdopen(fd,"w");
+                }
+}
+inline void close_log_fd(void);
+inline void close_log_fd(void) {
+        if(fp) {
+                fclose(fp);
+                fp = NULL;
+        }
+}
+
+#endif
 
 static void
 do_additional_stat_display(void) {
@@ -122,6 +148,7 @@ do_additional_stat_display(void) {
         uint64_t cur_rate = 0;
         static uint64_t peak_rate = 0;
         static uint64_t min_rate  = 0;
+
 
         uint64_t cur_cycles = rte_get_tsc_cycles();
         cur_pkts += print_delay;
@@ -138,6 +165,15 @@ do_additional_stat_display(void) {
         last_pkts = cur_pkts;
         last_cycles = cur_cycles;
 
+#ifdef LOG_TO_FILE
+        static uint32_t fw_count = 0;
+        if(!fp)open_log_fd();
+        if(fp) {
+                //write(fd,&cur_rate, sizeof(cur_rate));
+                fprintf(fp, "%d,%zu\n", fw_count, cur_rate);
+                fw_count++;
+        }
+#endif
         printf("\n\n");
 }
 /*

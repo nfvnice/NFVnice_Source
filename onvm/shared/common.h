@@ -137,7 +137,7 @@
 
 
 /* Enable back-pressure handling to throttle NFs upstream */
-//#define ENABLE_NF_BACKPRESSURE
+#define ENABLE_NF_BACKPRESSURE
 
 #ifdef ENABLE_NF_BACKPRESSURE
 //#define ENABLE_GLOBAL_BACKPRESSURE  //Enable this if want to test with default chain and choose one of the below backpressure modes
@@ -155,8 +155,8 @@
 #define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable, sub define  under ENABLE_SAVE_BACKLOG_FT_PER_NF)
 #endif //USE_BKPR_V2_IN_TIMER_MODE
 
-#define RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
-#define BACKPRESSURE_EXTRA_DEBUG_LOGS           // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
+//#define RECHECK_BACKPRESSURE_MARK_ON_TX_DEQUEUE //Enable to re-check for back-pressure marking, at the time of packet dequeue from the NFs Tx Ring.
+//#define BACKPRESSURE_EXTRA_DEBUG_LOGS           // Enable extra profile logs for back-pressure: Move all prints and additional variables under this flag (as optimization)
 
 //Need Early bind to NF for the chain and determine the bottlneck status: Avoid passing first few packets of a flow till the chain, only to drop them later: Helps for TCP and issue with storing multiple flows at earlier NF
 //#define ENABLE_EARLY_NF_BIND
