@@ -200,7 +200,7 @@ struct client {
         #ifdef INTERRUPT_SEM        
         const char *sem_name;
         key_t shm_key;
-        rte_atomic16_t *shm_server;
+        rte_atomic16_t *shm_server;     //0=running; 1=blocked_on_rx (no pkts to process); 2=blocked_on_tx (cannot push packets)
 
         #ifdef USE_MQ
         mqd_t mutex;

@@ -36,6 +36,8 @@ uint32_t hist_mode(volatile struct histogram *h);
 #define MAX_HISTOGRAM_SAMPLES (100)
 #define MIN_SAMPLES_FOR_HISTOGRAM (10)
 #define DISCARD_INITIAL_SAMPLES_COUNT  (10)
+//#define RESET_HISTOGRAM_EVERY_MAX_SAMPLES
+//#define RESET_HISTOGRAM_EVERY_MAX_SAMPLES_CONDITIONALLY
 typedef struct histogram_v2 {
         uint32_t val[MAX_HISTOGRAM_SAMPLES];    //raw values
         uint32_t cur_index;     //index to write current entry

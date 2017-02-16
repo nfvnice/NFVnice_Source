@@ -153,7 +153,12 @@ packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) {
                 meta->destination = 0;
         }
         meta->action = ONVM_NF_ACTION_OUT;
-        return 0;
+
+	/*
+	if (onvm_pkt_mac_addr_swap(pkt, 0) != 0) {
+                printf("ERROR: MAC failed to swap!\n");
+	} */
+			return 0;
 }
 
 

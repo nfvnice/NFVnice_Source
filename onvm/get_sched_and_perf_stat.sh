@@ -5,9 +5,9 @@
 i=0
 for sched in r c r b
 do
-	if [ $ gt 1 ] then
+	if [ $sched gt 1 ]; then
 		./tune_rt_sched.sh 1
-	else
+	elif [ "$sched" == "r" ]; then
 		./tune_rt_sched.sh 100
 	fi
         echo "****************************************************"
@@ -16,8 +16,8 @@ do
         sleep 5
         #pidstat -C "aes|bridge|forward|monitor|basic|speed|perf|pidstat" -lrsuwh 1 5 &        
         pidstat -C "aes|bridge|forward|monitor|basic|speed|flow|chain" -lrsuwh 1 10 &        
-        perf sched record --cpu=8 sleep 5
-	perf sched latency -s max
+        #perf sched record --cpu=8 sleep 5
+	#perf sched latency -s max
  
 	perf stat --cpu=8  -d -d -d -r 10 sleep 1
         sleep 3

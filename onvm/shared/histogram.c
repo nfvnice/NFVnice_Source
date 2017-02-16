@@ -295,6 +295,11 @@ void hist_store_v2(histogram_v2_t *h, uint32_t val) {
         h->ewma_avg = EWMA_AVG(h->ewma_avg, val);
 
         if(h->cur_index == MAX_HISTOGRAM_SAMPLES) {
+
+                #if defined (RESET_HISTOGRAM_EVERY_MAX_SAMPLES) && !defined(RESET_HISTOGRAM_EVERY_MAX_SAMPLES_CONDITIONALLY)
+                h->is_initialized = 0;    //reset if we want to recreate the histogram for every 100 samples; better do conditionally, if values have dramatically changed.
+                #endif //RESET_HISTOGRAM_EVERY_MAX_SAMPLES
+
                 hist_compute_v2(h);
                 h->cur_index = 0;
         }
@@ -308,11 +313,12 @@ void hist_compute_v2(histogram_v2_t *h) {
                 hist_init(&h->histogram,h->max_val+h->min_val/2, h->min_val);
                 h->is_initialized = 1;
         } else {
-               /* if(( h->max_val && h->max_val > (1.5*h->histogram.max_val) )|| (h->min_val && h->min_val < (0.5*h->histogram.min_val))) {
+                #if defined (RESET_HISTOGRAM_EVERY_MAX_SAMPLES_CONDITIONALLY ) //  && !defined(RESET_HISTOGRAM_EVERY_MAX_SAMPLES)
+                if(( h->max_val && h->max_val > (h->histogram.max+h->histogram.min/2) )|| (h->min_val && h->min_val < (h->histogram.min/2))) {
                         hist_init(&h->histogram,h->max_val+h->min_val/2, h->min_val);
                         h->is_initialized = 1;
                 }
-                */
+                #endif //RESET_HISTOGRAM_EVERY_MAX_SAMPLES_CONDITIONALLY
         }
         uint32_t i=0;
         for(i=0; i< h->cur_index; i++) {
