@@ -74,7 +74,11 @@
 //NF specific Feature Options
 //#define ENABLE_DEBUG_LOGS
 //#define USE_SYNC_IO
-
+#ifdef USE_SYNC_IO
+#define FD_OPEN_MODE (O_WRONLY|O_CREAT|O_FSYNC)
+#else
+#define FD_OPEN_MODE (O_WRONLY|O_CREAT|O_FSYNC)
+#endif //USE_SYNC_IO
 /* Struct that contains information about this NF */
 struct onvm_nf_info *nf_info;
 
@@ -332,7 +336,8 @@ initialize_log_buffers (void) {
         return ret;
 }
 int initialize_log_file(void) {
-        globals.fd = open(globals.pktlog_file, O_WRONLY|O_CREAT, 0666);
+
+        globals.fd = open(globals.pktlog_file, FD_OPEN_MODE, 0666);
         if (-1 == globals.fd) {
                 rte_exit(EXIT_FAILURE, "Cannot create file: %s \n", globals.pktlog_file);
         }
@@ -662,7 +667,7 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
         int ret=0;
         ret = log_the_packet(pkt);
         //For time being act as bridge:
-//#define ACT_AS_BRIDGE
+#define ACT_AS_BRIDGE
 #ifdef ACT_AS_BRIDGE
         if (pkt->port == 0) {
                 meta->destination = 0;
@@ -671,6 +676,8 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
                 meta->destination = 0;
         }
         meta->action = ONVM_NF_ACTION_OUT;
+
+        meta->destination = pkt->port;
 #else
         meta->action = ONVM_NF_ACTION_NEXT;
         meta->destination = pkt->port;

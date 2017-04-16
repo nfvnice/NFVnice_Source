@@ -127,7 +127,7 @@
 
 /* Enable watermark level NFs Tx and Rx Rings */
 // enable: ENABLE_RING_WATERMARK
-//#define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
+#define ENABLE_RING_WATERMARK // details on count in the onvm_init.h
 
 /* Enable ECN CE FLAG : Feature Flag to enable marking ECN_CE flag on the flows that pass through the NFs with Rx Ring buffers exceeding the watermark level.
  * Dependency: Must have ENABLE_RING_WATERMARK feature defined. and HIGH and LOW Thresholds to be set. otherwise, marking may not happen at all.. Ideally, marking should be done after dequeue from Tx, to mark if Rx is overbudget..
@@ -137,7 +137,7 @@
 
 
 /* Enable back-pressure handling to throttle NFs upstream */
-//#define ENABLE_NF_BACKPRESSURE
+#define ENABLE_NF_BACKPRESSURE
 
 #ifdef ENABLE_NF_BACKPRESSURE
 //#define ENABLE_GLOBAL_BACKPRESSURE  //Enable this if want to test with default chain and choose one of the below backpressure modes
@@ -147,9 +147,9 @@
 //#define NF_BACKPRESSURE_APPROACH_3    //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
 
 // Extensions and sub-options for Back_Pressure handling
-//#define DROP_PKTS_ONLY_AT_BEGGINING           // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF). (Note: can Enable)
+#define DROP_PKTS_ONLY_AT_BEGGINING           // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF). (Note: can Enable)
 
-#define USE_BKPR_V2_IN_TIMER_MODE       //Use this flag if the Timer Thread can perform the Backpressure setting
+//#define USE_BKPR_V2_IN_TIMER_MODE       //Use this flag if the Timer Thread can perform the Backpressure setting
 #if !defined(USE_BKPR_V2_IN_TIMER_MODE) && defined(NF_BACKPRESSURE_APPROACH_1)
 #define ENABLE_SAVE_BACKLOG_FT_PER_NF           // save backlog Flow Entries per NF (Note: Enable)
 #define BACKPRESSURE_USE_RING_BUFFER_MODE       // Use Ring buffer to store and delete backlog Flow Entries per NF  (Note: Enable, sub define  under ENABLE_SAVE_BACKLOG_FT_PER_NF)

@@ -1,0 +1,26 @@
+
+ Performance counter stats for 'sleep 10':
+
+            16,447      cache-references                                            
+               552      cache-misses              #    3.356 % of all cache refs    
+         1,032,232      cycles                   
+           678,884      instructions              #    0.66  insns per cycle        
+           136,249      branches                                                    
+                61      faults                                                      
+                 0      migrations                                                  
+
+      10.000784029 seconds time elapsed
+
+
+ Performance counter stats for 'sleep 10':
+
+            16,854      cache-references                                            
+               711      cache-misses              #    4.219 % of all cache refs    
+         1,071,256      cycles                   
+           698,530      instructions              #    0.65  insns per cycle        
+           139,387      branches                                                    
+                62      faults                                                      
+                 0      migrations                                                  
+
+      10.000779369 seconds time elapsed
+

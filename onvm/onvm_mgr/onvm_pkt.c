@@ -97,7 +97,7 @@ onvm_pkt_process_rx_batch(struct thread_info *rx, struct rte_mbuf *pkts[], uint1
                         meta->action = onvm_sc_next_action(flow_entry->sc, pkts[i]);
                         meta->destination = onvm_sc_next_destination(flow_entry->sc, pkts[i]);
                         #ifdef ENABLE_NF_BACKPRESSURE
-                        global_bkpr_mode=0;
+                        //global_bkpr_mode=0;
                         #endif //ENABLE_NF_BACKPRESSURE
                 } else {
                         meta->action = onvm_sc_next_action(default_chain, pkts[i]);
@@ -349,10 +349,10 @@ onvm_pkt_enqueue_nf(struct thread_info *thread, uint16_t dst_service_id, struct 
         // second: if approach is throttle by buffer drop, check if this chain needs upstreams to drop and if this one such upstream NF, then drop packet and return.
         if (flow_entry && flow_entry->sc) {
 
-                //#ifdef NF_BACKPRESSURE_APPROACH_2
+                #if defined(NF_BACKPRESSURE_APPROACH_2) || defined(USE_BKPR_V2_IN_TIMER_MODE)
                 // this information is needed only for NF based throttling apporach; packet drop approach is more in-line.
                 flow_entry->sc->nf_instance_id[meta->chain_index] = (uint8_t)cl->instance_id;
-                //#endif  //NF_BACKPRESSURE_APPROACH_2
+                #endif  //NF_BACKPRESSURE_APPROACH_2
 
                 #ifdef NF_BACKPRESSURE_APPROACH_1
                 // We want to throttle the packets at the upstream only iff (a) the packet belongs to the service chain whose Downstream NF indicates overflow, (b) this NF is upstream component for the service chain, and not a downstream NF (c) this NF is marked for throttle
@@ -485,7 +485,7 @@ onvm_pkt_process_next_action(struct thread_info *tx, struct rte_mbuf *pkt, struc
                 meta->action = onvm_sc_next_action(flow_entry->sc, pkt);
                 meta->destination = onvm_sc_next_destination(flow_entry->sc, pkt);
                 #ifdef ENABLE_NF_BACKPRESSURE
-                global_bkpr_mode=0;
+                //global_bkpr_mode=0;
                 #endif //ENABLE_NF_BACKPRESSURE
         } else {
                 meta->action = onvm_sc_next_action(default_chain, pkt);
