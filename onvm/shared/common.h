@@ -69,7 +69,7 @@
 //#define DELAY_BEFORE_SEND
 //#define DELAY_PER_PKT (5) //20micro seconds
 
-#define ONVM_MAX_CHAIN_LENGTH 7   // the maximum chain length
+#define ONVM_MAX_CHAIN_LENGTH 12   // the maximum chain length
 #define MAX_CLIENTS 16            // total number of NFs allowed
 #define MAX_SERVICES 16           // total number of unique services allowed
 #define MAX_CLIENTS_PER_SERVICE 8 // max number of NFs per service.
@@ -143,8 +143,8 @@
 //#define ENABLE_GLOBAL_BACKPRESSURE  //Enable this if want to test with default chain and choose one of the below backpressure modes
 
 #define NF_BACKPRESSURE_APPROACH_1    //Throttle enqueue of packets to the upstream NFs (handle in onvm_pkts_enqueue)
-//#define NF_BACKPRESSURE_APPROACH_2      //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
-//#define NF_BACKPRESSURE_APPROACH_3    //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
+//#define NF_BACKPRESSURE_APPROACH_2  //Throttle upstream NFs from getting scheduled (handle in wakeup mgr)
+//#define NF_BACKPRESSURE_APPROACH_3  //Throttle enqueue of packets to the upstream NFs (handle in NF_LIB with HOL blocking or pre-buffering of packets internally for bottlenecked chains)
 
 // Extensions and sub-options for Back_Pressure handling
 #define DROP_PKTS_ONLY_AT_BEGGINING           // Extension to approach 1 to make packet drops only at the beginning on the chain (i.e only at the time to enqueue to first NF). (Note: can Enable)
