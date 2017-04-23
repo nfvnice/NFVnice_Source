@@ -147,7 +147,7 @@ typedef struct aio_buf_t {
         uint32_t buf_index;     //const <index of buffer initialized at the time of allocation>
         uint32_t max_size;      // const <max size of the buffer allocated at the time of initalization>
         uint32_t buf_len;       // varaible updated for each read/write operation
-        struct rte_mbuf *pkt    // pkt associated with the aio_buf for the read case
+        struct rte_mbuf *pkt;    // pkt associated with the aio_buf for the read case
         struct aiocb *aiocb;    // <allocated at initialization and updated for each read/write>
         int req_status;         // <allocated at initialization and updated for each read/write>
 }aio_buf_t;
@@ -206,7 +206,7 @@ typedef enum pkt_log_mode {
         PKT_LOG_WAIT_ENQUEUE_ENABLED = 0,
         PKT_LOG_WAIT_ENQUEUE_DISABLED=1,
 }pkt_log_mode_e;
-int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, pkt_log_mode_e mode);
+int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode);
 int validate_packet_and_do_io(struct rte_mbuf* pkt);
 
 int add_buf_to_wait_pkts(struct rte_mbuf* pkt);
@@ -495,8 +495,9 @@ aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
         return NULL;
 }
 #define OFFSET_LIST_SIZE    (10)
-static int offset_desc[10] = { 0, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384 }
-int get_read_file_offset() {
+static int offset_desc[10] = { 0, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384 };
+int get_read_file_offset(void);
+int get_read_file_offset(void) {
     static int offset_index = 0;
     offset_index +=2; 
     if (offset_index >= OFFSET_LIST_SIZE) offset_index = 0;
@@ -618,7 +619,7 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
 
         
         if(pbuf->pkt) {
-                onvm_nflib_return_pkt(pbuf->pkt)
+                onvm_nflib_return_pkt(pbuf->pkt);
         }
         
         int ret = refresh_aio_buffer(pbuf);
@@ -677,8 +678,8 @@ static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_e
 }
 
 uint16_t flow_bypass_list[] = {0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
-int check_in_flow_bypass_list(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
-int check_in_flow_bypass_list(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         
         if(flow_entry && flow_entry->entry_index) {
               uint16_t i = 0;
@@ -688,8 +689,8 @@ int check_in_flow_bypass_list(struct rte_mbuf* pkt, struct onvm_flow_entry *flow
         }
         return 0;
 }
-int check_in_logged_flow_list(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
-int check_in_logged_flow_list(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         
         if(flow_entry && flow_entry->entry_index) {
               uint16_t i = 0;
@@ -724,7 +725,7 @@ typedef struct per_flow_ring_buffer {
         uint16_t r_h;               // read_head in the r_buf[]
         uint16_t w_h;               // write head in the r_buf[]
         uint16_t max_len;           // Max size/count of r_buf[]
-        struct rte_mbuf* pktbuf_ring[CLIENT_QUEUE_RINGSIZE*2+1];
+        struct rte_mbuf* pktbuf_ring[PERFLOW_QUEUE_RINGSIZE+1];
 }per_flow_ring_buffer_t;
 /*typedef struct pre_io_wait_queue {
          per_flow_ring_buffer_t flow_pkts[MAX_FLOW_TABLE_ENTRIES];      //indexed by flow_entry->entry_index
@@ -733,10 +734,10 @@ pre_io_wait_queue_t pre_io_wait_ring;
 */
 per_flow_ring_buffer_t pre_io_wait_ring[MAX_FLOW_TABLE_ENTRIES];
 
-int is_flow_pkt_in_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry);
-int is_flow_pkt_in_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         if(!flow_entry) return 0;
         return pre_io_wait_ring[flow_entry->entry_index].pkt_count;
         
@@ -774,7 +775,7 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
 
         return 0;
 }
-struct rte_mbuf* pkt get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry) {
+struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry) {
         
         if( pre_io_wait_ring[flow_entry->entry_index].w_h == pre_io_wait_ring[flow_entry->entry_index].r_h) return NULL; //empty
         
@@ -788,7 +789,7 @@ struct rte_mbuf* pkt get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct o
         }
         
         //Check if Backpressure for this flow needs to be disabled !!
-        if(pre_io_wait_ring[flow_entry->entry_index].pkt_count <= PERFLOW_QUEUE_LOW_WATERMARK)
+        if(pre_io_wait_ring[flow_entry->entry_index].pkt_count <= PERFLOW_QUEUE_LOW_WATERMARK) {
                 struct onvm_pkt_meta *meta = NULL;
                 meta = onvm_get_pkt_meta(pkt);
                 // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
@@ -813,7 +814,7 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt) {
         if(check_in_logged_flow_list(pkt, flow_entry)) return 0;
         return packet_process_io(pkt, flow_entry, PKT_LOG_WAIT_ENQUEUE_ENABLED);
 }
-int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, pkt_log_mode_e mode) {
+int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode) {
         int ret = MARK_PACKET_TO_RETAIN;
 
         if (NULL == flow_entry) {
@@ -914,7 +915,7 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
         }
         // Check if the packet is marked for DROP
         if(MARK_PACKET_FOR_DROP == ret) {
-                meta->action = ONVM_NF_ACTION_DROP
+                meta->action = ONVM_NF_ACTION_DROP;
                 ret = 0;
         }
         return ret;
