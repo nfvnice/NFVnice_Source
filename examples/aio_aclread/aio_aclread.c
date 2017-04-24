@@ -182,14 +182,14 @@ int initialize_sync_variable(void);
 int initialize_aiocb(aio_buf_t *pbuf);
 int initialize_signal_action (void);
 int initialize_log_file(void);
-int initialize_logger_nf(void);
+int initialize_aio_nf(void);
 
 int deinitialize_aio_buffers (void);
 int deinitialize_sync_variable(void);
 int deinitialize_aiocb(aio_buf_t *pbuf);
 int deinitialize_signal_action (void);
 int deinitialize_log_file(void);
-int deinitialize_logger_nf(void);
+int deinitialize_aio_nf(void);
 
 #define AIO_READ_OPERATION    (0)
 #define AIO_WRITE_OPERATION   (1)
@@ -412,7 +412,7 @@ initialize_signal_action (void) {
         return 0;
 }
 
-int initialize_logger_nf(void) {
+int initialize_aio_nf(void) {
         int ret = 0;
         ret = initialize_log_file();
         ret = initialize_aio_buffers();
@@ -461,7 +461,7 @@ int deinitialize_aio_buffers (void) {
         }
         return ret;
 }
-int deinitialize_logger_nf(void) {
+int deinitialize_aio_nf(void) {
         int ret = 0;
         ret = deinitialize_signal_action();
         ret = deinitialize_sync_variable();
@@ -820,6 +820,11 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
         if (NULL == flow_entry) {
                 get_flow_entry(pkt, &flow_entry);
         }
+        if(flow_entry) {
+            //#ifdef ENABLE_DEBUG_LOGS
+            printf("Flow with Entry Index: %d\n ", flow_entry->entry_index);
+            //#endif
+        }
         
         aio_buf_t *pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
         if( NULL == pbuf ) {
@@ -942,7 +947,7 @@ int main(int argc, char *argv[]) {
         /* Map the sdn_ft table */
         onvm_flow_dir_nf_init();
         
-        ret = initialize_logger_nf();
+        ret = initialize_aio_nf();
         if(ret) {
                 rte_exit(EXIT_FAILURE, "Initialization failed!! error [%d] \n", ret);
         }
@@ -950,7 +955,7 @@ int main(int argc, char *argv[]) {
         onvm_nflib_run(nf_info, &packet_handler);
         printf("If we reach here, program is ending");
         
-        ret = deinitialize_logger_nf();
+        ret = deinitialize_aio_nf();
 
         return 0;
 
