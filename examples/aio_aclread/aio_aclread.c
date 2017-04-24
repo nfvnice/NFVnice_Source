@@ -822,7 +822,7 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
         }
         if(flow_entry) {
             //#ifdef ENABLE_DEBUG_LOGS
-            printf("Flow with Entry Index: %d\n ", flow_entry->entry_index);
+            printf("Flow with Entry Index: %zu\n ", flow_entry->entry_index);
             //#endif
         }
         
