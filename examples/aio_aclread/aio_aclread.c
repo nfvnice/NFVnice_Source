@@ -771,7 +771,7 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         if((++(pre_io_wait_ring[flow_entry->entry_index].w_h)) == pre_io_wait_ring[flow_entry->entry_index].max_len) pre_io_wait_ring[flow_entry->entry_index].w_h=0;
         
         //Check if Backpressure for this flow needs to be enabled !!
-        if(pre_io_wait_ring[flow_entry->entry_index].pkt_count >=PERFLOW_QUEUE_HIGH_WATERMARK)
+        if(pre_io_wait_ring[flow_entry->entry_index].pkt_count >=PERFLOW_QUEUE_HIGH_WATERMARK) {
                 meta = onvm_get_pkt_meta(pkt);
                 // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
                 //if(meta->chain_index < 1) continue;
