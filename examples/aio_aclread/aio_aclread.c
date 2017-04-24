@@ -729,8 +729,8 @@ int add_to_logged_flow_list(struct rte_mbuf* pkt) {
 
 /** Functions to maintain/enqueue/dequue Per Flow Wait Queue for packets that are yet to initiate I/O */
 #define PERFLOW_QUEUE_RINGSIZE              (128)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
-#define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (80)
-#define PERFLOW_QUEUE_RING_THRESHOLD_LOW    (40)
+#define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (100)
+#define PERFLOW_QUEUE_RING_THRESHOLD_LOW    (50)
 #define PERFLOW_QUEUE_LOW_WATERMARK         (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_LOW/100)
 #define PERFLOW_QUEUE_HIGH_WATERMARK        (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_HIGH/100)
 typedef struct per_flow_ring_buffer {
@@ -938,12 +938,13 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
         if (ret == 0) {
 #ifdef ACT_AS_BRIDGE
                 if (pkt->port == 0) {
-                        meta->destination = 1;
+                        meta->destination = 0;
                 }
                 else {
                         meta->destination = 0;
                 }
                 meta->action = ONVM_NF_ACTION_OUT;
+                meta->destination = pkt->port;
 #else
                 meta->action = ONVM_NF_ACTION_NEXT;
                 meta->destination = pkt->port;
