@@ -745,7 +745,7 @@ int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pk
         //return 0;
 }
 int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
-        
+        if(!flow_entry) return 0;
         struct onvm_pkt_meta *meta = NULL;
         if(((pre_io_wait_ring[flow_entry->entry_index].w_h+1)%pre_io_wait_ring[flow_entry->entry_index].max_len) == pre_io_wait_ring[flow_entry->entry_index].r_h) {
                 printf("\n***** OVERFLOW IN PRE_IO_WAIT_QUEUE!!****** \n");
@@ -776,7 +776,7 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         return 0;
 }
 struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry) {
-        
+        if(!flow_entry) return 0;
         if( pre_io_wait_ring[flow_entry->entry_index].w_h == pre_io_wait_ring[flow_entry->entry_index].r_h) return NULL; //empty
         
         struct rte_mbuf* pkt = NULL;
@@ -831,6 +831,7 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                 else {
                         return MARK_PACKET_FOR_DROP;
                 }
+                return MARK_PACKET_FOR_DROP;
         }
 
         if(pbuf != NULL) {
@@ -898,7 +899,7 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
         ret = validate_packet_and_do_io(pkt); // packet_process_io(pkt, NULL, PKT_LOG_WAIT_ENQUEUE_ENABLED);
         
 //For time being act as bridge:
-//#define ACT_AS_BRIDGE
+#define ACT_AS_BRIDGE
         if (ret == 0) {
 #ifdef ACT_AS_BRIDGE
                 if (pkt->port == 0) {
