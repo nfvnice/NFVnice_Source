@@ -29,7 +29,7 @@
  *              -- NF can be registered with any serviceID (preferably 1)
  *
  ********************************************************************/
-
+#define _GNU_SOURCE     //for O_DIRECT
 #include <unistd.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -80,9 +80,14 @@
 
 #ifdef USE_SYNC_IO
 #define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
+//#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
+//#define FD_OPEN_MODE (O_RDONLY) // (O_RDONLY|O_FSYNC)
 #else
-#define FD_OPEN_MODE (O_RDONLY)
+//#define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
+#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
+//#define FD_OPEN_MODE (O_RDONLY)
 #endif //USE_SYNC_IO
+
 
 /* Struct that contains information about this NF */
 struct onvm_nf_info *nf_info;
