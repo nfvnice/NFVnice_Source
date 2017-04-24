@@ -939,6 +939,9 @@ int main(int argc, char *argv[]) {
                         globals.destination = nf_info->service_id + 1;
         }
 
+        /* Map the sdn_ft table */
+        onvm_flow_dir_nf_init();
+        
         ret = initialize_logger_nf();
         if(ret) {
                 rte_exit(EXIT_FAILURE, "Initialization failed!! error [%d] \n", ret);
