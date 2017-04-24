@@ -660,7 +660,7 @@ int do_io_on_wait_buf_pkts(void) {
         }
         return 0;
 }
-#define USE_KEY_MODE_FOR_FLOW_ENTRY
+//#define USE_KEY_MODE_FOR_FLOW_ENTRY
 static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
 static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry) {
         int ret = -1;
