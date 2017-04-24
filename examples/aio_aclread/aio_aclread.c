@@ -104,10 +104,10 @@ static globalArgs_t globals = {
         .destination = 0,
         .print_delay = 1, //1000000,
         .pktlog_file = "logger_pkt.txt", // "/dev/null", // "pkt_logger.txt", //
-        .read_file = "ipv4rules.txt",
+        .read_file = "logger_pkt.txt",
         .base_ip_addr   = "10.0.0.1",
-        .max_bufs   = 1, //1,
-        .buf_size   = 128, //4096, //128
+        .max_bufs   = 2, //1,
+        .buf_size   = 4096, //4096, //128
         .fd = -1,
         .file_offset = 0,
         .cur_buf_index = 0,
@@ -495,11 +495,11 @@ aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
         return NULL;
 }
 #define OFFSET_LIST_SIZE    (10)
-static int offset_desc[10] = { 0, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384 };
+static int offset_desc[OFFSET_LIST_SIZE] = { 0, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384, 32768 };
 int get_read_file_offset(void);
 int get_read_file_offset(void) {
     static int offset_index = 0;
-    offset_index +=2; 
+    offset_index +=1; 
     if (offset_index >= OFFSET_LIST_SIZE) offset_index = 0;
     return offset_desc[offset_index];
 }
@@ -517,7 +517,7 @@ int read_aio_buffer(aio_buf_t *pbuf) {
 #else
         pbuf->req_status = aio_read(pbuf->aiocb);
         if(-1 == pbuf->req_status) {
-                printf("Error at aio_write(): %s\n", strerror(errno));
+                printf("Error at aio_read(): %s\n", strerror(errno));
                 ret = pbuf->req_status;
                 return refresh_aio_buffer(pbuf);
                 //exit(1);
@@ -770,7 +770,6 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         //pre_io_wait_ring[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring[flow_entry->entry_index].pkt_count++]=pkt;
         if((++(pre_io_wait_ring[flow_entry->entry_index].w_h)) == pre_io_wait_ring[flow_entry->entry_index].max_len) pre_io_wait_ring[flow_entry->entry_index].w_h=0;
         
-#if 0
         //Check if Backpressure for this flow needs to be enabled !!
         if(pre_io_wait_ring[flow_entry->entry_index].pkt_count >=PERFLOW_QUEUE_HIGH_WATERMARK)
                 meta = onvm_get_pkt_meta(pkt);
@@ -781,7 +780,6 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
                         SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
                 }
         }
-#endif
 
         return 0;
 }
