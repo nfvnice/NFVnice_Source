@@ -78,6 +78,12 @@
 //#define ENABLE_DEBUG_LOGS
 //#define USE_SYNC_IO
 
+#ifdef USE_SYNC_IO
+#define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
+#else
+#define FD_OPEN_MODE (O_RDONLY)
+#endif //USE_SYNC_IO
+
 /* Struct that contains information about this NF */
 struct onvm_nf_info *nf_info;
 
@@ -380,7 +386,7 @@ initialize_aio_buffers (void) {
         return ret;
 }
 int initialize_log_file(void) {
-        globals.fd = open(globals.pktlog_file, O_RDONLY, 0);
+        globals.fd = open(globals.pktlog_file, FD_OPEN_MODE, 0);
         if (-1 == globals.fd) {
                 rte_exit(EXIT_FAILURE, "Cannot create file: %s \n", globals.pktlog_file);
         }
@@ -677,11 +683,12 @@ static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_e
         return ret;
 }
 
-uint16_t flow_bypass_list[] = {0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
+uint16_t flow_bypass_list[] = {2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
 int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         
-        if(flow_entry && flow_entry->entry_index) {
+        //if(flow_entry && flow_entry->entry_index) {
+        if(flow_entry) {
               uint16_t i = 0;
               for(i=0; i< sizeof(flow_bypass_list)/sizeof(uint16_t); i++) {
                       if(flow_bypass_list[i] == flow_entry->entry_index) return 1;
@@ -692,7 +699,8 @@ int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, stru
 int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         
-        if(flow_entry && flow_entry->entry_index) {
+        //if(flow_entry && flow_entry->entry_index) {
+        if(flow_entry) {
               uint16_t i = 0;
               for(i=0; i< flow_logged_info.cur_entries; i++) {
                       if(flow_logged_info.ft_list[i] == flow_entry->entry_index) return 1;
@@ -758,7 +766,7 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         if(!flow_entry) return 0;
         struct onvm_pkt_meta *meta = NULL;
         if(((pre_io_wait_ring[flow_entry->entry_index].w_h+1)%pre_io_wait_ring[flow_entry->entry_index].max_len) == pre_io_wait_ring[flow_entry->entry_index].r_h) {
-                printf("\n***** OVERFLOW IN PRE_IO_WAIT_QUEUE!!****** \n");
+                printf("\n***** OVERFLOW (Ring buffer Full!!) IN PRE_IO_WAIT_QUEUE!!****** \n");
                 //enable Backpressure on overflow
                 meta = onvm_get_pkt_meta(pkt);
                 if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
@@ -772,6 +780,7 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         
         //Check if Backpressure for this flow needs to be enabled !!
         if(pre_io_wait_ring[flow_entry->entry_index].pkt_count >=PERFLOW_QUEUE_HIGH_WATERMARK) {
+                printf("\n***** OVERFLOW (Exceeds High Water Mark!) IN PRE_IO_WAIT_QUEUE!!****** \n");
                 meta = onvm_get_pkt_meta(pkt);
                 // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
                 //if(meta->chain_index < 1) continue;
@@ -823,7 +832,11 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt) {
         return packet_process_io(pkt, flow_entry, PKT_LOG_WAIT_ENQUEUE_ENABLED);
 }
 int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode) {
+#ifndef USE_SYNC_IO
         int ret = MARK_PACKET_TO_RETAIN;
+#else
+        int ret = 0;
+#endif //USE_SYNC_IO
 
         if (NULL == flow_entry) {
                 get_flow_entry(pkt, &flow_entry);
@@ -836,6 +849,7 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
         
         aio_buf_t *pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
         if( NULL == pbuf ) {
+#ifndef USE_SYNC_IO
                 //Enqueue the packet to be processed later
                 if((0 == add_flow_pkt_to_pre_io_wait_queue(pkt, flow_entry))){
                         return MARK_PACKET_TO_RETAIN;   //indicates the packet is held in the wait_queue and will be released later
@@ -845,6 +859,7 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                         return MARK_PACKET_FOR_DROP;
                 }
                 return MARK_PACKET_FOR_DROP;
+#endif USE_SYNC_IO
         }
 
         if(pbuf != NULL) {
@@ -853,7 +868,7 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                 printf("\n reading ACL [%d] to Log Buffer after [%d] packets\n",pkt->buf_len, 1);
                 #endif //#ifdef ENABLE_DEBUG_LOGS
                 
-                
+#ifndef USE_SYNC_IO
                 // To maintain the packet ordering: check if any of the packets are wait_enabled, then directly enqueue the packet
                 if(is_flow_pkt_in_pre_io_wait_queue(pkt, flow_entry)) {
                         //int sts = add_flow_pkt_to_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
@@ -869,11 +884,13 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                                 }
                                 //return MARK_PACKET_TO_RETAIN;   //indicates the packet is held in the wait_queue and will be released later
                         }
-                        //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
                         else {
+                                //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
                                 return MARK_PACKET_FOR_DROP;
                         }
                 }
+#endif  //USE_SYNC_IO
+
                 pbuf->pkt = pkt;
                 read_aio_buffer(pbuf);
                 //add_to_logged_flow_list(pkt);

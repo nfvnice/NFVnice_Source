@@ -75,9 +75,9 @@
 //#define ENABLE_DEBUG_LOGS
 //#define USE_SYNC_IO
 #ifdef USE_SYNC_IO
-#define FD_OPEN_MODE (O_WRONLY|O_CREAT|O_FSYNC)
+#define FD_OPEN_MODE (O_WRONLY|O_CREAT|O_FSYNC)     //(O_WRONLY|O_CREAT|O_DIRECT)
 #else
-#define FD_OPEN_MODE (O_WRONLY|O_CREAT|O_FSYNC)
+#define FD_OPEN_MODE (O_WRONLY|O_CREAT|O_DIRECT)             
 #endif //USE_SYNC_IO
 /* Struct that contains information about this NF */
 struct onvm_nf_info *nf_info;
@@ -107,8 +107,8 @@ static globalArgs_t globals = {
         .pktlog_file = "logger_pkt.txt", // "/dev/null", // "pkt_logger.txt", //
         .read_file = "ipv4rules.txt",
         .base_ip_addr   = "10.0.0.1",
-        .max_bufs   = 1, //1,
-        .buf_size   = 128, //4096, //128
+        .max_bufs   = 2, //1,
+        .buf_size   = 4096, //4096, //128
         .fd = -1,
         .file_offset = 0,
         .cur_buf_index = 0,
