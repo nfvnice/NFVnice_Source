@@ -859,7 +859,7 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                         return MARK_PACKET_FOR_DROP;
                 }
                 return MARK_PACKET_FOR_DROP;
-#endif USE_SYNC_IO
+#endif //USE_SYNC_IO
         }
 
         if(pbuf != NULL) {
