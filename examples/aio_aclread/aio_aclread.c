@@ -733,7 +733,17 @@ typedef struct per_flow_ring_buffer {
 pre_io_wait_queue_t pre_io_wait_ring;
 */
 per_flow_ring_buffer_t pre_io_wait_ring[MAX_FLOW_TABLE_ENTRIES];
-
+int init_pre_io_wait_queue(void);
+int init_pre_io_wait_queue(void) {
+        int i = 0;
+        for (i=0; i < MAX_FLOW_TABLE_ENTRIES; i++) {
+                pre_io_wait_ring[i].pkt_count =0;
+                pre_io_wait_ring[i].r_h =0;
+                pre_io_wait_ring[i].w_h =0;
+                pre_io_wait_ring[i].max_len =PERFLOW_QUEUE_RINGSIZE;
+        }
+        return 0;
+}
 int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry);
@@ -904,7 +914,7 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
         ret = validate_packet_and_do_io(pkt); // packet_process_io(pkt, NULL, PKT_LOG_WAIT_ENQUEUE_ENABLED);
         
 //For time being act as bridge:
-#define ACT_AS_BRIDGE
+//#define ACT_AS_BRIDGE
         if (ret == 0) {
 #ifdef ACT_AS_BRIDGE
                 if (pkt->port == 0) {
@@ -951,7 +961,7 @@ int main(int argc, char *argv[]) {
         if(ret) {
                 rte_exit(EXIT_FAILURE, "Initialization failed!! error [%d] \n", ret);
         }
-
+        init_pre_io_wait_queue();
         onvm_nflib_run(nf_info, &packet_handler);
         printf("If we reach here, program is ending");
         
