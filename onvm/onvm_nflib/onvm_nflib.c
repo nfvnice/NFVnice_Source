@@ -694,6 +694,7 @@ onvm_nflib_handle_msg(struct onvm_nf_msg *msg) {
                 break;
         case MSG_NF_TRIGGER_ECB:
             notify_for_ecb();
+            break;
         case MSG_NOOP:
         default:
                 break;
