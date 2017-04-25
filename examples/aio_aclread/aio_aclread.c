@@ -76,16 +76,18 @@
 
 //NF specific Feature Options
 //#define ENABLE_DEBUG_LOGS
-//#define USE_SYNC_IO
+#define USE_SYNC_IO
 
 #ifdef USE_SYNC_IO
-#define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
-//#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
-//#define FD_OPEN_MODE (O_RDONLY) // (O_RDONLY|O_FSYNC)
-#else
+//#define FD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC)
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
-#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
-//#define FD_OPEN_MODE (O_RDONLY)
+//#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
+#define FD_OPEN_MODE (O_RDONLY) // (O_RDONLY|O_FSYNC)
+#else
+//#define FD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC) 
+//#define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
+//#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
+#define FD_OPEN_MODE (O_RDONLY)
 #endif //USE_SYNC_IO
 
 
@@ -117,7 +119,7 @@ static globalArgs_t globals = {
         .pktlog_file = "logger_pkt.txt", // "/dev/null", // "pkt_logger.txt", //
         .read_file = "logger_pkt.txt",
         .base_ip_addr   = "10.0.0.1",
-        .max_bufs   = 2, //1,
+        .max_bufs   = 1, //1,
         .buf_size   = 4096, //4096, //128
         .fd = -1,
         .file_offset = 0,
@@ -645,7 +647,7 @@ aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
         return NULL;
 }
 #define OFFSET_LIST_SIZE    (10)
-static int offset_desc[OFFSET_LIST_SIZE] = { 0, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384, 32768 };
+static int offset_desc[OFFSET_LIST_SIZE] = { 24576, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384, 32768 };
 int get_read_file_offset(void);
 int get_read_file_offset(void) {
     static int offset_index = 0;
@@ -657,7 +659,7 @@ int read_aio_buffer(aio_buf_t *pbuf) {
         int ret = 0;
         pbuf->aiocb->aio_nbytes = (size_t)pbuf->buf_len;
         pbuf->aiocb->aio_offset = (__off_t)get_read_file_offset(); //globals.file_offset;
-        //globals.file_offset += pbuf->buf_len; //for now always read from offset 0; size 64 or 68 bytes based of pkt type.
+        globals.file_offset += pbuf->buf_len; //for now always read from offset 0; size 64 or 68 bytes based of pkt type.
 
 #ifdef USE_SYNC_IO
         ret = pread(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
@@ -963,7 +965,7 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
         ret = validate_packet_and_do_io(pkt); // packet_process_io(pkt, NULL, PKT_LOG_WAIT_ENQUEUE_ENABLED);
         
 //For time being act as bridge:
-//#define ACT_AS_BRIDGE
+#define ACT_AS_BRIDGE
         if (ret == 0) {
 #ifdef ACT_AS_BRIDGE
                 if (pkt->port == 0) {
