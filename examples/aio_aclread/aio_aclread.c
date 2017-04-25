@@ -482,6 +482,23 @@ int deinitialize_aio_nf(void) {
         return ret;
 }
 
+//#define USE_KEY_MODE_FOR_FLOW_ENTRY
+static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
+static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry) {
+        int ret = -1;
+        if(flow_entry)*flow_entry = NULL;
+#ifdef USE_KEY_MODE_FOR_FLOW_ENTRY
+        struct onvm_ft_ipv4_5tuple fk;
+        if ((ret = onvm_ft_fill_key(&fk, pkt))) {
+                return ret;
+        }
+        ret = onvm_flow_dir_get_key(&fk, flow_entry);
+#else  // #elif defined (USE_KEY_MODE_FOR_FLOW_ENTRY)
+        ret = onvm_flow_dir_get_pkt(pkt, flow_entry);
+#endif
+        return ret;
+}
+
 
 /** Functions to maintain/enqueue/dequue Per Flow Wait Queue for packets that are yet to initiate I/O */
 #define PERFLOW_QUEUE_RINGSIZE              (128)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
@@ -589,12 +606,12 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
         
         return pkt;
 }
-struct rte_mbuf* get_next_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **flow_entry);
+struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **flow_entry);
 struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **flow_entry) {
         if(0 ==pre_io_wait_ring.wait_list_count) return NULL;
-        uint32_t index = 0;
+        uint32_t i = 0;
         struct rte_mbuf* w_pkt = NULL;
-        for ( index = 0; index < MAX_FLOW_TABLE_ENTRIES; index++ ) {
+        for ( i = 0; i < MAX_FLOW_TABLE_ENTRIES; i++ ) {
                     if(pre_io_wait_ring.flow_pkts[i].pkt_count) {
                         get_flow_entry(pre_io_wait_ring.flow_pkts[i].pktbuf_ring[pre_io_wait_ring.flow_pkts[i].r_h], flow_entry);
                         return get_next_pkt_for_flow_entry_from_pre_io_wait_queue(*flow_entry);
@@ -796,22 +813,6 @@ int do_io_on_wait_buf_pkts(void) {
         }
         return 0;
 }
-//#define USE_KEY_MODE_FOR_FLOW_ENTRY
-static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
-static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry) {
-        int ret = -1;
-        if(flow_entry)*flow_entry = NULL;
-#ifdef USE_KEY_MODE_FOR_FLOW_ENTRY
-        struct onvm_ft_ipv4_5tuple fk;
-        if ((ret = onvm_ft_fill_key(&fk, pkt))) {
-                return ret;
-        }
-        ret = onvm_flow_dir_get_key(&fk, flow_entry);
-#else  // #elif defined (USE_KEY_MODE_FOR_FLOW_ENTRY)
-        ret = onvm_flow_dir_get_pkt(pkt, flow_entry);
-#endif
-        return ret;
-}
 
 uint16_t flow_bypass_list[] = {2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
 int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
@@ -1006,7 +1007,7 @@ int explicit_callback_function(void) {
                 else {
                         done = 1;
                 }
-        gee}while (!done) 
+        }while (!done) 
         //while(pbuf) keep processing packets from per_flow_pre_io_wait_queue
         return done;
 }
