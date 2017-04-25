@@ -792,7 +792,8 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt) {
         
         //if (pkt->hash.rss%3 == 0) return 0;
         if(check_in_flow_bypass_list(pkt, flow_entry)) return 0;
-        if(check_in_logged_flow_list(pkt, flow_entry)) return 0;
+        //if(check_in_logged_flow_list(pkt, flow_entry)) return 0;
+        return 0;
         return packet_process_io(pkt, flow_entry, PKT_LOG_WAIT_ENQUEUE_ENABLED);
 }
 int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode) {
