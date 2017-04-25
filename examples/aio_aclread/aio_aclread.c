@@ -75,6 +75,7 @@
 #define MARK_PACKET_FOR_DROP    (2)
 
 //NF specific Feature Options
+#define ACT_AS_BRIDGE
 //#define ENABLE_DEBUG_LOGS
 //#define USE_SYNC_IO
 
@@ -971,6 +972,7 @@ do_stats_display(void) {
         printf("Total Bytes Written : %d\n", globals.file_offset);
         //printf("Total Blocks on Sem : %d\n", (uint32_t)globals.sem_block_count);
         printf("Total Flows with pre_io_Wait: %d\n", pre_io_wait_ring.wait_list_count);
+        printf("Total pkts in wait_list: %d, %d\n", pre_io_wait_ring..flow_pkts[0].w_h, pre_io_wait_ring..flow_pkts[0].pkt_count);
         //printf("N°   : %d\n", pkt_process);
         printf("\n\n");
 
@@ -987,10 +989,11 @@ int nf_as_bridge(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unus
         meta->destination = pkt->port;
         return 0;
 }
+#define DISPLAY_AFTER_PACKETS   (1)     //(100000)
 static int
 packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) { // __attribute__((unused))
         static uint32_t counter = 0;
-                if (++counter == 100000) {
+                if (++counter == DISPLAY_AFTER_PACKETS) {
                         do_stats_display();
                         counter = 0;
                 }
@@ -999,7 +1002,6 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
         ret = validate_packet_and_do_io(pkt); // packet_process_io(pkt, NULL, PKT_LOG_WAIT_ENQUEUE_ENABLED);
         
 //For time being act as bridge:
-#define ACT_AS_BRIDGE
         if (ret == 0) {
 #ifdef ACT_AS_BRIDGE
             nf_as_bridge(pkt,meta);
