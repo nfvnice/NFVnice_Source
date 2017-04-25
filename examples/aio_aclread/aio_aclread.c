@@ -586,9 +586,9 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         
         //Check if Backpressure for this flow needs to be enabled !!
         if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count >=PERFLOW_QUEUE_HIGH_WATERMARK) {
-                #ifdef ENABLE_DEBUG_LOGS
-                printf("\n***** OVERFLOW (Exceeds High Water Mark!) IN PRE_IO_WAIT_QUEUE!!****** \n");
-                #endif
+                //#ifdef ENABLE_DEBUG_LOGS
+                printf("\n***** OVERFLOW (Exceeds High Water Mark!) IN PRE_IO_WAIT_QUEUE!!****** [r:%d, w:%d, c:%d]\n", pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h, pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h, pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count);
+                //#endif
                 mark_flow_for_backpressure(pkt,flow_entry);
                 return 0;
         }
@@ -918,6 +918,9 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                 }
                 //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
                 else {
+                        //#ifdef ENABLE_DEBUG_LOGS
+                        printf("Dropping 1 Packets for the Flow with Entry Index: %zu\n ", flow_entry->entry_index);
+                        //#endif
                         return MARK_PACKET_FOR_DROP;
                 }
                 return MARK_PACKET_FOR_DROP;
@@ -944,6 +947,9 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                         }
                         else {
                                 //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
+                                //#ifdef ENABLE_DEBUG_LOGS
+                                printf("Dropping2 Packets for the Flow with Entry Index: %zu\n ", flow_entry->entry_index);
+                                //#endif
                                 return MARK_PACKET_FOR_DROP;
                         }
                 }
@@ -989,7 +995,7 @@ int nf_as_bridge(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unus
         meta->destination = pkt->port;
         return 0;
 }
-#define DISPLAY_AFTER_PACKETS   (1)     //(100000)
+#define DISPLAY_AFTER_PACKETS   (100)     //(100000)
 static int
 packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) { // __attribute__((unused))
         static uint32_t counter = 0;
