@@ -393,6 +393,12 @@ void onvm_nf_yeild(struct onvm_nf_info* info) {
         #ifdef USE_POLL_MODE
         // no operation; continue;
         #endif
+        
+        //check and trigger explicit callabck before returning.
+        if(need_ecb && nf_ecb) {
+                need_ecb = 0;
+                nf_ecb();
+        }
 }
 void onvm_nf_wake_notify(__attribute__((unused))struct onvm_nf_info* info);
 void onvm_nf_wake_notify(__attribute__((unused))struct onvm_nf_info* info)
@@ -423,7 +429,7 @@ void onvm_nf_wake_notify(__attribute__((unused))struct onvm_nf_info* info)
 
         #ifdef USE_SEMAPHORE
         sem_post(mutex);
-        printf("Triggered to wakeup the NF thread internally");
+        //printf("Triggered to wakeup the NF thread internally");
         #endif
 
         #ifdef USE_SCHED_YIELD
@@ -519,10 +525,10 @@ onvm_nflib_run(
 
 
                 //can as well move this inside the onvm_nf_yeild() function. Always perform at the end of yeild call.
-                if(need_ecb && nf_ecb) {
-                    need_ecb = 0;
-                    nf_ecb();
-                }
+                //if(need_ecb && nf_ecb) {
+                //    need_ecb = 0;
+                //    nf_ecb();
+                //}
                 
                 nb_pkts = (uint16_t)rte_ring_dequeue_burst(rx_ring, pkts, nb_pkts);
 

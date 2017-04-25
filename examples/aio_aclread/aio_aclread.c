@@ -783,14 +783,14 @@ int wait_for_buffer_ready(unsigned int timeout_ms) {
 int notify_io_rw_done(aio_buf_t *pbuf) {
 
         pbuf->req_status = aio_error(pbuf->aiocb);
-        //#ifdef ENABLE_DEBUG_LOGS
+        #ifdef ENABLE_DEBUG_LOGS
         if(0 != pbuf->req_status) {
                 printf("\n Aio_read/write completed with error [ %d]\n", pbuf->req_status);
         }
         else {
                 printf("Aio_read/write completed Successfully [%d]!!\n", pbuf->req_status);
         }
-        //#endif //#ifdef ENABLE_DEBUG_LOGS
+        #endif //#ifdef ENABLE_DEBUG_LOGS
 
         if(pbuf->pkt) {
             #ifdef ACT_AS_BRIDGE
@@ -1020,7 +1020,11 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
 
 int explicit_callback_function(void);
 int explicit_callback_function(void) {
+        
+        #ifdef ENABLE_DEBUG_LOGS
         printf("Inside NFs Explicit Callback Function\n");
+        #endif
+        
         int done = 0;
         struct onvm_flow_entry *flow_entry;
         struct rte_mbuf* pkt = NULL;
@@ -1029,7 +1033,7 @@ int explicit_callback_function(void) {
         do {
                 pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
                 if( NULL == pbuf ) {
-                        return 0;
+                        break;//return 0;
                 }
                 pkt = get_first_pkt_from_pre_io_wait_queue(&flow_entry);
                 if(pkt && flow_entry) {
@@ -1037,7 +1041,7 @@ int explicit_callback_function(void) {
                         read_aio_buffer(pbuf);
                 }
                 else {
-                        done = 1;
+                        done = 1; break;
                 }
                 count++;
         }while (!done);
