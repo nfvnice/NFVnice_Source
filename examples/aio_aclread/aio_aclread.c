@@ -972,7 +972,7 @@ do_stats_display(void) {
         printf("Total Bytes Written : %d\n", globals.file_offset);
         //printf("Total Blocks on Sem : %d\n", (uint32_t)globals.sem_block_count);
         printf("Total Flows with pre_io_Wait: %d\n", pre_io_wait_ring.wait_list_count);
-        printf("Total pkts in wait_list: %d, %d\n", pre_io_wait_ring..flow_pkts[0].w_h, pre_io_wait_ring.flow_pkts[0].pkt_count);
+        printf("Total pkts in wait_list: %d, %d\n", pre_io_wait_ring.flow_pkts[0].w_h, pre_io_wait_ring.flow_pkts[0].pkt_count);
         //printf("N°   : %d\n", pkt_process);
         printf("\n\n");
 
