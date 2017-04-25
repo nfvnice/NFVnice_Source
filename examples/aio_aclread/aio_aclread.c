@@ -1007,7 +1007,7 @@ int explicit_callback_function(void) {
                 else {
                         done = 1;
                 }
-        }while (!done) 
+        }while (!done);
         //while(pbuf) keep processing packets from per_flow_pre_io_wait_queue
         return done;
 }
