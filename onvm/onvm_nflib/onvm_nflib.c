@@ -51,6 +51,15 @@
 #include "onvm_nflib.h"
 
 
+nf_explicit_callback_function nf_ecb = NULL;
+static uint8_t need_ecb = 0;
+void register_explicit_callback_function(nf_explicit_callback_function ecb) {
+        if(ecb) {
+                nf_ecb = ecb;
+        }
+        return;
+}
+
 /*****************************************************************************
                         HISTOGRAM DETAILS
 */
@@ -385,6 +394,74 @@ void onvm_nf_yeild(struct onvm_nf_info* info) {
         // no operation; continue;
         #endif
 }
+onvm_nf_wake_notify(struct onvm_nf_info* info);
+onvm_nf_wake_notify(struct onvm_nf_info* info)
+{
+        #ifdef USE_MQ
+        static int msg = '\0';
+        //struct timespec timeout = {.tv_sec=0, .tv_nsec=1000};
+        //clock_gettime(CLOCK_REALTIME, &timeout);timeout..tv_nsec+=1000;
+        //msg = (unsigned int)mq_timedsend(clients[instance_id].mutex, (const char*) &msg, sizeof(msg),(unsigned int)prio, &timeout);
+        //msg = (unsigned int)mq_send(clients[instance_id].mutex, (const char*) &msg, sizeof(msg),(unsigned int)prio);
+        msg = mq_send(mutex, (const char*) &msg,0,0);
+        if (0 > msg) perror ("mq_send failed!");
+        #endif
+
+        #ifdef USE_FIFO
+        unsigned msg = 1;
+        msg = write(mutex, (void*) &msg, sizeof(msg));
+        #endif
+
+
+        #ifdef USE_SIGNAL
+        //static int count = 0;
+        //if (count < 100) { count++;
+        int sts = sigqueue(nf_info->pid, SIGUSR1, (const union sigval)0);
+        if (sts) perror ("sigqueue failed!!");
+        //}
+        #endif
+
+        #ifdef USE_SEMAPHORE
+        sem_post(mutex);
+        printf("Triggered to wakeup the NF thread internally");
+        #endif
+
+        #ifdef USE_SCHED_YIELD
+        rte_atomic16_read(clients[instance_id].shm_server);
+        #endif
+
+        #ifdef USE_NANO_SLEEP
+        rte_atomic16_read(clients[instance_id].shm_server);
+        #endif
+
+        #ifdef USE_SOCKET
+        static char msg[2] = "\0";
+        sendto(onvm_socket_id, msg, sizeof(msg), 0, (struct sockaddr *) &clients[instance_id].mutex, (socklen_t) sizeof(struct sockaddr_un));
+        #endif
+
+        #ifdef USE_FLOCK
+        if (0 > (flock(clients[instance_id].mutex, LOCK_UN|LOCK_NB))) { perror ("FILE UnLock Failed!!");}
+        #endif
+
+        #ifdef USE_MQ2
+        static unsigned long msg = 1;
+        //static msgbuf_t msg = {.mtype = 1, .mtext[0]='\0'};
+        //if (0 > msgsnd(clients[instance_id].mutex, (const void*) &msg, sizeof(msg.mtext), IPC_NOWAIT)) {
+        if (0 > msgsnd(clients[instance_id].mutex, (const void*) &msg, 0, IPC_NOWAIT)) {
+                perror ("Msgsnd Failed!!");
+        }
+        #endif
+
+        #ifdef USE_ZMQ
+        static char msg[2] = "\0";
+        zmq_connect (onvm_socket_id,get_sem_name(instance_id));
+        zmq_send (onvm_socket_id, msg, sizeof(msg), 0);
+        #endif
+
+        #ifdef USE_POLL_MODE
+        rte_atomic16_read(clients[instance_id].shm_server);
+        #endif
+}
 
 uint64_t compute_start_cycles(void);// __attribute__((always_inline));
 uint64_t compute_total_cycles(uint64_t start_t); //__attribute__((always_inline));
@@ -439,6 +516,12 @@ onvm_nflib_run(
                 #endif  // defined(ENABLE_NF_BACKPRESSURE) && defined(NF_BACKPRESSURE_APPROACH_2)
 
 
+                //can as well move this inside the onvm_nf_yeild() function. Always perform at the end of yeild call.
+                if(need_ecb && nf_ecb) {
+                    need_ecb = 0;
+                    nf_ecb();
+                }
+                
                 nb_pkts = (uint16_t)rte_ring_dequeue_burst(rx_ring, pkts, nb_pkts);
 
                 if(nb_pkts == 0) {
@@ -591,6 +674,31 @@ onvm_nflib_drop_pkt(struct rte_mbuf* pkt) {
         return 0;
 }
 
+
+void notify_for_ecb(void) {
+        if ((rte_atomic16_read(flag_p) ==1)) {
+            need_ecb = 1;
+            onvm_nf_wake_notify(nf_info);
+        }
+        return;
+}
+
+int
+onvm_nflib_handle_msg(struct onvm_nf_msg *msg) {
+        switch(msg->msg_type) {
+        case MSG_STOP:
+                RTE_LOG(INFO, APP, "Shutting down...\n");
+                keep_running = 0;
+                break;
+        case MSG_NF_TRIGGER_ECB:
+            notify_for_ecb();
+        case MSG_NOOP:
+        default:
+                break;
+        }
+
+        return 0;
+}
 /******************************Helper functions*******************************/
 static struct onvm_nf_info *
 onvm_nflib_info_init(const char *tag)

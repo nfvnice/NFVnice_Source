@@ -635,6 +635,8 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
         
         int ret = refresh_aio_buffer(pbuf);
         
+        if(1)   //packets in pre_io_wait_queue
+        notify_for_ecb();
         if(wait_mutex && globals.is_blocked_on_sem){
                 sem_post(wait_mutex);
         }
@@ -956,6 +958,13 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
                 ret = 0;
         }
         return ret;
+}
+
+int explicit_callback_function(void);
+int explicit_callback_function(void) {
+        printf("Inside NFs Explicit Callback Function\n");
+        //while(pbuf) keep processing packets from per_flow_pre_io_wait_queue
+        return 0;
 }
 
 int main(int argc, char *argv[]) {
