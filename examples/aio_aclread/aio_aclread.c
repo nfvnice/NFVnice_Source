@@ -973,14 +973,15 @@ do_stats_display(void) {
 }
 
 int nf_as_bridge(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) {
-                if (pkt->port == 0) {
-                        meta->destination = 0;
-                }
-                else {
-                        meta->destination = 0;
-                }
-                meta->action = ONVM_NF_ACTION_OUT;
-                meta->destination = pkt->port;
+        if (pkt->port == 0) {
+                meta->destination = 0;
+        }
+        else {
+                meta->destination = 0;
+        }
+        meta->action = ONVM_NF_ACTION_OUT;
+        meta->destination = pkt->port;
+        return 0;
 }
 static int
 packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) { // __attribute__((unused))
