@@ -174,12 +174,6 @@ static aio_buf_t *aio_buf_pool = NULL;
 sem_t *wait_mutex = NULL;
 #define AIO_REQUEST_PRIO (0)
 
-#define WAIT_PACKET_STORE_SIZE  (32)
-typedef struct wait_packet_buf {
-        struct rte_mbuf *buffer[WAIT_PACKET_STORE_SIZE];
-        uint16_t count;
-}wait_packet_buf_t;
-static wait_packet_buf_t wait_pkts;
 /******************************************************************************
  *              FUNCTION DECLARATIONS
  ******************************************************************************/
@@ -223,21 +217,10 @@ typedef enum pkt_log_mode {
 int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode);
 int validate_packet_and_do_io(struct rte_mbuf* pkt);
 
-int add_buf_to_wait_pkts(struct rte_mbuf* pkt);
-int do_io_on_wait_buf_pkts(void);
 /******************************************************************************
  *              FUNCTION DEFINITIONS
  ******************************************************************************/
-/*Wait_buf enqueue and dequeue
- *
- */
-int add_buf_to_wait_pkts(struct rte_mbuf* pkt) {
-        if(wait_pkts.count < WAIT_PACKET_STORE_SIZE) {
-                wait_pkts.buffer[wait_pkts.count++] = pkt;
-                return 0;
-        }
-        return 1;
-}
+
 
 /* Handler for I/O completion signal */
 #ifdef USE_SIGEV_SIGNAL
@@ -703,30 +686,6 @@ int read_aio_buffer(aio_buf_t *pbuf) {
         globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
         return ret;
 }
-int write_aio_buffer(aio_buf_t *pbuf) {
-        int ret = 0;
-        pbuf->aiocb->aio_nbytes = (size_t)pbuf->buf_len;
-        pbuf->aiocb->aio_offset = (__off_t)globals.file_offset;
-        globals.file_offset += pbuf->buf_len;
-
-#ifdef USE_SYNC_IO
-        ret = pwrite(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
-        globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
-        refresh_aio_buffer(pbuf);
-        return ret;
-#endif
-        pbuf->req_status = aio_write(pbuf->aiocb);
-        if(-1 == pbuf->req_status) {
-                printf("Error at aio_write(): %s\n", strerror(errno));
-                ret = pbuf->req_status;
-                return refresh_aio_buffer(pbuf);
-                //exit(1);
-        }
-        pbuf->state = BUF_SUBMITTED;
-        //globals.cur_buf_index = ((globals.cur_buf_index+1) % (globals.max_bufs));
-        globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
-        return ret;
-}
 int refresh_aio_buffer(aio_buf_t *pbuf) {
         int ret = 0;
         pbuf->aiocb->aio_nbytes = (size_t)0;
@@ -739,47 +698,6 @@ int refresh_aio_buffer(aio_buf_t *pbuf) {
         #endif //ENABLE_DEBUG_LOGS
         return ret;
 }
-
-int wait_for_buffer_ready(unsigned int timeout_ms) {
-        if(!wait_mutex) {
-                //poll or return error
-                return -1;
-        }
-        #ifdef ENABLE_DEBUG_LOGS
-        printf("\n Waiting for Buffer Ready Notification. Block Count= [%d]!!\n", (int)globals.sem_block_count);
-        #endif //ENABLE_DEBUG_LOGS
-
-        if(!timeout_ms) {
-                globals.is_blocked_on_sem = 1;
-                globals.sem_block_count++;
-                sem_wait(wait_mutex);
-                globals.is_blocked_on_sem = 0;
-        }
-        else {
-                struct timespec ts;
-                if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-                        globals.is_blocked_on_sem = 1;
-                        globals.sem_block_count++;
-                        return sem_wait(wait_mutex);
-                }
-                ts.tv_nsec += timeout_ms*1000*1000;
-                ts.tv_sec += ts.tv_nsec /1000000000;
-                ts.tv_nsec %= 1000000000;
-                globals.is_blocked_on_sem = 1;
-                globals.sem_block_count++;
-                int ret = sem_timedwait(wait_mutex,&ts);
-                //what to do?
-                if(ETIMEDOUT == ret) {
-                        globals.is_blocked_on_sem = 0;
-                }
-                return ret;
-        }
-        #ifdef ENABLE_DEBUG_LOGS
-        printf("\nWait Completed! [ block_state=%d, block_count=%d]!!\n", globals.is_blocked_on_sem, (int)globals.sem_block_count);
-        #endif //ENABLE_DEBUG_LOGS
-        return 0;
-}
-
 int notify_io_rw_done(aio_buf_t *pbuf) {
 
         pbuf->req_status = aio_error(pbuf->aiocb);
@@ -805,9 +723,6 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
         if(pre_io_wait_ring.wait_list_count) {   //packets in pre_io_wait_queue
                 notify_for_ecb();
         }
-        if(wait_mutex && globals.is_blocked_on_sem){
-                sem_post(wait_mutex);
-        }
         return ret;
 }
 
@@ -830,19 +745,7 @@ int clear_thread_start(void *pdata) {
 #define MAX_PKT_HEADER_SIZE (68)
 #define MAX_PKT_READ_SIZE   (1024)
 
-int do_io_on_wait_buf_pkts(void) {
-        if(wait_pkts.count) {
-               uint32_t i = 0;
-               for(i=0; i< wait_pkts.count; i++) {
-                       packet_process_io(wait_pkts.buffer[i], NULL, PKT_LOG_WAIT_ENQUEUE_DISABLED);
-                       onvm_nflib_return_pkt(wait_pkts.buffer[i]);
-               }
-               wait_pkts.count = 0;
-        }
-        return 0;
-}
-
-uint16_t flow_bypass_list[] = {2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
+uint16_t flow_bypass_list[] = {0,1, 2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
 int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         
