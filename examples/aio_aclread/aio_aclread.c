@@ -384,7 +384,7 @@ initialize_aio_buffers (void) {
                         memset(aio_buf_pool[i].buf, 18, sizeof(uint8_t)*alloc_buf_size);
 
                         #ifdef ENABLE_DEBUG_LOGS
-                        for(ret=0; ret < 10; ret++) printf("%d", aio_buf_pool[i].buf[ret]);
+                        //for(ret=0; ret < 10; ret++) printf("%d", aio_buf_pool[i].buf[ret]);
                         printf("allocated buf [%d] of size [%d]\n ", (int)i, (int)alloc_buf_size);
                         #endif //ENABLE_DEBUG_LOGS
                 }
@@ -548,7 +548,9 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         if(!flow_entry) return 0;
         struct onvm_pkt_meta *meta = NULL;
         if(((pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h+1)%pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) {
+                #ifdef ENABLE_DEBUG_LOGS
                 printf("\n***** OVERFLOW (Ring buffer Full!!) IN PRE_IO_WAIT_QUEUE!!****** \n");
+                #endif
                 //enable Backpressure on overflow
                 meta = onvm_get_pkt_meta(pkt);
                 if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
@@ -565,7 +567,9 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         
         //Check if Backpressure for this flow needs to be enabled !!
         if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count >=PERFLOW_QUEUE_HIGH_WATERMARK) {
+                #ifdef ENABLE_DEBUG_LOGS
                 printf("\n***** OVERFLOW (Exceeds High Water Mark!) IN PRE_IO_WAIT_QUEUE!!****** \n");
+                #endif
                 meta = onvm_get_pkt_meta(pkt);
                 // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
                 //if(meta->chain_index < 1) continue;
@@ -944,13 +948,14 @@ do_stats_display(void) {
         /* Clear screen and move to top left */
         //printf("%s%s", clr, topLeft);
 
-        printf("PKT_LOGGER STATS:\n");
+        printf("AIO_ACLREADER STATS:\n");
         printf("-----\n");
         printf("Total Packets Serviced: %d\n", pkt_process);
         printf("Total Bytes Written : %d\n", globals.file_offset);
         printf("Total Blocks on Sem : %d\n", (uint32_t)globals.sem_block_count);
         //printf("N°   : %d\n", pkt_process);
         printf("\n\n");
+
 }
 
 static int
@@ -1048,69 +1053,3 @@ int main(int argc, char *argv[]) {
 
         //return aiotest_main(argc, argv);
 }
-/*
- *
- * ADIO READ FROM STDIN EXAMPLE
- * include <sys/types.h>
-#include <aio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <iostream>
-
-using namespace std;
-
-const int SIZE_TO_READ = 100;
-
-int main()
-{
-    // open the file
-    int file = open("blah.txt", O_RDONLY, 0);
-
-    if (file == -1)
-    {
-        cout << "Unable to open file!" << endl;
-        return 1;
-    }
-
-    // create the buffer
-    char* buffer = new char[SIZE_TO_READ];
-
-    // create the control block structure
-    aiocb cb;
-
-    memset(&cb, 0, sizeof(aiocb));
-    cb.aio_nbytes = SIZE_TO_READ;
-    cb.aio_fildes = file;
-    cb.aio_offset = 0;
-    cb.aio_buf = buffer;
-
-    // read!
-    if (aio_read(&cb) == -1)
-    {
-        cout << "Unable to create request!" << endl;
-        close(file);
-    }
-
-    cout << "Request enqueued!" << endl;
-
-    // wait until the request has finished
-    while(aio_error(&cb) == EINPROGRESS)
-    {
-        cout << "Working..." << endl;
-    }
-
-    // success?
-    int numBytes = aio_return(&cb);
-
-    if (numBytes != -1)
-        cout << "Success!" << endl;
-    else
-        cout << "Error!" << endl;
-
-    // now clean up
-    delete[] buffer;
-    close(file);
-
-    return 0;
-}
- */
