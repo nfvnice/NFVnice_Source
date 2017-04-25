@@ -119,7 +119,7 @@ static globalArgs_t globals = {
         .pktlog_file = "logger_pkt.txt", // "/dev/null", // "pkt_logger.txt", //
         .read_file = "logger_pkt.txt",
         .base_ip_addr   = "10.0.0.1",
-        .max_bufs   = 1, //1,
+        .max_bufs   = 2, //1,
         .buf_size   = 4096, //4096, //128
         .fd = -1,
         .file_offset = 0,
@@ -203,7 +203,7 @@ int deinitialize_aiocb(aio_buf_t *pbuf);
 int deinitialize_signal_action (void);
 int deinitialize_log_file(void);
 int deinitialize_aio_nf(void);
-
+int nf_as_bridge(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta);
 #define AIO_READ_OPERATION    (0)
 #define AIO_WRITE_OPERATION   (1)
 aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode);
@@ -634,6 +634,7 @@ struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **f
 }
 
 aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
+        /*
         if (aio_operation_mode && BUF_IN_USE == aio_buf_pool[globals.cur_buf_index].state) {
                         return &(aio_buf_pool[globals.cur_buf_index]);
         }
@@ -649,6 +650,13 @@ aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
                                 globals.cur_buf_index = i;
                                 return &(aio_buf_pool[globals.cur_buf_index]);
                         }
+                }
+        }
+        */
+        uint32_t i = 0;
+        for (i=0; i < globals.max_bufs; i++) {
+                if (BUF_FREE == aio_buf_pool[i].state) {
+                    return &(aio_buf_pool[i]);
                 }
         }
         #ifdef ENABLE_DEBUG_LOGS
@@ -770,17 +778,20 @@ int wait_for_buffer_ready(unsigned int timeout_ms) {
 int notify_io_rw_done(aio_buf_t *pbuf) {
 
         pbuf->req_status = aio_error(pbuf->aiocb);
-        #ifdef ENABLE_DEBUG_LOGS
+        //#ifdef ENABLE_DEBUG_LOGS
         if(0 != pbuf->req_status) {
                 printf("\n Aio_read/write completed with error [ %d]\n", pbuf->req_status);
         }
         else {
                 printf("Aio_read/write completed Successfully [%d]!!\n", pbuf->req_status);
         }
-        #endif //#ifdef ENABLE_DEBUG_LOGS
+        //#endif //#ifdef ENABLE_DEBUG_LOGS
 
-        
         if(pbuf->pkt) {
+            #ifdef ACT_AS_BRIDGE
+            struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pbuf->pkt);
+            nf_as_bridge(pbuf->pkt,meta);
+            #endif
                 onvm_nflib_return_pkt(pbuf->pkt);
         }
         
@@ -950,16 +961,27 @@ do_stats_display(void) {
         /* Clear screen and move to top left */
         //printf("%s%s", clr, topLeft);
 
-        printf("AIO_ACLREADER STATS:\n");
+        //printf("AIO_ACLREADER STATS:\n");
         printf("-----\n");
-        printf("Total Packets Serviced: %d\n", pkt_process);
+        //printf("Total Packets Serviced: %d\n", pkt_process);
         printf("Total Bytes Written : %d\n", globals.file_offset);
-        printf("Total Blocks on Sem : %d\n", (uint32_t)globals.sem_block_count);
+        //printf("Total Blocks on Sem : %d\n", (uint32_t)globals.sem_block_count);
+        printf("Total Flows with pre_io_Wait: %d\n", pre_io_wait_ring.wait_list_count);
         //printf("N°   : %d\n", pkt_process);
         printf("\n\n");
 
 }
 
+int nf_as_bridge(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) {
+                if (pkt->port == 0) {
+                        meta->destination = 0;
+                }
+                else {
+                        meta->destination = 0;
+                }
+                meta->action = ONVM_NF_ACTION_OUT;
+                meta->destination = pkt->port;
+}
 static int
 packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) { // __attribute__((unused))
         static uint32_t counter = 0;
@@ -975,14 +997,7 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
 #define ACT_AS_BRIDGE
         if (ret == 0) {
 #ifdef ACT_AS_BRIDGE
-                if (pkt->port == 0) {
-                        meta->destination = 0;
-                }
-                else {
-                        meta->destination = 0;
-                }
-                meta->action = ONVM_NF_ACTION_OUT;
-                meta->destination = pkt->port;
+            nf_as_bridge(pkt,meta);
 #else
                 meta->action = ONVM_NF_ACTION_NEXT;
                 meta->destination = pkt->port;
