@@ -355,7 +355,7 @@ initialize_aio_buffers (void) {
         int ret = 0;
         if(aio_buf_pool) {
                 #ifdef ENABLE_DEBUG_LOGS
-                printf("Already Allocated!!");
+                printf("Already Allocated!!\n");
                 #endif //ENABLE_DEBUG_LOGS
                 return -1;
         }
@@ -588,6 +588,20 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
         }
         
         return pkt;
+}
+struct rte_mbuf* get_next_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **flow_entry);
+struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **flow_entry) {
+        if(0 ==pre_io_wait_ring.wait_list_count) return NULL;
+        uint32_t index = 0;
+        struct rte_mbuf* w_pkt = NULL;
+        for ( index = 0; index < MAX_FLOW_TABLE_ENTRIES; index++ ) {
+                    if(pre_io_wait_ring.flow_pkts[i].pkt_count) {
+                        get_flow_entry(pre_io_wait_ring.flow_pkts[i].pktbuf_ring[pre_io_wait_ring.flow_pkts[i].r_h], flow_entry);
+                        return get_next_pkt_for_flow_entry_from_pre_io_wait_queue(*flow_entry);
+                        break;
+                    }
+        }
+        return w_pkt;
 }
 
 aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
@@ -860,10 +874,11 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                 get_flow_entry(pkt, &flow_entry);
         }
         if(flow_entry) {
-            //#ifdef ENABLE_DEBUG_LOGS
+            #ifdef ENABLE_DEBUG_LOGS
             printf("Flow with Entry Index: %zu\n ", flow_entry->entry_index);
-            //#endif
+            #endif
         }
+        else return 0;
         
         aio_buf_t *pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
         if( NULL == pbuf ) {
@@ -974,8 +989,26 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
 int explicit_callback_function(void);
 int explicit_callback_function(void) {
         printf("Inside NFs Explicit Callback Function\n");
+        int done = 0;
+        struct onvm_flow_entry *flow_entry;
+        struct rte_mbuf* pkt = NULL;
+        aio_buf_t *pbuf = NULL;     
+        do {
+                pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
+                if( NULL == pbuf ) {
+                        return 0;
+                }
+                pkt = get_first_pkt_from_pre_io_wait_queue(&flow_entry);
+                if(pkt && flow_entry) {
+                        pbuf->pkt = pkt;
+                        read_aio_buffer(pbuf);
+                }
+                else {
+                        done = 1;
+                }
+        gee}while (!done) 
         //while(pbuf) keep processing packets from per_flow_pre_io_wait_queue
-        return 0;
+        return done;
 }
 
 int main(int argc, char *argv[]) {
