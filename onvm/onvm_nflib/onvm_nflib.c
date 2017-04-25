@@ -394,8 +394,8 @@ void onvm_nf_yeild(struct onvm_nf_info* info) {
         // no operation; continue;
         #endif
 }
-onvm_nf_wake_notify(struct onvm_nf_info* info);
-onvm_nf_wake_notify(struct onvm_nf_info* info)
+void onvm_nf_wake_notify(__attribute__((unused))struct onvm_nf_info* info);
+void onvm_nf_wake_notify(__attribute__((unused))struct onvm_nf_info* info)
 {
         #ifdef USE_MQ
         static int msg = '\0';
@@ -461,6 +461,8 @@ onvm_nf_wake_notify(struct onvm_nf_info* info)
         #ifdef USE_POLL_MODE
         rte_atomic16_read(clients[instance_id].shm_server);
         #endif
+        
+        return;
 }
 
 uint64_t compute_start_cycles(void);// __attribute__((always_inline));
