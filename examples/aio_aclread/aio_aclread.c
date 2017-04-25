@@ -76,7 +76,7 @@
 
 //NF specific Feature Options
 //#define ENABLE_DEBUG_LOGS
-#define USE_SYNC_IO
+//#define USE_SYNC_IO
 
 #ifdef USE_SYNC_IO
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC)
@@ -522,6 +522,27 @@ typedef struct pre_io_wait_queue {
 }pre_io_wait_queue_t;
 pre_io_wait_queue_t pre_io_wait_ring;
 
+int mark_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+int clear_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+int mark_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+        struct onvm_pkt_meta *meta = NULL;
+        meta = onvm_get_pkt_meta(pkt);
+        if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
+                SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
+        }
+        return 0 ; //exit(1);
+}
+int clear_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+        struct onvm_pkt_meta *meta = NULL;
+        meta = onvm_get_pkt_meta(pkt);
+        // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
+        //if(meta->chain_index < 1) continue;
+        //Check the Flow Entry mark status and Add mark if not already done!
+        if((TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
+                CLEAR_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
+        }
+    return 0;
+}
 int init_pre_io_wait_queue(void);
 int init_pre_io_wait_queue(void) {
         int i = 0;
@@ -539,30 +560,27 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
 struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry);
 int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         if(!flow_entry) return 0;
-        return pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count;
+        //return pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count;
         
         if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h ==  pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) return 0;
-        //return 0;
+        return 1;
 }
 int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         if(!flow_entry) return 0;
-        struct onvm_pkt_meta *meta = NULL;
+        
         if(((pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h+1)%pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) {
                 #ifdef ENABLE_DEBUG_LOGS
                 printf("\n***** OVERFLOW (Ring buffer Full!!) IN PRE_IO_WAIT_QUEUE!!****** \n");
                 #endif
                 //enable Backpressure on overflow
-                meta = onvm_get_pkt_meta(pkt);
-                if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
-                        SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
-                }
-                return 1 ; //exit(1);
+                mark_flow_for_backpressure(pkt,flow_entry);
+                return 1;
         }
         if(0 == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count) {
             pre_io_wait_ring.wait_list_count++;
         }
-        pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h]=pkt; pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count++;
         //pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count++]=pkt;
+        pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h]=pkt; pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count++;
         if((++(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h)) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h=0;
         
         //Check if Backpressure for this flow needs to be enabled !!
@@ -570,13 +588,8 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
                 #ifdef ENABLE_DEBUG_LOGS
                 printf("\n***** OVERFLOW (Exceeds High Water Mark!) IN PRE_IO_WAIT_QUEUE!!****** \n");
                 #endif
-                meta = onvm_get_pkt_meta(pkt);
-                // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
-                //if(meta->chain_index < 1) continue;
-                //Check the Flow Entry mark status and Add mark if not already done!
-                if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
-                        SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
-                }
+                mark_flow_for_backpressure(pkt,flow_entry);
+                return 0;
         }
 
         return 0;
@@ -600,14 +613,7 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
         }
         //Check if Backpressure for this flow needs to be disabled !!
         if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                struct onvm_pkt_meta *meta = NULL;
-                meta = onvm_get_pkt_meta(pkt);
-                // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
-                //if(meta->chain_index < 1) continue;
-                //Check the Flow Entry mark status and Add mark if not already done!
-                if((TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
-                        CLEAR_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
-                }
+                clear_flow_for_backpressure(pkt,flow_entry);
         }
         
         return pkt;
@@ -663,7 +669,7 @@ int read_aio_buffer(aio_buf_t *pbuf) {
         int ret = 0;
         pbuf->aiocb->aio_nbytes = (size_t)pbuf->buf_len;
         pbuf->aiocb->aio_offset = (__off_t)get_read_file_offset(); //globals.file_offset;
-        globals.file_offset += pbuf->buf_len; //for now always read from offset 0; size 64 or 68 bytes based of pkt type.
+        globals.file_offset += 1; //pbuf->buf_len; //for now always read from offset 0; size 64 or 68 bytes based of pkt type.
 
 #ifdef USE_SYNC_IO
         ret = pread(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
@@ -919,10 +925,6 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                                 if( new_pkt != NULL) {
                                         pkt = new_pkt;      // do io_on the first enqueued_packet()
                                 }
-                                else {
-                                        //should never be the case  //return MARK_PACKET_FOR_DROP;
-                                }
-                                //return MARK_PACKET_TO_RETAIN;   //indicates the packet is held in the wait_queue and will be released later
                         }
                         else {
                                 //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
@@ -943,7 +945,7 @@ do_stats_display(void) {
         //const char clr[] = { 27, '[', '2', 'J', '\0' };
         //const char topLeft[] = { 27, '[', '1', ';', '1', 'H', '\0' };
         static uint32_t pkt_process = 0;
-        pkt_process+=100000;
+        pkt_process+=0;
 
         /* Clear screen and move to top left */
         //printf("%s%s", clr, topLeft);
