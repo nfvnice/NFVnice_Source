@@ -482,6 +482,114 @@ int deinitialize_aio_nf(void) {
         return ret;
 }
 
+
+/** Functions to maintain/enqueue/dequue Per Flow Wait Queue for packets that are yet to initiate I/O */
+#define PERFLOW_QUEUE_RINGSIZE              (128)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
+#define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (100)
+#define PERFLOW_QUEUE_RING_THRESHOLD_LOW    (50)
+#define PERFLOW_QUEUE_LOW_WATERMARK         (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_LOW/100)
+#define PERFLOW_QUEUE_HIGH_WATERMARK        (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_HIGH/100)
+typedef struct per_flow_ring_buffer {
+        uint16_t pkt_count;         // num of entries in the r_buf[]
+        uint16_t r_h;               // read_head in the r_buf[]
+        uint16_t w_h;               // write head in the r_buf[]
+        uint16_t max_len;           // Max size/count of r_buf[]
+        struct rte_mbuf* pktbuf_ring[PERFLOW_QUEUE_RINGSIZE+1];
+}per_flow_ring_buffer_t;
+//per_flow_ring_buffer_t pre_io_wait_ring[MAX_FLOW_TABLE_ENTRIES];
+typedef struct pre_io_wait_queue {
+        uint32_t wait_list_count;
+        per_flow_ring_buffer_t flow_pkts[MAX_FLOW_TABLE_ENTRIES];      //indexed by flow_entry->entry_index
+}pre_io_wait_queue_t;
+pre_io_wait_queue_t pre_io_wait_ring;
+
+int init_pre_io_wait_queue(void);
+int init_pre_io_wait_queue(void) {
+        int i = 0;
+        pre_io_wait_ring.wait_list_count=0;
+        for (i=0; i < MAX_FLOW_TABLE_ENTRIES; i++) {
+                pre_io_wait_ring.flow_pkts[i].pkt_count =0;
+                pre_io_wait_ring.flow_pkts[i].r_h =0;
+                pre_io_wait_ring.flow_pkts[i].w_h =0;
+                pre_io_wait_ring.flow_pkts[i].max_len =PERFLOW_QUEUE_RINGSIZE;
+        }
+        return 0;
+}
+int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry);
+int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+        if(!flow_entry) return 0;
+        return pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count;
+        
+        if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h ==  pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) return 0;
+        //return 0;
+}
+int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+        if(!flow_entry) return 0;
+        struct onvm_pkt_meta *meta = NULL;
+        if(((pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h+1)%pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) {
+                printf("\n***** OVERFLOW (Ring buffer Full!!) IN PRE_IO_WAIT_QUEUE!!****** \n");
+                //enable Backpressure on overflow
+                meta = onvm_get_pkt_meta(pkt);
+                if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
+                        SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
+                }
+                return 1 ; //exit(1);
+        }
+        if(0 == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count) {
+            pre_io_wait_ring.wait_list_count++;
+        }
+        pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h]=pkt; pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count++;
+        //pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count++]=pkt;
+        if((++(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h)) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h=0;
+        
+        //Check if Backpressure for this flow needs to be enabled !!
+        if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count >=PERFLOW_QUEUE_HIGH_WATERMARK) {
+                printf("\n***** OVERFLOW (Exceeds High Water Mark!) IN PRE_IO_WAIT_QUEUE!!****** \n");
+                meta = onvm_get_pkt_meta(pkt);
+                // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
+                //if(meta->chain_index < 1) continue;
+                //Check the Flow Entry mark status and Add mark if not already done!
+                if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
+                        SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
+                }
+        }
+
+        return 0;
+}
+struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry) {
+        if(!flow_entry) return 0;
+        if( pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) return NULL; //empty
+        
+        struct rte_mbuf* pkt = NULL;
+        
+        pkt  = pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h];
+        if(pkt) {
+                pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h] = NULL;
+                if((++(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h)) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h=0;
+                pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count--;
+        }
+        
+        if(0 == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count) {
+            pre_io_wait_ring.wait_list_count--;
+            //if(pre_io_wait_ring.wait_list_count > 0)pre_io_wait_ring.wait_list_count--;
+        }
+        //Check if Backpressure for this flow needs to be disabled !!
+        if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count <= PERFLOW_QUEUE_LOW_WATERMARK) {
+                struct onvm_pkt_meta *meta = NULL;
+                meta = onvm_get_pkt_meta(pkt);
+                // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
+                //if(meta->chain_index < 1) continue;
+                //Check the Flow Entry mark status and Add mark if not already done!
+                if((TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
+                        CLEAR_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
+                }
+        }
+        
+        return pkt;
+}
+
 aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
         if (aio_operation_mode && BUF_IN_USE == aio_buf_pool[globals.cur_buf_index].state) {
                         return &(aio_buf_pool[globals.cur_buf_index]);
@@ -729,113 +837,6 @@ int add_to_logged_flow_list(struct rte_mbuf* pkt) {
 }
 
 
-
-/** Functions to maintain/enqueue/dequue Per Flow Wait Queue for packets that are yet to initiate I/O */
-#define PERFLOW_QUEUE_RINGSIZE              (128)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
-#define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (100)
-#define PERFLOW_QUEUE_RING_THRESHOLD_LOW    (50)
-#define PERFLOW_QUEUE_LOW_WATERMARK         (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_LOW/100)
-#define PERFLOW_QUEUE_HIGH_WATERMARK        (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_HIGH/100)
-typedef struct per_flow_ring_buffer {
-        uint16_t pkt_count;         // num of entries in the r_buf[]
-        uint16_t r_h;               // read_head in the r_buf[]
-        uint16_t w_h;               // write head in the r_buf[]
-        uint16_t max_len;           // Max size/count of r_buf[]
-        struct rte_mbuf* pktbuf_ring[PERFLOW_QUEUE_RINGSIZE+1];
-}per_flow_ring_buffer_t;
-//per_flow_ring_buffer_t pre_io_wait_ring[MAX_FLOW_TABLE_ENTRIES];
-typedef struct pre_io_wait_queue {
-        uint32_t wait_list_count;
-        per_flow_ring_buffer_t flow_pkts[MAX_FLOW_TABLE_ENTRIES];      //indexed by flow_entry->entry_index
-}pre_io_wait_queue_t;
-pre_io_wait_queue_t pre_io_wait_ring;
-
-int init_pre_io_wait_queue(void);
-int init_pre_io_wait_queue(void) {
-        int i = 0;
-        pre_io_wait_ring.wait_list_count=0;
-        for (i=0; i < MAX_FLOW_TABLE_ENTRIES; i++) {
-                pre_io_wait_ring.flow_pkts[i].pkt_count =0;
-                pre_io_wait_ring.flow_pkts[i].r_h =0;
-                pre_io_wait_ring.flow_pkts[i].w_h =0;
-                pre_io_wait_ring.flow_pkts[i].max_len =PERFLOW_QUEUE_RINGSIZE;
-        }
-        return 0;
-}
-int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
-int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
-struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry);
-int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
-        if(!flow_entry) return 0;
-        return pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count;
-        
-        if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h ==  pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) return 0;
-        //return 0;
-}
-int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
-        if(!flow_entry) return 0;
-        struct onvm_pkt_meta *meta = NULL;
-        if(((pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h+1)%pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) {
-                printf("\n***** OVERFLOW (Ring buffer Full!!) IN PRE_IO_WAIT_QUEUE!!****** \n");
-                //enable Backpressure on overflow
-                meta = onvm_get_pkt_meta(pkt);
-                if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
-                        SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
-                }
-                return 1 ; //exit(1);
-        }
-        if(0 == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count) {
-            pre_io_wait_ring.wait_list_count++;
-        }
-        pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h]=pkt; pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count++;
-        //pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count++]=pkt;
-        if((++(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h)) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h=0;
-        
-        //Check if Backpressure for this flow needs to be enabled !!
-        if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count >=PERFLOW_QUEUE_HIGH_WATERMARK) {
-                printf("\n***** OVERFLOW (Exceeds High Water Mark!) IN PRE_IO_WAIT_QUEUE!!****** \n");
-                meta = onvm_get_pkt_meta(pkt);
-                // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
-                //if(meta->chain_index < 1) continue;
-                //Check the Flow Entry mark status and Add mark if not already done!
-                if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
-                        SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
-                }
-        }
-
-        return 0;
-}
-struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry) {
-        if(!flow_entry) return 0;
-        if( pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) return NULL; //empty
-        
-        struct rte_mbuf* pkt = NULL;
-        
-        pkt  = pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h];
-        if(pkt) {
-                pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h] = NULL;
-                if((++(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h)) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h=0;
-                pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count--;
-        }
-        
-        if(0 == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count) {
-            pre_io_wait_ring.wait_list_count--;
-            //if(pre_io_wait_ring.wait_list_count > 0)pre_io_wait_ring.wait_list_count--;
-        }
-        //Check if Backpressure for this flow needs to be disabled !!
-        if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                struct onvm_pkt_meta *meta = NULL;
-                meta = onvm_get_pkt_meta(pkt);
-                // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
-                //if(meta->chain_index < 1) continue;
-                //Check the Flow Entry mark status and Add mark if not already done!
-                if((TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
-                        CLEAR_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
-                }
-        }
-        
-        return pkt;
-}
 /** Build Some Decision mode ACL logic that conditionally logs pkts from certain flows..
  * In simple case: it could be odd/even flow_entry, some src/dst port or hash.rss
  * **/
