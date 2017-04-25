@@ -634,31 +634,35 @@ struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **f
 }
 
 aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
-        /*
-        if (aio_operation_mode && BUF_IN_USE == aio_buf_pool[globals.cur_buf_index].state) {
-                        return &(aio_buf_pool[globals.cur_buf_index]);
-        }
-        else if(BUF_FREE == aio_buf_pool[globals.cur_buf_index].state) {
-                aio_buf_pool[globals.cur_buf_index].state = BUF_IN_USE;
-                //if (AIO_READ_OPERATION == aio_operation_mode) {}
-                return &(aio_buf_pool[globals.cur_buf_index]);
-        }
-        else if (aio_operation_mode && BUF_SUBMITTED == aio_buf_pool[globals.cur_buf_index].state) {
+        if (AIO_READ_OPERATION == aio_operation_mode) {
                 uint32_t i = 0;
                 for (i=0; i < globals.max_bufs; i++) {
-                        if (aio_buf_pool[i].state != BUF_SUBMITTED) {
-                                globals.cur_buf_index = i;
+                        if (BUF_FREE == aio_buf_pool[i].state) {
+                            globals.cur_buf_index = i;
+                            return &(aio_buf_pool[i]);
+                        }
+                }
+                return NULL;
+        }
+        if (AIO_WRITE_OPERATION == aio_operation_mode) {
+                if (BUF_IN_USE == aio_buf_pool[globals.cur_buf_index].state) {
                                 return &(aio_buf_pool[globals.cur_buf_index]);
+                }
+                else if(BUF_FREE == aio_buf_pool[globals.cur_buf_index].state) {
+                        aio_buf_pool[globals.cur_buf_index].state = BUF_IN_USE;
+                        return &(aio_buf_pool[globals.cur_buf_index]);
+                }
+                else if (BUF_SUBMITTED == aio_buf_pool[globals.cur_buf_index].state) {
+                        uint32_t i = 0;
+                        for (i=0; i < globals.max_bufs; i++) {
+                                if (aio_buf_pool[i].state != BUF_SUBMITTED) {
+                                        globals.cur_buf_index = i;
+                                        return &(aio_buf_pool[globals.cur_buf_index]);
+                                }
                         }
                 }
         }
-        */
-        uint32_t i = 0;
-        for (i=0; i < globals.max_bufs; i++) {
-                if (BUF_FREE == aio_buf_pool[i].state) {
-                    return &(aio_buf_pool[i]);
-                }
-        }
+                
         #ifdef ENABLE_DEBUG_LOGS
         printf("\nBuffer:[%p] state=%d, CurrentBufferIndex=%d", &aio_buf_pool[0], aio_buf_pool[0].state, globals.cur_buf_index);
         #endif //#ENABLE_DEBUG_LOGS
