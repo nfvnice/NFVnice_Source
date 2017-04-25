@@ -1024,6 +1024,7 @@ int explicit_callback_function(void) {
         int done = 0;
         struct onvm_flow_entry *flow_entry;
         struct rte_mbuf* pkt = NULL;
+        int count = 0;
         aio_buf_t *pbuf = NULL;     
         do {
                 pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
@@ -1038,7 +1039,9 @@ int explicit_callback_function(void) {
                 else {
                         done = 1;
                 }
+                count++;
         }while (!done);
+        printf("Total Packets processed in explicit_callback()= %d\n", count);
         //while(pbuf) keep processing packets from per_flow_pre_io_wait_queue
         return done;
 }
@@ -1068,6 +1071,7 @@ int main(int argc, char *argv[]) {
                 rte_exit(EXIT_FAILURE, "Initialization failed!! error [%d] \n", ret);
         }
         init_pre_io_wait_queue();
+        register_explicit_callback_function(explicit_callback_function);
         onvm_nflib_run(nf_info, &packet_handler);
         printf("If we reach here, program is ending");
         
