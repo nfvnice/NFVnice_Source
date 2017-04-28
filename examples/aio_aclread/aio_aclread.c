@@ -82,20 +82,21 @@
 #ifdef USE_SYNC_IO
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC)
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
-//#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
-#define FD_OPEN_MODE (O_RDONLY) // (O_RDONLY|O_FSYNC)
+#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
+//#define FD_OPEN_MODE (O_RDONLY) // (O_RDONLY|O_FSYNC)
 #else
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC) 
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
-//#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
-#define FD_OPEN_MODE (O_RDONLY)
+#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
+//#define FD_OPEN_MODE (O_RDONLY)
 #endif //USE_SYNC_IO
 
 
 #ifndef USE_SYNC_IO
 #define PURE_ASYNC_MODE     (0)
 #define PSEUDO_ASYNC_MODE   (1)
-#define ASYNC_MODE  (PURE_ASYNC_MODE)   //(PSEUDO_ASYNC_MODE)
+#define ASYNC_MODE  (PURE_ASYNC_MODE)
+//#define ASYNC_MODE  (PSEUDO_ASYNC_MODE)
 #endif
 
 #define DISPLAY_AFTER_PACKETS   (100000)     //(100000)
@@ -269,7 +270,7 @@ int get_read_file_offset(void);
 #define MAX_PKT_HEADER_SIZE (68)
 #define MAX_PKT_READ_SIZE   (1024)
 
-uint16_t flow_bypass_list[] = {0,1, 2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
+uint16_t flow_bypass_list[] = {2,3}; //{0,1, 2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
 int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 
@@ -791,6 +792,7 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
         
         int ret = refresh_aio_buffer(pbuf);
         
+        #ifndef USE_SYNC_IO
         #if (PSEUDO_ASYNC_MODE == ASYNC_MODE)
         if(wait_mutex && globals.is_blocked_on_sem){
                 sem_post(wait_mutex);
@@ -800,6 +802,7 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
                 notify_for_ecb();
         }
         #endif
+        #endif //#ifndef USE_SYNC_IO
         return ret;
 }
 
@@ -877,6 +880,7 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
         int queued_flow_flag = 0;
 #else
         int ret = 0;
+        int queued_flow_flag = 0;
 #endif //USE_SYNC_IO
 
         if (NULL == flow_entry) {

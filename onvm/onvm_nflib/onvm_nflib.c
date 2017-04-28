@@ -684,8 +684,8 @@ onvm_nflib_drop_pkt(struct rte_mbuf* pkt) {
 
 
 void notify_for_ecb(void) {
+        need_ecb = 1;
         if ((rte_atomic16_read(flag_p) ==1)) {
-            need_ecb = 1;
             onvm_nf_wake_notify(nf_info);
         }
         return;
