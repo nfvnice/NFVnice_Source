@@ -92,6 +92,14 @@
 #endif //USE_SYNC_IO
 
 
+#ifndef USE_SYNC_IO
+#define PURE_ASYNC_MODE     (0)
+#define PSEUDO_ASYNC_MODE   (1)
+#define ASYNC_MODE  (PURE_ASYNC_MODE)   //(PSEUDO_ASYNC_MODE)
+#endif
+
+#define DISPLAY_AFTER_PACKETS   (100000)     //(100000)
+
 /* Struct that contains information about this NF */
 struct onvm_nf_info *nf_info;
 
@@ -174,6 +182,17 @@ static aio_buf_t *aio_buf_pool = NULL;
 sem_t *wait_mutex = NULL;
 #define AIO_REQUEST_PRIO (0)
 
+//AIO Operation type (Read or Write)
+#define AIO_READ_OPERATION    (0)
+#define AIO_WRITE_OPERATION   (1)
+
+//mode=0=> from pkt_handler (can enqueue to wait), mode=1 => from wiat_queue ( cannot enqueue to wiat)
+typedef enum pkt_log_mode {
+        PKT_LOG_WAIT_ENQUEUE_ENABLED = 0,
+        PKT_LOG_WAIT_ENQUEUE_DISABLED=1,
+}pkt_log_mode_e;
+
+
 /******************************************************************************
  *              FUNCTION DECLARATIONS
  ******************************************************************************/
@@ -191,7 +210,6 @@ int initialize_aiocb(aio_buf_t *pbuf);
 int initialize_signal_action (void);
 int initialize_log_file(void);
 int initialize_aio_nf(void);
-
 int deinitialize_aio_buffers (void);
 int deinitialize_sync_variable(void);
 int deinitialize_aiocb(aio_buf_t *pbuf);
@@ -199,8 +217,6 @@ int deinitialize_signal_action (void);
 int deinitialize_log_file(void);
 int deinitialize_aio_nf(void);
 int nf_as_bridge(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta);
-#define AIO_READ_OPERATION    (0)
-#define AIO_WRITE_OPERATION   (1)
 aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode);
 int write_aio_buffer(aio_buf_t *pbuf);
 int refresh_aio_buffer(aio_buf_t *pbuf);
@@ -208,15 +224,57 @@ int read_aio_buffer(aio_buf_t *pbuf);
 
 int wait_for_buffer_ready(unsigned int timeout_ms);
 int notify_io_rw_done(aio_buf_t *pbuf);
+int packet_process_io(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode);
+int validate_packet_and_do_io(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta);
 
-//mode=0=> from pkt_handler (can enqueue to wait), mode=1 => from wiat_queue ( cannot enqueue to wiat)
-typedef enum pkt_log_mode {
-        PKT_LOG_WAIT_ENQUEUE_ENABLED = 0,
-        PKT_LOG_WAIT_ENQUEUE_DISABLED=1,
-}pkt_log_mode_e;
-int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode);
-int validate_packet_and_do_io(struct rte_mbuf* pkt);
 
+static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
+
+
+/** Functions to maintain/enqueue/dequue Per Flow Wait Queue for packets that are yet to initiate I/O */
+#define PERFLOW_QUEUE_RINGSIZE              (128)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
+#define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (100)
+#define PERFLOW_QUEUE_RING_THRESHOLD_LOW    (50)
+#define PERFLOW_QUEUE_LOW_WATERMARK         (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_LOW/100)
+#define PERFLOW_QUEUE_HIGH_WATERMARK        (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_HIGH/100)
+typedef struct per_flow_ring_buffer {
+        uint16_t pkt_count;         // num of entries in the r_buf[]
+        uint16_t r_h;               // read_head in the r_buf[]
+        uint16_t w_h;               // write head in the r_buf[]
+        uint16_t max_len;           // Max size/count of r_buf[]
+        struct rte_mbuf* pktbuf_ring[PERFLOW_QUEUE_RINGSIZE+1];
+}per_flow_ring_buffer_t;
+//per_flow_ring_buffer_t pre_io_wait_ring[MAX_FLOW_TABLE_ENTRIES];
+typedef struct pre_io_wait_queue {
+        uint32_t wait_list_count;
+        per_flow_ring_buffer_t flow_pkts[MAX_FLOW_TABLE_ENTRIES];      //indexed by flow_entry->entry_index
+}pre_io_wait_queue_t;
+pre_io_wait_queue_t pre_io_wait_ring;
+
+int mark_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+int clear_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+
+/* Functions corresponding to Per flow Queue that holds enqueued packets that are waiting to perform I/O. */
+int init_pre_io_wait_queue(void);
+int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry);
+struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **flow_entry);
+
+#define OFFSET_LIST_SIZE    (10)
+static int offset_desc[OFFSET_LIST_SIZE] = { 24576, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384, 32768 };
+int get_read_file_offset(void);
+
+#include <rte_ether.h>
+#define MAX_PKT_HEADER_SIZE (68)
+#define MAX_PKT_READ_SIZE   (1024)
+
+uint16_t flow_bypass_list[] = {0,1, 2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
+int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+
+
+int explicit_callback_function(void);
 /******************************************************************************
  *              FUNCTION DEFINITIONS
  ******************************************************************************/
@@ -415,6 +473,7 @@ int initialize_aio_nf(void) {
         ret = initialize_aio_buffers();
         ret = initialize_sync_variable();
         ret = initialize_signal_action();
+        ret = init_pre_io_wait_queue();
         return ret;
 }
 
@@ -469,7 +528,6 @@ int deinitialize_aio_nf(void) {
 }
 
 //#define USE_KEY_MODE_FOR_FLOW_ENTRY
-static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
 static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry) {
         int ret = -1;
         if(flow_entry)*flow_entry = NULL;
@@ -486,28 +544,6 @@ static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_e
 }
 
 
-/** Functions to maintain/enqueue/dequue Per Flow Wait Queue for packets that are yet to initiate I/O */
-#define PERFLOW_QUEUE_RINGSIZE              (128)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
-#define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (100)
-#define PERFLOW_QUEUE_RING_THRESHOLD_LOW    (50)
-#define PERFLOW_QUEUE_LOW_WATERMARK         (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_LOW/100)
-#define PERFLOW_QUEUE_HIGH_WATERMARK        (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_HIGH/100)
-typedef struct per_flow_ring_buffer {
-        uint16_t pkt_count;         // num of entries in the r_buf[]
-        uint16_t r_h;               // read_head in the r_buf[]
-        uint16_t w_h;               // write head in the r_buf[]
-        uint16_t max_len;           // Max size/count of r_buf[]
-        struct rte_mbuf* pktbuf_ring[PERFLOW_QUEUE_RINGSIZE+1];
-}per_flow_ring_buffer_t;
-//per_flow_ring_buffer_t pre_io_wait_ring[MAX_FLOW_TABLE_ENTRIES];
-typedef struct pre_io_wait_queue {
-        uint32_t wait_list_count;
-        per_flow_ring_buffer_t flow_pkts[MAX_FLOW_TABLE_ENTRIES];      //indexed by flow_entry->entry_index
-}pre_io_wait_queue_t;
-pre_io_wait_queue_t pre_io_wait_ring;
-
-int mark_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
-int clear_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 int mark_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         struct onvm_pkt_meta *meta = NULL;
         meta = onvm_get_pkt_meta(pkt);
@@ -527,7 +563,7 @@ int clear_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *fl
         }
     return 0;
 }
-int init_pre_io_wait_queue(void);
+
 int init_pre_io_wait_queue(void) {
         int i = 0;
         pre_io_wait_ring.wait_list_count=0;
@@ -539,9 +575,6 @@ int init_pre_io_wait_queue(void) {
         }
         return 0;
 }
-int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
-int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
-struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry);
 int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         if(!flow_entry) return 0;
         //return pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count;
@@ -602,7 +635,6 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
         
         return pkt;
 }
-struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **flow_entry);
 struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **flow_entry) {
         if(0 ==pre_io_wait_ring.wait_list_count) return NULL;
         uint32_t i = 0;
@@ -623,6 +655,7 @@ aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
                 for (i=0; i < globals.max_bufs; i++) {
                         if (BUF_FREE == aio_buf_pool[i].state) {
                             globals.cur_buf_index = i;
+                            aio_buf_pool[i].state = BUF_IN_USE;
                             return &(aio_buf_pool[i]);
                         }
                 }
@@ -652,9 +685,7 @@ aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
         #endif //#ENABLE_DEBUG_LOGS
         return NULL;
 }
-#define OFFSET_LIST_SIZE    (10)
-static int offset_desc[OFFSET_LIST_SIZE] = { 24576, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384, 32768 };
-int get_read_file_offset(void);
+
 int get_read_file_offset(void) {
     static int offset_index = 0;
     offset_index +=1; 
@@ -664,8 +695,8 @@ int get_read_file_offset(void) {
 int read_aio_buffer(aio_buf_t *pbuf) {
         int ret = 0;
         pbuf->aiocb->aio_nbytes = (size_t)pbuf->buf_len;
-        pbuf->aiocb->aio_offset = (__off_t)get_read_file_offset(); //globals.file_offset;
-        globals.file_offset += 1; //pbuf->buf_len; //for now always read from offset 0; size 64 or 68 bytes based of pkt type.
+        pbuf->aiocb->aio_offset = (__off_t)get_read_file_offset();
+        //globals.file_offset += 1; //pbuf->buf_len; //for now always read from offset 0; size 64 or 68 bytes based of pkt type.
 
 #ifdef USE_SYNC_IO
         ret = pread(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
@@ -681,8 +712,7 @@ int read_aio_buffer(aio_buf_t *pbuf) {
                 //exit(1);
         }
         pbuf->state = BUF_SUBMITTED;
-#endif
-        //globals.cur_buf_index = ((globals.cur_buf_index+1) % (globals.max_bufs));
+#endif  //USE_SYNC_IO
         globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
         return ret;
 }
@@ -698,6 +728,47 @@ int refresh_aio_buffer(aio_buf_t *pbuf) {
         #endif //ENABLE_DEBUG_LOGS
         return ret;
 }
+
+int wait_for_buffer_ready(unsigned int timeout_ms) {
+        if(!wait_mutex) {
+                //poll or return error
+                return -1;
+        }
+        #ifdef ENABLE_DEBUG_LOGS
+        printf("\n Waiting for Buffer Ready Notification. Block Count= [%d]!!\n", (int)globals.sem_block_count);
+        #endif //ENABLE_DEBUG_LOGS
+
+        if(!timeout_ms) {
+                globals.is_blocked_on_sem = 1;
+                globals.sem_block_count++;
+                sem_wait(wait_mutex);
+                globals.is_blocked_on_sem = 0;
+        }
+        else {
+                struct timespec ts;
+                if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+                        globals.is_blocked_on_sem = 1;
+                        globals.sem_block_count++;
+                        return sem_wait(wait_mutex);
+                }
+                ts.tv_nsec += timeout_ms*1000*1000;
+                ts.tv_sec += ts.tv_nsec /1000000000;
+                ts.tv_nsec %= 1000000000;
+                globals.is_blocked_on_sem = 1;
+                globals.sem_block_count++;
+                int ret = sem_timedwait(wait_mutex,&ts);
+                //what to do?
+                if(ETIMEDOUT == ret) {
+                        globals.is_blocked_on_sem = 0;
+                }
+                return ret;
+        }
+        #ifdef ENABLE_DEBUG_LOGS
+        printf("\nWait Completed! [ block_state=%d, block_count=%d]!!\n", globals.is_blocked_on_sem, (int)globals.sem_block_count);
+        #endif //ENABLE_DEBUG_LOGS
+        return 0;
+}
+
 int notify_io_rw_done(aio_buf_t *pbuf) {
 
         pbuf->req_status = aio_error(pbuf->aiocb);
@@ -720,9 +791,15 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
         
         int ret = refresh_aio_buffer(pbuf);
         
+        #if (PSEUDO_ASYNC_MODE == ASYNC_MODE)
+        if(wait_mutex && globals.is_blocked_on_sem){
+                sem_post(wait_mutex);
+        }
+        #else
         if(pre_io_wait_ring.wait_list_count) {   //packets in pre_io_wait_queue
                 notify_for_ecb();
         }
+        #endif
         return ret;
 }
 
@@ -741,12 +818,7 @@ int clear_thread_start(void *pdata) {
         }
         return ret;
 }
-#include <rte_ether.h>
-#define MAX_PKT_HEADER_SIZE (68)
-#define MAX_PKT_READ_SIZE   (1024)
 
-uint16_t flow_bypass_list[] = {0,1, 2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
-int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         
         //if(flow_entry && flow_entry->entry_index) {
@@ -758,7 +830,7 @@ int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, stru
         }
         return 0;
 }
-int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+
 int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         
         //if(flow_entry && flow_entry->entry_index) {
@@ -786,21 +858,25 @@ int add_to_logged_flow_list(struct rte_mbuf* pkt) {
 /** Build Some Decision mode ACL logic that conditionally logs pkts from certain flows..
  * In simple case: it could be odd/even flow_entry, some src/dst port or hash.rss
  * **/
-int validate_packet_and_do_io(struct rte_mbuf* pkt) {
+int validate_packet_and_do_io(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) {
         struct onvm_flow_entry *flow_entry = NULL;
         get_flow_entry(pkt, &flow_entry);
         
         //if (pkt->hash.rss%3 == 0) return 0;
         if(check_in_flow_bypass_list(pkt, flow_entry)) return 0;
+        
         //if(check_in_logged_flow_list(pkt, flow_entry)) return 0;
-        return 0;
-        return packet_process_io(pkt, flow_entry, PKT_LOG_WAIT_ENQUEUE_ENABLED);
+        
+        //return 0;
+        
+        return packet_process_io(pkt, meta, flow_entry, PKT_LOG_WAIT_ENQUEUE_ENABLED);
 }
-int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode) {
+int packet_process_io(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode) {
 #ifndef USE_SYNC_IO
         int ret = MARK_PACKET_TO_RETAIN;
 #else
         int ret = 0;
+        int queued_flow_flag = 0;
 #endif //USE_SYNC_IO
 
         if (NULL == flow_entry) {
@@ -814,11 +890,23 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
         else return 0;
         
         aio_buf_t *pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
-        if( NULL == pbuf ) {
+        if( (NULL == pbuf)  || (queued_flow_flag = is_flow_pkt_in_pre_io_wait_queue(pkt, flow_entry))) {
 #ifndef USE_SYNC_IO
+                #if (PSEUDO_ASYNC_MODE == ASYNC_MODE) 
+                wait_for_buffer_ready(0);
+                pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
+                if(pbuf == NULL){
+                        #ifdef ENABLE_DEBUG_LOGS
+                        printf("\n No empty Buffers!!\n");
+                        #endif //#ifdef ENABLE_DEBUG_LOGS
+                        return -1;
+                }
+                
+                #else   //Pure Asynchronous Mode
+                
                 //Enqueue the packet to be processed later
                 if((0 == add_flow_pkt_to_pre_io_wait_queue(pkt, flow_entry))){
-                        return MARK_PACKET_TO_RETAIN;   //indicates the packet is held in the wait_queue and will be released later
+                        if(pbuf == NULL ) return MARK_PACKET_TO_RETAIN;   //indicates the packet is held in the wait_queue and will be released later
                 }
                 //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
                 else {
@@ -827,7 +915,8 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                         //#endif
                         return MARK_PACKET_FOR_DROP;
                 }
-                return MARK_PACKET_FOR_DROP;
+                #endif
+                
 #endif //USE_SYNC_IO
         }
 
@@ -838,25 +927,15 @@ int packet_process_io(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry, 
                 #endif //#ifdef ENABLE_DEBUG_LOGS
                 
 #ifndef USE_SYNC_IO
+                #if (PSEUDO_ASYNC_MODE != ASYNC_MODE)
                 // To maintain the packet ordering: check if any of the packets are wait_enabled, then directly enqueue the packet
-                if(is_flow_pkt_in_pre_io_wait_queue(pkt, flow_entry)) {
-                        //int sts = add_flow_pkt_to_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
-                        //return ((sts == 0)? (MARK_PACKET_TO_RETAIN): (MARK_PACKET_FOR_DROP));
-                        //Enqueue the packet to be processed later
-                        if((0 == add_flow_pkt_to_pre_io_wait_queue(pkt, flow_entry))){
-                                struct rte_mbuf* new_pkt = get_next_pkt_for_flow_entry_from_pre_io_wait_queue(flow_entry);
-                                if( new_pkt != NULL) {
-                                        pkt = new_pkt;      // do io_on the first enqueued_packet()
-                                }
-                        }
-                        else {
-                                //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
-                                //#ifdef ENABLE_DEBUG_LOGS
-                                printf("Dropping2 Packets for the Flow with Entry Index: %zu\n ", flow_entry->entry_index);
-                                //#endif
-                                return MARK_PACKET_FOR_DROP;
+                if(queued_flow_flag) {
+                        struct rte_mbuf* new_pkt = get_next_pkt_for_flow_entry_from_pre_io_wait_queue(flow_entry);
+                        if( new_pkt != NULL) {
+                                pkt = new_pkt;      // do io_on the first enqueued_packet()
                         }
                 }
+                #endif
 #endif  //USE_SYNC_IO
 
                 pbuf->pkt = pkt;
@@ -878,9 +957,9 @@ do_stats_display(void) {
 
         //printf("AIO_ACLREADER STATS:\n");
         printf("-----\n");
-        //printf("Total Packets Serviced: %d\n", pkt_process);
-        printf("Total Bytes Written : %d\n", globals.file_offset);
-        //printf("Total Blocks on Sem : %d\n", (uint32_t)globals.sem_block_count);
+        ////printf("Total Packets Serviced: %d\n", pkt_process);
+        //printf("Total Bytes Written : %d\n", globals.file_offset);
+        ////printf("Total Blocks on Sem : %d\n", (uint32_t)globals.sem_block_count);
         printf("Total Flows with pre_io_Wait: %d\n", pre_io_wait_ring.wait_list_count);
         printf("Total pkts in wait_list: %d, %d\n", pre_io_wait_ring.flow_pkts[0].w_h, pre_io_wait_ring.flow_pkts[0].pkt_count);
         //printf("N°   : %d\n", pkt_process);
@@ -899,7 +978,7 @@ int nf_as_bridge(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unus
         meta->destination = pkt->port;
         return 0;
 }
-#define DISPLAY_AFTER_PACKETS   (100)     //(100000)
+
 static int
 packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) { // __attribute__((unused))
         static uint32_t counter = 0;
@@ -909,7 +988,7 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
                 }
 
         int ret=0;
-        ret = validate_packet_and_do_io(pkt); // packet_process_io(pkt, NULL, PKT_LOG_WAIT_ENQUEUE_ENABLED);
+        ret = validate_packet_and_do_io(pkt, meta); // packet_process_io(pkt, meta, NULL, PKT_LOG_WAIT_ENQUEUE_ENABLED);
         
 //For time being act as bridge:
         if (ret == 0) {
@@ -928,13 +1007,13 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_met
         return ret;
 }
 
-int explicit_callback_function(void);
+
 int explicit_callback_function(void) {
         
         #ifdef ENABLE_DEBUG_LOGS
         printf("Inside NFs Explicit Callback Function\n");
         #endif
-        
+        //while(pbuf) keep processing packets from per_flow_pre_io_wait_queue
         int done = 0;
         struct onvm_flow_entry *flow_entry;
         struct rte_mbuf* pkt = NULL;
@@ -943,20 +1022,24 @@ int explicit_callback_function(void) {
         do {
                 pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
                 if( NULL == pbuf ) {
-                        break;//return 0;
-                }
-                pkt = get_first_pkt_from_pre_io_wait_queue(&flow_entry);
-                if(pkt && flow_entry) {
-                        pbuf->pkt = pkt;
-                        read_aio_buffer(pbuf);
+                        done = 1; break;//return 0;
                 }
                 else {
-                        done = 1; break;
+                        pkt = get_first_pkt_from_pre_io_wait_queue(&flow_entry);
+                        if(pkt && flow_entry) {
+                                pbuf->pkt = pkt;
+                                read_aio_buffer(pbuf);
+                                pkt = NULL; flow_entry = NULL;
+                        }
+                        else {
+                                done = 1; break;
+                        }
                 }
                 count++;
         }while (!done);
-        printf("Total Packets processed in explicit_callback()= %d\n", count);
-        //while(pbuf) keep processing packets from per_flow_pre_io_wait_queue
+         #ifdef ENABLE_DEBUG_LOGS
+         printf("Total Packets processed in explicit_callback()= %d\n", count);
+         #endif
         return done;
 }
 
@@ -984,7 +1067,7 @@ int main(int argc, char *argv[]) {
         if(ret) {
                 rte_exit(EXIT_FAILURE, "Initialization failed!! error [%d] \n", ret);
         }
-        init_pre_io_wait_queue();
+        
         register_explicit_callback_function(explicit_callback_function);
         onvm_nflib_run(nf_info, &packet_handler);
         printf("If we reach here, program is ending");
