@@ -216,7 +216,7 @@ int deinitialize_aiocb(aio_buf_t *pbuf);
 int deinitialize_signal_action (void);
 int deinitialize_log_file(void);
 int deinitialize_aio_nf(void);
-int nf_as_bridge(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta);
+int nf_as_bridge(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta);
 aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode);
 int write_aio_buffer(aio_buf_t *pbuf);
 int refresh_aio_buffer(aio_buf_t *pbuf);
@@ -224,8 +224,8 @@ int read_aio_buffer(aio_buf_t *pbuf);
 
 int wait_for_buffer_ready(unsigned int timeout_ms);
 int notify_io_rw_done(aio_buf_t *pbuf);
-int packet_process_io(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode);
-int validate_packet_and_do_io(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta);
+int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode);
+int validate_packet_and_do_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta);
 
 
 static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
@@ -858,7 +858,7 @@ int add_to_logged_flow_list(struct rte_mbuf* pkt) {
 /** Build Some Decision mode ACL logic that conditionally logs pkts from certain flows..
  * In simple case: it could be odd/even flow_entry, some src/dst port or hash.rss
  * **/
-int validate_packet_and_do_io(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) {
+int validate_packet_and_do_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta) {
         struct onvm_flow_entry *flow_entry = NULL;
         get_flow_entry(pkt, &flow_entry);
         
@@ -871,12 +871,12 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attr
         
         return packet_process_io(pkt, meta, flow_entry, PKT_LOG_WAIT_ENQUEUE_ENABLED);
 }
-int packet_process_io(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode) {
+int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode) {
 #ifndef USE_SYNC_IO
         int ret = MARK_PACKET_TO_RETAIN;
+        int queued_flow_flag = 0;
 #else
         int ret = 0;
-        int queued_flow_flag = 0;
 #endif //USE_SYNC_IO
 
         if (NULL == flow_entry) {
@@ -967,7 +967,7 @@ do_stats_display(void) {
 
 }
 
-int nf_as_bridge(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) {
+int nf_as_bridge(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta) {
         if (pkt->port == 0) {
                 meta->destination = 0;
         }
@@ -980,7 +980,7 @@ int nf_as_bridge(struct rte_mbuf* pkt, struct onvm_pkt_meta* __attribute__((unus
 }
 
 static int
-packet_handler(struct rte_mbuf* __attribute__((unused)) pkt, struct onvm_pkt_meta* __attribute__((unused)) meta) { // __attribute__((unused))
+packet_handler(struct rte_mbuf* __attribute__((unused)) pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta) { // __attribute__((unused))
         static uint32_t counter = 0;
                 if (++counter == DISPLAY_AFTER_PACKETS) {
                         do_stats_display();
