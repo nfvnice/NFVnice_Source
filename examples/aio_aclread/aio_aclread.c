@@ -244,8 +244,8 @@ get_rte_ring_queue_name(unsigned id) {
 
 /** Functions to maintain/enqueue/dequue Per Flow Wait Queue for packets that are yet to initiate I/O */
 #define PERFLOW_QUEUE_RINGSIZE              (128)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
-#define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (100)
-#define PERFLOW_QUEUE_RING_THRESHOLD_LOW    (50)
+#define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (75)
+#define PERFLOW_QUEUE_RING_THRESHOLD_LOW    (25)
 #define PERFLOW_QUEUE_LOW_WATERMARK         (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_LOW/100)
 #define PERFLOW_QUEUE_HIGH_WATERMARK        (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_HIGH/100)
 typedef struct per_flow_ring_buffer {
@@ -640,19 +640,25 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         int sts = 0;
         if(rte_ring_full(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) {
                 mark_flow_for_backpressure(pkt,flow_entry);
+                #ifdef ENABLE_DEBUG_LOGS
                 printf("\n Overflow ( Exceeds buffer size)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), (int)flow_entry->entry_index);
+                #endif
                 return 1;
         }
         sts = rte_ring_sp_enqueue(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring, pkt);
         if(sts) {
+                #ifdef ENABLE_DEBUG_LOGS
                 printf("\n Overflow ( Exceeds High Water mark)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), (int)flow_entry->entry_index);
+                #endif
                 mark_flow_for_backpressure(pkt,flow_entry);
         }
         else {
                 if( 1 == rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)){
                 pre_io_wait_ring.wait_list_count++;
                 }
+                #ifdef ENABLE_DEBUG_LOGS
                 printf("\n added pkt to rte_ring: %d:%d:%d\n",rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), (int)flow_entry->entry_index, pre_io_wait_ring.wait_list_count);
+                #endif
         }
         return 0;
         #endif
@@ -688,6 +694,9 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
         if(sts) {
                 return NULL; 
         } else {
+                if(rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
+                clear_flow_for_backpressure(pkt,flow_entry);
+                }
                 if(rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) {
                         pre_io_wait_ring.wait_list_count--;
                 }
@@ -711,10 +720,13 @@ struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **f
         #else
         for ( i = 0; i < MAX_FLOW_TABLE_ENTRIES; i++ ) {
                     if(rte_ring_count(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring)) {
-                        struct rte_mbuf* pkt = NULL;
-                        if (0 == rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring, (void**)&pkt)) {
-                                get_flow_entry(pkt, flow_entry);
-                                return pkt;
+                        
+                        if (0 == rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring, (void**)&w_pkt)) {
+                                get_flow_entry(w_pkt, flow_entry);
+                                if(rte_ring_empty(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring)) {
+                                        pre_io_wait_ring.wait_list_count--;
+                                }
+                                return w_pkt;
                         }
                         break;
                     }
