@@ -78,6 +78,7 @@
 #define ACT_AS_BRIDGE
 //#define ENABLE_DEBUG_LOGS
 //#define USE_SYNC_IO
+#define CHECK_INCLUSIVE_MODE
 
 #ifndef USE_SYNC_IO
 #define PURE_ASYNC_MODE     (0)
@@ -286,8 +287,12 @@ int get_read_file_offset(void);
 #define MAX_PKT_HEADER_SIZE (68)
 #define MAX_PKT_READ_SIZE   (1024)
 
-uint16_t flow_bypass_list[] = {2,3}; //{0,1, 2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
+
+uint16_t flow_bypass_list[] = {0,1}; //{0,1, 2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
 int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+uint16_t flow_needio_list[] = {0,1}; //{0,1, 2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
+int check_in_flow_needio_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+
 int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 
 
@@ -930,6 +935,19 @@ int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, stru
         return 0;
 }
 
+int check_in_flow_needio_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+        
+        //if(flow_entry && flow_entry->entry_index) {
+        if(flow_entry) {
+              uint16_t i = 0;
+              for(i=0; i< sizeof(flow_needio_list)/sizeof(uint16_t); i++) {
+                      if(flow_needio_list[i] == flow_entry->entry_index) return 1;
+              }
+        }
+        return 0;
+}
+
+
 int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         
         //if(flow_entry && flow_entry->entry_index) {
@@ -962,8 +980,11 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt,  __attribute__((unused)) str
         get_flow_entry(pkt, &flow_entry);
         
         //if (pkt->hash.rss%3 == 0) return 0;
+        #ifdef CHECK_INCLUSIVE_MODE
+        if(!check_in_flow_needio_list(pkt, flow_entry)) return 0;
+        #else
         if(check_in_flow_bypass_list(pkt, flow_entry)) return 0;
-        
+        #endif
         //if(check_in_logged_flow_list(pkt, flow_entry)) return 0;
         
         //return 0;
