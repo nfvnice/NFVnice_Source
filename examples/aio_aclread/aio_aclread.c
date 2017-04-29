@@ -238,7 +238,7 @@ get_rte_ring_queue_name(unsigned id) {
          * by maximum 4 digits (plus an extra byte for safety) */
         static char buffer[sizeof(PER_FLOW_Q_NAME) + 5];
 
-        snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_RXQ_NAME, id);
+        snprintf(buffer, sizeof(buffer) - 1, PER_FLOW_Q_NAME, id);
         return buffer;
 }
 
@@ -584,8 +584,9 @@ int init_pre_io_wait_queue(void) {
         pre_io_wait_ring.wait_list_count=0;
         #ifdef USE_RTE_RING
         unsigned socket_id =  rte_socket_id();
+        //socket_id =  SOCKET_ID_ANY;
         const char * ring_name = NULL;
-        const unsigned ringsize = PERFLOW_QUEUE_RINGSIZE;
+        const unsigned ring_size = PERFLOW_QUEUE_RINGSIZE;
         #endif
         for (i=0; i < MAX_FLOW_TABLE_ENTRIES; i++) {
                 pre_io_wait_ring.flow_pkts[i].pkt_count =0;
@@ -639,10 +640,12 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         int sts = 0;
         if(rte_ring_full(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) {
                 mark_flow_for_backpressure(pkt,flow_entry);
+                printf("\n Overflow ( Exceeds buffer size)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), flow_entry->entry_index);
                 return 1;
         }
         sts = rte_ring_sp_enqueue(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring, pkt);
         if(sts) {
+                printf("\n Overflow ( Exceeds High Water mark)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), flow_entry->entry_index);
                 mark_flow_for_backpressure(pkt,flow_entry);
         }
         else {
