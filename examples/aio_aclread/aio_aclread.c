@@ -995,18 +995,6 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
 #ifndef USE_SYNC_IO
 #if (PURE_ASYNC_MODE == ASYNC_MODE)
         queued_flow_flag = is_flow_pkt_in_pre_io_wait_queue(pkt, flow_entry);
-        if(queued_flow_flag) {
-                //Enqueue the packet to be processed later
-                if((0 == add_flow_pkt_to_pre_io_wait_queue(pkt, flow_entry))){
-                }
-                //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
-                else {
-                        #ifdef ENABLE_DEBUG_LOGS
-                        printf("Dropping 1 Packets for the Flow with Entry Index: %zu\n ", flow_entry->entry_index);
-                        #endif
-                        return MARK_PACKET_FOR_DROP;
-                }
-        }
 #endif
 #endif
         aio_buf_t *pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
@@ -1039,7 +1027,7 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
         }
 
         if(pbuf != NULL) {
-                pbuf->buf_len = MAX_PKT_READ_SIZE; //MIN(MAX_PKT_READ_SIZE, pkt->buf_len);
+                
                 #ifdef ENABLE_DEBUG_LOGS
                 printf("\n reading ACL [%d] to Log Buffer after [%d] packets\n",pkt->buf_len, 1);
                 #endif //#ifdef ENABLE_DEBUG_LOGS
@@ -1047,7 +1035,18 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
 #ifndef USE_SYNC_IO
                 #if (PSEUDO_ASYNC_MODE != ASYNC_MODE)
                 // To maintain the packet ordering: check if any of the packets are wait_enabled, then directly enqueue the packet
-                if(queued_flow_flag) {
+                if(queued_flow_flag) {                    
+                        //Enqueue the current packet to be processed later; and continue processing the first packet in queue instead
+                        if((0 == add_flow_pkt_to_pre_io_wait_queue(pkt, flow_entry))){
+                        }
+                        //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
+                        else {
+                                #ifdef ENABLE_DEBUG_LOGS
+                                printf("Dropping 1 Packets for the Flow with Entry Index: %zu\n ", flow_entry->entry_index);
+                                #endif
+                                ret = MARK_PACKET_FOR_DROP;
+                        }
+                        
                         struct rte_mbuf* new_pkt = get_next_pkt_for_flow_entry_from_pre_io_wait_queue(flow_entry);
                         if( new_pkt != NULL) {
                                 pkt = new_pkt;      // do io_on the first enqueued_packet()
@@ -1055,7 +1054,7 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
                 }
                 #endif
 #endif  //USE_SYNC_IO
-
+                pbuf->buf_len = MAX_PKT_READ_SIZE; //MIN(MAX_PKT_READ_SIZE, pkt->buf_len);
                 pbuf->pkt = pkt;
                 read_aio_buffer(pbuf);
                 //add_to_logged_flow_list(pkt);
