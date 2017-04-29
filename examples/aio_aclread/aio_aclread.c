@@ -992,12 +992,13 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt,  __attribute__((unused)) str
         return packet_process_io(pkt, meta, flow_entry, PKT_LOG_WAIT_ENQUEUE_ENABLED);
 }
 int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode) {
+        struct rte_mbuf* new_pkt = pkt;
 #ifndef USE_SYNC_IO
         int ret = MARK_PACKET_TO_RETAIN;
         int queued_flow_flag = 0;
 #else
         int ret = 0;
-        int queued_flow_flag = 0;
+        
 #endif //USE_SYNC_IO
 
         if (NULL == flow_entry) {
@@ -1068,15 +1069,12 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
                                 ret = MARK_PACKET_FOR_DROP;
                         }
                         
-                        struct rte_mbuf* new_pkt = get_next_pkt_for_flow_entry_from_pre_io_wait_queue(flow_entry);
-                        if( new_pkt != NULL) {
-                                pkt = new_pkt;      // do io_on the first enqueued_packet()
-                        }
+                        new_pkt = get_next_pkt_for_flow_entry_from_pre_io_wait_queue(flow_entry);
                 }
                 #endif
 #endif  //USE_SYNC_IO
                 pbuf->buf_len = MAX_PKT_READ_SIZE; //MIN(MAX_PKT_READ_SIZE, pkt->buf_len);
-                pbuf->pkt = pkt;
+                pbuf->pkt = new_pkt;
                 read_aio_buffer(pbuf);
                 //add_to_logged_flow_list(pkt);
         }
