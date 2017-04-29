@@ -816,9 +816,9 @@ int refresh_aio_buffer(aio_buf_t *pbuf) {
         int ret = 0;
         pbuf->aiocb->aio_nbytes = (size_t)0;
         pbuf->aiocb->aio_offset = (__off_t)0;
-        pbuf->state = BUF_FREE;
         pbuf->buf_len=0;
         pbuf->pkt = NULL;
+        pbuf->state = BUF_FREE;
         #ifdef ENABLE_DEBUG_LOGS
         printf("\n Buffer [%p] state moved to FREE [%d]\n",pbuf, pbuf->state);
         #endif //ENABLE_DEBUG_LOGS
@@ -868,10 +868,11 @@ int wait_for_buffer_ready(unsigned int timeout_ms) {
 int notify_io_rw_done(aio_buf_t *pbuf) {
 
         pbuf->req_status = aio_error(pbuf->aiocb);
-        #ifdef ENABLE_DEBUG_LOGS
+        
         if(0 != pbuf->req_status) {
                 printf("\n Aio_read/write completed with error [ %d]\n", pbuf->req_status);
         }
+        #ifdef ENABLE_DEBUG_LOGS
         else {
                 printf("Aio_read/write completed Successfully [%d]!!\n", pbuf->req_status);
         }
