@@ -607,9 +607,13 @@ int init_pre_io_wait_queue(void) {
 int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         if(!flow_entry) return 0;
         //return pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count;
-        
+        #ifndef USE_RTE_RING
         if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h ==  pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) return 0;
         return 1;
+        #else
+        if (rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) return 0;
+        return 1;
+        #endif
 }
 int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         if(!flow_entry) return 0;
@@ -727,7 +731,7 @@ struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **f
                         if (0 == rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring, (void**)&pkt)) {
                                 get_flow_entry(pkt, flow_entry);
                                 if(rte_ring_count(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                                        clear_flow_for_backpressure(pkt,flow_entry);
+                                        clear_flow_for_backpressure(pkt,*flow_entry);
                                 }
                                 if(rte_ring_empty(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring)) {
                                         pre_io_wait_ring.wait_list_count--;
@@ -746,7 +750,7 @@ aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
                 uint32_t i = 0;
                 for (i=0; i < globals.max_bufs; i++) {
                         if (BUF_FREE == aio_buf_pool[i].state) {
-                            globals.cur_buf_index = i;
+                            //globals.cur_buf_index = i;
                             aio_buf_pool[i].state = BUF_IN_USE;
                             return &(aio_buf_pool[i]);
                         }
@@ -792,7 +796,7 @@ int read_aio_buffer(aio_buf_t *pbuf) {
 
 #ifdef USE_SYNC_IO
         ret = pread(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
-        globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
+        //globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
         refresh_aio_buffer(pbuf);
         return ret;
 #else
@@ -805,7 +809,7 @@ int read_aio_buffer(aio_buf_t *pbuf) {
         }
         pbuf->state = BUF_SUBMITTED;
 #endif  //USE_SYNC_IO
-        globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
+        //globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
         return ret;
 }
 int refresh_aio_buffer(aio_buf_t *pbuf) {
@@ -1005,9 +1009,9 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
                 }
                 //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
                 else {
-                        //#ifdef ENABLE_DEBUG_LOGS
+                        #ifdef ENABLE_DEBUG_LOGS
                         printf("Dropping 1 Packets for the Flow with Entry Index: %zu\n ", flow_entry->entry_index);
-                        //#endif
+                        #endif
                         return MARK_PACKET_FOR_DROP;
                 }
                 #endif
@@ -1110,10 +1114,10 @@ int explicit_callback_function(void) {
         #endif
         //while(pbuf) keep processing packets from per_flow_pre_io_wait_queue
         int done = 0;
-        struct onvm_flow_entry *flow_entry;
-        struct rte_mbuf* pkt = NULL;
         int count = 0;
-        aio_buf_t *pbuf = NULL;     
+        aio_buf_t *pbuf = NULL;
+        struct onvm_flow_entry *flow_entry = NULL;
+        struct rte_mbuf* pkt = NULL;
         do {
                 pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
                 if( NULL == pbuf ) {
@@ -1123,6 +1127,7 @@ int explicit_callback_function(void) {
                         pkt = get_first_pkt_from_pre_io_wait_queue(&flow_entry);
                         if(pkt && flow_entry) {
                                 pbuf->pkt = pkt;
+                                pbuf->buf_len = MAX_PKT_READ_SIZE;
                                 read_aio_buffer(pbuf);
                                 pkt = NULL; flow_entry = NULL;
                         }
