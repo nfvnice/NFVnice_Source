@@ -640,18 +640,19 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         int sts = 0;
         if(rte_ring_full(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) {
                 mark_flow_for_backpressure(pkt,flow_entry);
-                printf("\n Overflow ( Exceeds buffer size)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), flow_entry->entry_index);
+                printf("\n Overflow ( Exceeds buffer size)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), (int)flow_entry->entry_index);
                 return 1;
         }
         sts = rte_ring_sp_enqueue(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring, pkt);
         if(sts) {
-                printf("\n Overflow ( Exceeds High Water mark)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), flow_entry->entry_index);
+                printf("\n Overflow ( Exceeds High Water mark)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), (int)flow_entry->entry_index);
                 mark_flow_for_backpressure(pkt,flow_entry);
         }
         else {
                 if( 1 == rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)){
                 pre_io_wait_ring.wait_list_count++;
                 }
+                printf("\n added pkt to rte_ring: %d:%d:%d\n",rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), (int)flow_entry->entry_index, pre_io_wait_ring.wait_list_count);
         }
         return 0;
         #endif
