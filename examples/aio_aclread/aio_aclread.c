@@ -86,7 +86,7 @@
 #define ASYNC_MODE  (PURE_ASYNC_MODE)
 //#define ASYNC_MODE  (PSEUDO_ASYNC_MODE)
 #if (ASYNC_MODE == PURE_ASYNC_MODE)
-//#define USE_RTE_RING
+#define USE_RTE_RING
 #endif
 #endif
 
@@ -681,7 +681,8 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
         struct rte_mbuf* pkt = NULL;
         
         #ifndef USE_RTE_RING
-        if( pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) return NULL; //empty
+        if( pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) 
+            return NULL; //empty
                 
         pkt  = pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h];
         if(pkt) {
@@ -700,7 +701,8 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
         }
         #else
         int sts = 0;
-        if(rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) return NULL;
+        if(rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) 
+            return NULL;
         sts = rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring, (void**)&pkt);
         if(sts) {
                 return NULL; 
@@ -992,7 +994,7 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt,  __attribute__((unused)) str
         return packet_process_io(pkt, meta, flow_entry, PKT_LOG_WAIT_ENQUEUE_ENABLED);
 }
 int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta, struct onvm_flow_entry *flow_entry, __attribute__((unused)) pkt_log_mode_e mode) {
-        struct rte_mbuf* new_pkt = pkt;
+        struct rte_mbuf* io_pkt = pkt;
 #ifndef USE_SYNC_IO
         int ret = MARK_PACKET_TO_RETAIN;
         int queued_flow_flag = 0;
@@ -1016,7 +1018,7 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
 
 #ifndef USE_SYNC_IO
 #if (PURE_ASYNC_MODE == ASYNC_MODE)
-        queued_flow_flag = is_flow_pkt_in_pre_io_wait_queue(pkt, flow_entry);
+        
 #endif
 #endif
         aio_buf_t *pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
@@ -1055,8 +1057,9 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
                 #endif //#ifdef ENABLE_DEBUG_LOGS
                 
 #ifndef USE_SYNC_IO
-                #if (PSEUDO_ASYNC_MODE != ASYNC_MODE)
+                #if (PURE_ASYNC_MODE == ASYNC_MODE)
                 // To maintain the packet ordering: check if any of the packets are wait_enabled, then directly enqueue the packet
+                queued_flow_flag = is_flow_pkt_in_pre_io_wait_queue(pkt, flow_entry);
                 if(queued_flow_flag) {                    
                         //Enqueue the current packet to be processed later; and continue processing the first packet in queue instead
                         if((0 == add_flow_pkt_to_pre_io_wait_queue(pkt, flow_entry))){
@@ -1069,12 +1072,12 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
                                 ret = MARK_PACKET_FOR_DROP;
                         }
                         
-                        new_pkt = get_next_pkt_for_flow_entry_from_pre_io_wait_queue(flow_entry);
+                        io_pkt = get_next_pkt_for_flow_entry_from_pre_io_wait_queue(flow_entry);
                 }
                 #endif
 #endif  //USE_SYNC_IO
                 pbuf->buf_len = MAX_PKT_READ_SIZE; //MIN(MAX_PKT_READ_SIZE, pkt->buf_len);
-                pbuf->pkt = new_pkt;
+                pbuf->pkt = io_pkt;
                 read_aio_buffer(pbuf);
                 //add_to_logged_flow_list(pkt);
         }
