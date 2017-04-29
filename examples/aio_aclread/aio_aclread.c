@@ -102,7 +102,7 @@
 #endif //USE_SYNC_IO
 
 
-#define DISPLAY_AFTER_PACKETS   (100000)     //(100000)
+#define DISPLAY_AFTER_PACKETS   (1000000)     //(100000)
 
 /* Struct that contains information about this NF */
 struct onvm_nf_info *nf_info;
@@ -987,10 +987,30 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
             printf("Flow with Entry Index: %zu\n ", flow_entry->entry_index);
             #endif
         }
-        else return 0;
-        
+        else  {
+                printf("\n Flow without any Flow Entry!!!:\n ");
+                return 0;
+        }
+
+#ifndef USE_SYNC_IO
+#if (PURE_ASYNC_MODE == ASYNC_MODE)
+        queued_flow_flag = is_flow_pkt_in_pre_io_wait_queue(pkt, flow_entry);
+        if(queued_flow_flag) {
+                //Enqueue the packet to be processed later
+                if((0 == add_flow_pkt_to_pre_io_wait_queue(pkt, flow_entry))){
+                }
+                //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
+                else {
+                        #ifdef ENABLE_DEBUG_LOGS
+                        printf("Dropping 1 Packets for the Flow with Entry Index: %zu\n ", flow_entry->entry_index);
+                        #endif
+                        return MARK_PACKET_FOR_DROP;
+                }
+        }
+#endif
+#endif
         aio_buf_t *pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
-        if( (NULL == pbuf)  || (queued_flow_flag = is_flow_pkt_in_pre_io_wait_queue(pkt, flow_entry))) {
+        if( (NULL == pbuf) ) {
 #ifndef USE_SYNC_IO
                 #if (PSEUDO_ASYNC_MODE == ASYNC_MODE) 
                 wait_for_buffer_ready(0);
@@ -1001,12 +1021,10 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
                         #endif //#ifdef ENABLE_DEBUG_LOGS
                         return -1;
                 }
-                
                 #else   //Pure Asynchronous Mode
-                
                 //Enqueue the packet to be processed later
                 if((0 == add_flow_pkt_to_pre_io_wait_queue(pkt, flow_entry))){
-                        if(pbuf == NULL ) return MARK_PACKET_TO_RETAIN;   //indicates the packet is held in the wait_queue and will be released later
+                        return MARK_PACKET_TO_RETAIN;   //indicates the packet is held in the wait_queue and will be released later
                 }
                 //Failed to add pkt to the wait_queue ( indicates overflow.. mark to drop and setup the Flow OverFlow (backpressure)
                 else {
