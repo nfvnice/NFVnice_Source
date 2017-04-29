@@ -78,6 +78,7 @@
 #define ACT_AS_BRIDGE
 //#define ENABLE_DEBUG_LOGS
 //#define USE_SYNC_IO
+//#define USE_RTE_RING
 
 #ifdef USE_SYNC_IO
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC)
@@ -230,7 +231,16 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt,  __attribute__((unused)) str
 
 
 static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_entry);
+#define PER_FLOW_Q_NAME "Per_flow_queue_%u"
+static inline const char *
+get_rte_ring_queue_name(unsigned id) {
+        /* buffer for return value. Size calculated by %u being replaced
+         * by maximum 4 digits (plus an extra byte for safety) */
+        static char buffer[sizeof(PER_FLOW_Q_NAME) + 5];
 
+        snprintf(buffer, sizeof(buffer) - 1, MP_CLIENT_RXQ_NAME, id);
+        return buffer;
+}
 
 /** Functions to maintain/enqueue/dequue Per Flow Wait Queue for packets that are yet to initiate I/O */
 #define PERFLOW_QUEUE_RINGSIZE              (128)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
@@ -243,7 +253,11 @@ typedef struct per_flow_ring_buffer {
         uint16_t r_h;               // read_head in the r_buf[]
         uint16_t w_h;               // write head in the r_buf[]
         uint16_t max_len;           // Max size/count of r_buf[]
+        #ifndef USE_RTE_RING
         struct rte_mbuf* pktbuf_ring[PERFLOW_QUEUE_RINGSIZE+1];
+        #else
+        struct rte_ring *pktbuf_rte_ring;   //alternative use the rte_ring buffer to enqueue/dequeue the packets
+        #endif
 }per_flow_ring_buffer_t;
 //per_flow_ring_buffer_t pre_io_wait_ring[MAX_FLOW_TABLE_ENTRIES];
 typedef struct pre_io_wait_queue {
@@ -436,7 +450,7 @@ initialize_aio_buffers (void) {
         return ret;
 }
 int initialize_log_file(void) {
-        globals.fd = open(globals.pktlog_file, FD_OPEN_MODE, 0);
+        globals.fd = open(globals.pktlog_file, FD_OPEN_MODE, 0666);
         if (-1 == globals.fd) {
                 rte_exit(EXIT_FAILURE, "Cannot create file: %s \n", globals.pktlog_file);
         }
@@ -568,11 +582,22 @@ int clear_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *fl
 int init_pre_io_wait_queue(void) {
         int i = 0;
         pre_io_wait_ring.wait_list_count=0;
+        #ifdef USE_RTE_RING
+        unsigned socket_id =  rte_socket_id();
+        const char * ring_name = NULL;
+        const unsigned ringsize = PERFLOW_QUEUE_RINGSIZE;
+        #endif
         for (i=0; i < MAX_FLOW_TABLE_ENTRIES; i++) {
                 pre_io_wait_ring.flow_pkts[i].pkt_count =0;
                 pre_io_wait_ring.flow_pkts[i].r_h =0;
                 pre_io_wait_ring.flow_pkts[i].w_h =0;
+                #ifndef USE_RTE_RING
                 pre_io_wait_ring.flow_pkts[i].max_len =PERFLOW_QUEUE_RINGSIZE;
+                #else
+                ring_name = get_rte_ring_queue_name(i);
+                pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring = rte_ring_create(ring_name, ring_size,socket_id,RING_F_SP_ENQ|RING_F_SC_DEQ);
+                rte_ring_set_water_mark(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring, PERFLOW_QUEUE_HIGH_WATERMARK);
+                #endif
         }
         return 0;
 }
@@ -586,6 +611,7 @@ int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pk
 int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         if(!flow_entry) return 0;
         
+        #ifndef USE_RTE_RING       
         if(((pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h+1)%pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) {
                 #ifdef ENABLE_DEBUG_LOGS
                 printf("\n***** OVERFLOW (Ring buffer Full!!) IN PRE_IO_WAIT_QUEUE!!****** \n");
@@ -609,15 +635,33 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
                 mark_flow_for_backpressure(pkt,flow_entry);
                 return 0;
         }
+        #else
+        int sts = 0;
+        if(rte_ring_full(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) {
+                mark_flow_for_backpressure(pkt,flow_entry);
+                return 1;
+        }
+        sts = rte_ring_sp_enqueue(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring, pkt);
+        if(sts) {
+                mark_flow_for_backpressure(pkt,flow_entry);
+        }
+        else {
+                if( 1 == rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)){
+                pre_io_wait_ring.wait_list_count++;
+                }
+        }
+        return 0;
+        #endif
 
         return 0;
 }
 struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry) {
         if(!flow_entry) return 0;
-        if( pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) return NULL; //empty
-        
         struct rte_mbuf* pkt = NULL;
         
+        #ifndef USE_RTE_RING
+        if( pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) return NULL; //empty
+                
         pkt  = pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h];
         if(pkt) {
                 pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h] = NULL;
@@ -633,13 +677,26 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
         if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count <= PERFLOW_QUEUE_LOW_WATERMARK) {
                 clear_flow_for_backpressure(pkt,flow_entry);
         }
-        
+        #else
+        int sts = 0;
+        if(rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) return NULL;
+        sts = rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring, (void**)&pkt);
+        if(sts) {
+                return NULL; 
+        } else {
+                if(rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) {
+                        pre_io_wait_ring.wait_list_count--;
+                }
+        }
+        #endif
         return pkt;
 }
 struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **flow_entry) {
         if(0 ==pre_io_wait_ring.wait_list_count) return NULL;
         uint32_t i = 0;
         struct rte_mbuf* w_pkt = NULL;
+        
+        #ifndef USE_RTE_RING
         for ( i = 0; i < MAX_FLOW_TABLE_ENTRIES; i++ ) {
                     if(pre_io_wait_ring.flow_pkts[i].pkt_count) {
                         get_flow_entry(pre_io_wait_ring.flow_pkts[i].pktbuf_ring[pre_io_wait_ring.flow_pkts[i].r_h], flow_entry);
@@ -647,6 +704,18 @@ struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **f
                         break;
                     }
         }
+        #else
+        for ( i = 0; i < MAX_FLOW_TABLE_ENTRIES; i++ ) {
+                    if(rte_ring_count(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring)) {
+                        struct rte_mbuf* pkt = NULL;
+                        if (0 == rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring, (void**)&pkt)) {
+                                get_flow_entry(pkt, flow_entry);
+                                return pkt;
+                        }
+                        break;
+                    }
+        }
+        #endif
         return w_pkt;
 }
 
