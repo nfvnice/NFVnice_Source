@@ -693,9 +693,10 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
         sts = rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring, (void**)&pkt);
         if(sts) {
                 return NULL; 
-        } else {
+        } 
+        else {
                 if(rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                clear_flow_for_backpressure(pkt,flow_entry);
+                        clear_flow_for_backpressure(pkt,flow_entry);
                 }
                 if(rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) {
                         pre_io_wait_ring.wait_list_count--;
@@ -723,6 +724,9 @@ struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **f
                         
                         if (0 == rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring, (void**)&w_pkt)) {
                                 get_flow_entry(w_pkt, flow_entry);
+                                if(rte_ring_count(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
+                                        clear_flow_for_backpressure(pkt,flow_entry);
+                                }
                                 if(rte_ring_empty(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring)) {
                                         pre_io_wait_ring.wait_list_count--;
                                 }
