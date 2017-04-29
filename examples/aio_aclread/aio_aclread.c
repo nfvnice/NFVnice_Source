@@ -1142,6 +1142,7 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt,  __attribute__((unu
         if(MARK_PACKET_FOR_DROP == ret) {
                 meta->action = ONVM_NF_ACTION_DROP;
                 ret = 0;
+                counter--;
         }
         return ret;
 }
@@ -1161,7 +1162,7 @@ int explicit_callback_function(void) {
         do {
                 pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
                 if( NULL == pbuf ) {
-                        done = 1; break;//return 0;
+                        return 0; //done = 1; break;//return 0;
                 }
                 else {
                         pkt = get_first_pkt_from_pre_io_wait_queue(&flow_entry);
