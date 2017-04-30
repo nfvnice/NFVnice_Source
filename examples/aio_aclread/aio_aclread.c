@@ -246,16 +246,21 @@ get_rte_ring_queue_name(unsigned id) {
 }
 
 /** Functions to maintain/enqueue/dequue Per Flow Wait Queue for packets that are yet to initiate I/O */
-#define PERFLOW_QUEUE_RINGSIZE              (128)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
+#define PERFLOW_QUEUE_RINGSIZE              (32)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
 #define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (100)
 #define PERFLOW_QUEUE_RING_THRESHOLD_LOW    (50)
 #define PERFLOW_QUEUE_LOW_WATERMARK         (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_LOW/100)
 #define PERFLOW_QUEUE_HIGH_WATERMARK        (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_HIGH/100)
+
+#define RING_BUF_NORMAL     (0)
+#define RING_BUF_OVER_HWM   (1)
+#define RING_BUF_OVERFLOW   (1) //(2)  TODO: consider how to address OVERFLOW-->OVER_HWM
 typedef struct per_flow_ring_buffer {
         uint16_t pkt_count;         // num of entries in the r_buf[]
         uint16_t r_h;               // read_head in the r_buf[]
         uint16_t w_h;               // write head in the r_buf[]
         uint16_t max_len;           // Max size/count of r_buf[]
+        uint16_t ring_status;       // 0 = Normal; 1 = Exceeds High Water Mark; 2 = Overflow
         #ifndef USE_RTE_RING
         struct rte_mbuf* pktbuf_ring[PERFLOW_QUEUE_RINGSIZE+1];
         #else
@@ -629,7 +634,10 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
                 printf("\n***** OVERFLOW (Ring buffer Full!!) IN PRE_IO_WAIT_QUEUE!!****** \n");
                 #endif
                 //enable Backpressure on overflow
-                mark_flow_for_backpressure(pkt,flow_entry);
+                if(RING_BUF_OVERFLOW != pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status) {
+                        pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status = RING_BUF_OVERFLOW;
+                        mark_flow_for_backpressure(pkt,flow_entry);
+                }
                 return 1;
         }
         if(0 == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count) {
@@ -644,13 +652,19 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
                 //#ifdef ENABLE_DEBUG_LOGS
                 printf("\n***** OVERFLOW (Exceeds High Water Mark!) IN PRE_IO_WAIT_QUEUE!!****** [r:%d, w:%d, c:%d]\n", pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h, pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h, pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count);
                 //#endif
-                mark_flow_for_backpressure(pkt,flow_entry);
+                if(RING_BUF_NORMAL == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status) {
+                        pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status = RING_BUF_OVER_HWM;
+                        mark_flow_for_backpressure(pkt,flow_entry);
+                }
                 return 0;
         }
         #else
         int sts = 0;
         if(rte_ring_full(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) {
-                mark_flow_for_backpressure(pkt,flow_entry);
+                if(RING_BUF_OVERFLOW != pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status) {
+                        pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status = RING_BUF_OVERFLOW;
+                        mark_flow_for_backpressure(pkt,flow_entry);
+                }
                 #ifdef ENABLE_DEBUG_LOGS
                 printf("\n Overflow ( Exceeds buffer size)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), (int)flow_entry->entry_index);
                 #endif
@@ -661,7 +675,10 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
                 #ifdef ENABLE_DEBUG_LOGS
                 printf("\n Overflow ( Exceeds High Water mark)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), (int)flow_entry->entry_index);
                 #endif
-                mark_flow_for_backpressure(pkt,flow_entry);
+                if(RING_BUF_NORMAL == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status) {
+                        pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status = RING_BUF_OVER_HWM;
+                        mark_flow_for_backpressure(pkt,flow_entry);
+                }
                 if ( -ENOBUFS == sts) {
                         return 1;
                 }
@@ -700,7 +717,10 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
                 }
                 //Check if Backpressure for this flow needs to be disabled !!
                 else if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                        clear_flow_for_backpressure(pkt,flow_entry);
+                        if(RING_BUF_NORMAL != pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status) {
+                                pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status = RING_BUF_NORMAL;
+                                clear_flow_for_backpressure(pkt,flow_entry);
+                        }
                 }
         }
         #else
@@ -716,7 +736,10 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
                         pre_io_wait_ring.wait_list_count--;
                 }
                 else if(rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                        clear_flow_for_backpressure(pkt,flow_entry);
+                        if(RING_BUF_NORMAL != pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status) {
+                                pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status = RING_BUF_NORMAL;
+                                clear_flow_for_backpressure(pkt,flow_entry);
+                        }
                 }
         }
         #endif
@@ -745,7 +768,10 @@ struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **f
                                         pre_io_wait_ring.wait_list_count--;
                                 }
                                 else if(rte_ring_count(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                                        clear_flow_for_backpressure(pkt,*flow_entry);
+                                        if(RING_BUF_NORMAL != pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status) {
+                                                pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status = RING_BUF_NORMAL;
+                                                clear_flow_for_backpressure(pkt,flow_entry);
+                                        }
                                 }
                                 return pkt;
                         }
@@ -786,7 +812,7 @@ aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
                         }
                 }
         }
-                
+
         #ifdef ENABLE_DEBUG_LOGS
         printf("\nBuffer:[%p] state=%d, CurrentBufferIndex=%d", &aio_buf_pool[0], aio_buf_pool[0].state, globals.cur_buf_index);
         #endif //#ENABLE_DEBUG_LOGS
@@ -1176,7 +1202,7 @@ int explicit_callback_function(void) {
                                 pkt = NULL; flow_entry = NULL;
                         }
                         else {
-                                done = 1; break;
+                               return 1; // done = 1; break;
                         }
                 }
                 count++;
