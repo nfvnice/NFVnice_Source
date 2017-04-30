@@ -591,7 +591,7 @@ onvm_nflib_run(
                                 pktsTX[tx_batch_size++] = pkts[i];
                         }
                         else {
-                                //tx_stats->tx_buffer[info->instance_id]++;
+                                tx_stats->tx_buffer[info->instance_id]++;
                         }
                 }
 

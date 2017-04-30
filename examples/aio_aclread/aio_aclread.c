@@ -621,7 +621,7 @@ int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pk
         #endif
 }
 int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
-        if(!flow_entry) return 0;
+        if(!flow_entry) return 1;
         
         #ifndef USE_RTE_RING       
         if(((pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h+1)%pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) {
@@ -662,10 +662,13 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
                 printf("\n Overflow ( Exceeds High Water mark)! %d, %d\n", rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), (int)flow_entry->entry_index);
                 #endif
                 mark_flow_for_backpressure(pkt,flow_entry);
+                if ( -ENOBUFS == sts) {
+                        return 1;
+                }
         }
         else {
                 if( 1 == rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)){
-                pre_io_wait_ring.wait_list_count++;
+                        pre_io_wait_ring.wait_list_count++;
                 }
                 #ifdef ENABLE_DEBUG_LOGS
                 printf("\n added pkt to rte_ring: %d:%d:%d\n",rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring), (int)flow_entry->entry_index, pre_io_wait_ring.wait_list_count);
@@ -677,12 +680,12 @@ int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_ent
         return 0;
 }
 struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry) {
-        if(!flow_entry) return 0;
+        if(!flow_entry) return NULL;
         struct rte_mbuf* pkt = NULL;
         
         #ifndef USE_RTE_RING
         if( pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) 
-            return NULL; //empty
+                return NULL; //empty
                 
         pkt  = pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h];
         if(pkt) {
