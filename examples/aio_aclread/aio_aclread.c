@@ -689,30 +689,31 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
                 pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_ring[pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h] = NULL;
                 if((++(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h)) == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].max_len) pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h=0;
                 pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count--;
-        }
         
-        if(0 == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count) {
-            pre_io_wait_ring.wait_list_count--;
-            //if(pre_io_wait_ring.wait_list_count > 0)pre_io_wait_ring.wait_list_count--;
-        }
-        //Check if Backpressure for this flow needs to be disabled !!
-        if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                clear_flow_for_backpressure(pkt,flow_entry);
+        
+                if(0 == pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count) {
+                    pre_io_wait_ring.wait_list_count--;
+                    //if(pre_io_wait_ring.wait_list_count > 0)pre_io_wait_ring.wait_list_count--;
+                }
+                //Check if Backpressure for this flow needs to be disabled !!
+                else if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count <= PERFLOW_QUEUE_LOW_WATERMARK) {
+                        clear_flow_for_backpressure(pkt,flow_entry);
+                }
         }
         #else
         int sts = 0;
         if(rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) 
-            return NULL;
+                return NULL;
         sts = rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring, (void**)&pkt);
         if(sts) {
                 return NULL; 
         } 
         else {
-                if(rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                        clear_flow_for_backpressure(pkt,flow_entry);
-                }
                 if(rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) {
                         pre_io_wait_ring.wait_list_count--;
+                }
+                else if(rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
+                        clear_flow_for_backpressure(pkt,flow_entry);
                 }
         }
         #endif
@@ -737,11 +738,11 @@ struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **f
                         
                         if (0 == rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring, (void**)&pkt)) {
                                 get_flow_entry(pkt, flow_entry);
-                                if(rte_ring_count(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                                        clear_flow_for_backpressure(pkt,*flow_entry);
-                                }
                                 if(rte_ring_empty(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring)) {
                                         pre_io_wait_ring.wait_list_count--;
+                                }
+                                else if(rte_ring_count(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
+                                        clear_flow_for_backpressure(pkt,*flow_entry);
                                 }
                                 return pkt;
                         }
@@ -812,7 +813,7 @@ int read_aio_buffer(aio_buf_t *pbuf) {
                 printf("Error at aio_read(): %s\n", strerror(errno));
                 ret = pbuf->req_status;
                 return refresh_aio_buffer(pbuf);
-                //exit(1);
+                exit(1);
         }
         pbuf->state = BUF_SUBMITTED;
 #endif  //USE_SYNC_IO
@@ -874,22 +875,21 @@ int wait_for_buffer_ready(unsigned int timeout_ms) {
 
 int notify_io_rw_done(aio_buf_t *pbuf) {
 
-        pbuf->req_status = aio_error(pbuf->aiocb);
-        
+        #ifdef ENABLE_DEBUG_LOGS
+        pbuf->req_status = aio_error(pbuf->aiocb);       
         if(0 != pbuf->req_status) {
                 printf("\n Aio_read/write completed with error [ %d]\n", pbuf->req_status);
         }
-        #ifdef ENABLE_DEBUG_LOGS
         else {
                 printf("Aio_read/write completed Successfully [%d]!!\n", pbuf->req_status);
         }
         #endif //#ifdef ENABLE_DEBUG_LOGS
 
         if(pbuf->pkt) {
-            #ifdef ACT_AS_BRIDGE
-            struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pbuf->pkt);
-            nf_as_bridge(pbuf->pkt,meta);
-            #endif
+                #ifdef ACT_AS_BRIDGE
+                struct onvm_pkt_meta *meta = onvm_get_pkt_meta(pbuf->pkt);
+                nf_as_bridge(pbuf->pkt,meta);
+                #endif
                 onvm_nflib_return_pkt(pbuf->pkt);
         }
         
@@ -1013,14 +1013,9 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
         }
         else  {
                 printf("\n Flow without any Flow Entry!!!:\n ");
-                return 0;
+                exit(2); //return 0;
         }
 
-#ifndef USE_SYNC_IO
-#if (PURE_ASYNC_MODE == ASYNC_MODE)
-        
-#endif
-#endif
         aio_buf_t *pbuf = get_aio_buffer_from_aio_buf_pool(AIO_READ_OPERATION);
         if( (NULL == pbuf) ) {
 #ifndef USE_SYNC_IO
@@ -1052,10 +1047,6 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
 
         if(pbuf != NULL) {
                 
-                #ifdef ENABLE_DEBUG_LOGS
-                printf("\n reading ACL [%d] to Log Buffer after [%d] packets\n",pkt->buf_len, 1);
-                #endif //#ifdef ENABLE_DEBUG_LOGS
-                
 #ifndef USE_SYNC_IO
                 #if (PURE_ASYNC_MODE == ASYNC_MODE)
                 // To maintain the packet ordering: check if any of the packets are wait_enabled, then directly enqueue the packet
@@ -1076,8 +1067,15 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
                 }
                 #endif
 #endif  //USE_SYNC_IO
+
+                
                 pbuf->buf_len = MAX_PKT_READ_SIZE; //MIN(MAX_PKT_READ_SIZE, pkt->buf_len);
                 pbuf->pkt = io_pkt;
+                
+                #ifdef ENABLE_DEBUG_LOGS
+                printf("\n reading ACL [%d] to Log Buffer after [%d] packets\n",pkt->buf_len, 1);
+                #endif //#ifdef ENABLE_DEBUG_LOGS
+                
                 read_aio_buffer(pbuf);
                 //add_to_logged_flow_list(pkt);
         }
@@ -1107,12 +1105,14 @@ do_stats_display(void) {
 }
 
 int nf_as_bridge(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta) {
+        #if 0
         if (pkt->port == 0) {
                 meta->destination = 0;
         }
         else {
                 meta->destination = 0;
         }
+        #endif
         meta->action = ONVM_NF_ACTION_OUT;
         meta->destination = pkt->port;
         return 0;
