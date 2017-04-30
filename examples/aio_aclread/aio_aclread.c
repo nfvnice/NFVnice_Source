@@ -768,9 +768,9 @@ struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **f
                                         pre_io_wait_ring.wait_list_count--;
                                 }
                                 else if(rte_ring_count(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
-                                        if(RING_BUF_NORMAL != pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status) {
-                                                pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status = RING_BUF_NORMAL;
-                                                clear_flow_for_backpressure(pkt,flow_entry);
+                                        if(RING_BUF_NORMAL != pre_io_wait_ring.flow_pkts[i].ring_status) {
+                                                pre_io_wait_ring.flow_pkts[i].ring_status = RING_BUF_NORMAL;
+                                                clear_flow_for_backpressure(pkt,*flow_entry);
                                         }
                                 }
                                 return pkt;
