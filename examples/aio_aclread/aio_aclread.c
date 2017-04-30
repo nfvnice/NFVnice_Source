@@ -1029,7 +1029,7 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
                         #ifdef ENABLE_DEBUG_LOGS
                         printf("\n No empty Buffers!!\n");
                         #endif //#ifdef ENABLE_DEBUG_LOGS
-                        return -1;
+                        return MARK_PACKET_FOR_DROP;
                 }
                 #else   //Pure Asynchronous Mode
                 //Enqueue the packet to be processed later
