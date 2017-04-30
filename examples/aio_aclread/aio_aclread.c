@@ -1194,6 +1194,7 @@ int main(int argc, char *argv[]) {
         argc -= arg_offset;
         argv += arg_offset;
 
+
         if (parse_app_args(argc, argv, progname) < 0)
                 rte_exit(EXIT_FAILURE, "Invalid command-line arguments\n");
         
