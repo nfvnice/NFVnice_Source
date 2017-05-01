@@ -576,14 +576,17 @@ static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_e
 
 
 int mark_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+        #ifdef ENABLE_NF_BACKPRESSURE
         struct onvm_pkt_meta *meta = NULL;
         meta = onvm_get_pkt_meta(pkt);
         if(!(TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
                 SET_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
         }
+        #endif
         return 0 ; //exit(1);
 }
 int clear_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+        #ifdef ENABLE_NF_BACKPRESSURE
         struct onvm_pkt_meta *meta = NULL;
         meta = onvm_get_pkt_meta(pkt);
         // Enable below line to skip the 1st NF in the chain Note: <=1 => skip Flow_rule_installer and the First NF in the chain; <1 => skip only the Flow_rule_installer NF
@@ -592,6 +595,7 @@ int clear_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *fl
         if((TEST_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index))) {
                 CLEAR_BIT(flow_entry->sc->highest_downstream_nf_index_id, meta->chain_index);
         }
+        #endif
     return 0;
 }
 
