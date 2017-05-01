@@ -278,8 +278,8 @@ typedef struct pre_io_wait_queue {
 }pre_io_wait_queue_t;
 pre_io_wait_queue_t pre_io_wait_ring;
 
-int mark_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
-int clear_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
+int mark_flow_for_backpressure(__attribute__((unused)) struct rte_mbuf* pkt, __attribute__((unused)) struct onvm_flow_entry *flow_entry);
+int clear_flow_for_backpressure(__attribute__((unused)) struct rte_mbuf* pkt, __attribute__((unused)) struct onvm_flow_entry *flow_entry);
 
 /* Functions corresponding to Per flow Queue that holds enqueued packets that are waiting to perform I/O. */
 int init_pre_io_wait_queue(void);
@@ -575,7 +575,7 @@ static int get_flow_entry( struct rte_mbuf *pkt, struct onvm_flow_entry **flow_e
 }
 
 
-int mark_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+int mark_flow_for_backpressure(__attribute__((unused)) struct rte_mbuf* pkt, __attribute__((unused)) struct onvm_flow_entry *flow_entry) {
         #ifdef ENABLE_NF_BACKPRESSURE
         struct onvm_pkt_meta *meta = NULL;
         meta = onvm_get_pkt_meta(pkt);
@@ -585,7 +585,7 @@ int mark_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flo
         #endif
         return 0 ; //exit(1);
 }
-int clear_flow_for_backpressure(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
+int clear_flow_for_backpressure(__attribute__((unused)) struct rte_mbuf* pkt, __attribute__((unused)) struct onvm_flow_entry *flow_entry) {
         #ifdef ENABLE_NF_BACKPRESSURE
         struct onvm_pkt_meta *meta = NULL;
         meta = onvm_get_pkt_meta(pkt);
