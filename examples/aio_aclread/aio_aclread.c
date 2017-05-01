@@ -621,11 +621,11 @@ int init_pre_io_wait_queue(void) {
 int deinit_pre_io_wait_queue(void) {
         int i = 0;
         struct rte_mbuf* pkt = NULL;
+        struct onvm_pkt_meta* meta = NULL;
         for (i=0; i < MAX_FLOW_TABLE_ENTRIES; i++) {
                 #ifndef USE_RTE_RING
                 if(pre_io_wait_ring.flow_pkts[i].pkt_count) {
                         struct onvm_flow_entry *flow_entry = NULL;
-                        struct onvm_pkt_meta* meta = NULL;
                         get_flow_entry(pre_io_wait_ring.flow_pkts[i].pktbuf_ring[pre_io_wait_ring.flow_pkts[i].r_h], &flow_entry);
                         //return all the packets
                         while(pre_io_wait_ring.flow_pkts[i].pkt_count) {
