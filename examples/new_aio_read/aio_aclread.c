@@ -217,7 +217,7 @@ int log_all_wait_buf_pkts(void);
  */
 int add_buf_to_wait_pkts(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         if(wait_pkts[flow_entry->entry_index].count < WAIT_PACKET_STORE_SIZE) {
-                wait_pkts[flow_entry->entry_index].buffer[wait_pkts.count++] = pkt;
+                wait_pkts[flow_entry->entry_index].buffer[wait_pkts[flow_entry->entry_index].count++] = pkt;
                 return 0;
         }
         return 1;
@@ -627,13 +627,16 @@ int clear_thread_start(void *pdata) {
 #define MAX_PKT_HEADER_SIZE (68)
 
 int log_all_wait_buf_pkts(void) {
-        if(wait_pkts.count) {
-               uint32_t i = 0;
-               for(i=0; i< wait_pkts.count; i++) {
-                       log_the_packet(wait_pkts.buffer[i], PKT_LOG_WAIT_ENQUEUE_DISABLED);
-                       onvm_nflib_return_pkt(wait_pkts.buffer[i]);
-               }
-               wait_pkts.count = 0;
+        int i = 0;
+        for (i=0; i <MAX_FLOW_TABLE_ENTRIES; i++) {
+                if(wait_pkts[i].count) {
+                       uint32_t j = 0;
+                       for(j=0; j< wait_pkts[i].count; j++) {
+                               log_the_packet(wait_pkts[i].buffer[j], PKT_LOG_WAIT_ENQUEUE_DISABLED);
+                               onvm_nflib_return_pkt(wait_pkts[i].buffer[j]);
+                       }
+                       wait_pkts[i].count = 0;
+                }
         }
         return 0;
 }
@@ -710,7 +713,9 @@ int log_the_packet(struct rte_mbuf* pkt, pkt_log_mode_e mode) {
 
         pkt_buf_t *pbuf = get_buffer_to_log();
         if( NULL == pbuf) {
-                if((PKT_LOG_WAIT_ENQUEUE_ENABLED == mode)  && (0 == (ret = add_buf_to_wait_pkts(pkt)))){
+                struct onvm_flow_entry *flow_entry = NULL;
+                get_flow_entry(pkt, &flow_entry);
+                if((PKT_LOG_WAIT_ENQUEUE_ENABLED == mode)  && (0 == (ret = add_buf_to_wait_pkts(pkt,flow_entry)))){
                         return 1;   //indicates the packet is held in the wait_queue and will be released later
                 } //else: enqueue to wiat_bufs has failed, block till bufs are released..
                 wait_for_buffer_ready(0);
