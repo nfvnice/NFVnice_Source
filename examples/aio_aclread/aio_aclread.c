@@ -283,7 +283,7 @@ int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pk
 int add_flow_pkt_to_pre_io_wait_queue(struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_flow_entry *flow_entry);
 struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **flow_entry);
-
+int deinit_pre_io_wait_queue(void);
 #define OFFSET_LIST_SIZE    (10)
 static int offset_desc[OFFSET_LIST_SIZE] = { 24576, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384, 32768 };
 int get_read_file_offset(void);
@@ -546,11 +546,11 @@ int deinitialize_aio_buffers (void) {
 }
 int deinitialize_aio_nf(void) {
         int ret = 0;
+        ret = deinit_pre_io_wait_queue();
         ret = deinitialize_signal_action();
         ret = deinitialize_sync_variable();
         ret = deinitialize_log_file();
         ret = deinitialize_aio_buffers();
-
         return ret;
 }
 
@@ -612,6 +612,38 @@ int init_pre_io_wait_queue(void) {
                 rte_ring_set_water_mark(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring, PERFLOW_QUEUE_HIGH_WATERMARK);
                 #endif
         }
+        return 0;
+}
+int deinit_pre_io_wait_queue(void) {
+        int i = 0;
+        struct rte_mbuf* pkt = NULL;
+        for (i=0; i < MAX_FLOW_TABLE_ENTRIES; i++) {
+                #ifndef USE_RTE_RING
+                if(pre_io_wait_ring.flow_pkts[i].pkt_count) {
+                        struct onvm_flow_entry *flow_entry = NULL;
+                        get_flow_entry(pre_io_wait_ring.flow_pkts[i].pktbuf_ring[pre_io_wait_ring.flow_pkts[i].r_h], &flow_entry);
+                        //return all the packets
+                        while(pre_io_wait_ring.flow_pkts[i].pkt_count) {
+                                pkt = get_next_pkt_for_flow_entry_from_pre_io_wait_queue(flow_entry);
+                                onvm_nflib_return_pkt(pkt);
+                        }
+                        pre_io_wait_ring.flow_pkts[i].pkt_count = 0;
+                }
+                pre_io_wait_ring.flow_pkts[i].r_h =0;
+                pre_io_wait_ring.flow_pkts[i].w_h =0;
+                pre_io_wait_ring.flow_pkts[i].max_len =PERFLOW_QUEUE_RINGSIZE;
+                #else
+                int pkt_count = 0;
+                if((pkt_count = rte_ring_count(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring))) {
+                        while(pkt_count) {
+                            rte_ring_sc_dequeue(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring, (void**)&pkt);
+                            onvm_nflib_return_pkt(pkt);
+                        }
+                }
+                rte_ring_free(pre_io_wait_ring.flow_pkts[i].pktbuf_rte_ring);
+                #endif
+        }
+        pre_io_wait_ring.wait_list_count=0;
         return 0;
 }
 int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
