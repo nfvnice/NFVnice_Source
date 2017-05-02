@@ -1115,8 +1115,8 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
                         #endif
                         ret = MARK_PACKET_FOR_DROP; //return MARK_PACKET_FOR_DROP;
                 }
-                #endif
                 return ret;
+                #endif
 #endif //USE_SYNC_IO
         }
 
@@ -1142,7 +1142,6 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
                 }
                 #endif
 #endif  //USE_SYNC_IO
-
                 
                 pbuf->buf_len = MAX_PKT_READ_SIZE; //MIN(MAX_PKT_READ_SIZE, pkt->buf_len);
                 pbuf->pkt = io_pkt;
