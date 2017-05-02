@@ -1073,7 +1073,7 @@ int packet_process_io(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm
         struct rte_mbuf* io_pkt = pkt;
 #ifndef USE_SYNC_IO
         int ret = MARK_PACKET_TO_RETAIN;
-        int queued_flow_flag = 0;
+         __attribute__((unused)) int queued_flow_flag = 0;
 #else
         int ret = 0;
 #endif //USE_SYNC_IO
