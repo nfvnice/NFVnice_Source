@@ -88,6 +88,8 @@
 #if (ASYNC_MODE == PURE_ASYNC_MODE)
 #define USE_RTE_RING
 #endif
+#else
+//#define USE_SYNC_PREAD
 #endif
 
 #ifdef USE_SYNC_IO
@@ -877,7 +879,12 @@ int read_aio_buffer(aio_buf_t *pbuf) {
         //globals.file_offset += 1; //pbuf->buf_len; //for now always read from offset 0; size 64 or 68 bytes based of pkt type.
 
 #ifdef USE_SYNC_IO
+        #ifdef USE_SYNC_PREAD
         ret = pread(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
+        #else
+        ret = lseek(globals.fd, pbuf->aiocb->aio_offset, SEEK_SET);
+        ret = read(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes);
+        #endif
         //globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
         refresh_aio_buffer(pbuf);
         return ret;
