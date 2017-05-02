@@ -516,6 +516,7 @@ register_signal_handler(void) {
 
         for (i = 1; i < 31; i++) {
                 if(i == SIGWINCH)continue;
+                if(i == SIGSEGV)continue;
                 //if(i==SIGFPE)continue;
                 sigaction(i, &act, 0);
         }
