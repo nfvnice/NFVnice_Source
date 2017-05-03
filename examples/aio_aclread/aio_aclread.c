@@ -977,7 +977,7 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
                 onvm_nflib_return_pkt(pbuf->pkt);
         }
         #ifdef USE_SYNC_IO
-        pwrite(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
+        if(pwrite(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset)) {};
         #endif
         
         int ret = refresh_aio_buffer(pbuf);
