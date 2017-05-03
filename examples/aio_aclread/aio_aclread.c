@@ -77,7 +77,7 @@
 //NF specific Feature Options
 #define ACT_AS_BRIDGE
 #define TWO_PORT_BRIDGE
-#define USE_SYNC_IO
+//#define USE_SYNC_IO
 #define CHECK_INCLUSIVE_MODE
 //#define ENABLE_DEBUG_LOGS
 
@@ -103,15 +103,15 @@
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC) 
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
 //#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
-//#define FD_OPEN_MODE (O_RDONLY)
-#define FD_OPEN_MODE (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
+#define FD_OPEN_MODE (O_RDONLY)
+//#define FD_OPEN_MODE (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
 #endif //USE_SYNC_IO
 
 
 #define DISPLAY_AFTER_PACKETS   (1000000)
 #define MAX_PKT_BUF_SIZE (64*1024)
 #define BUF_SIZE MAX_PKT_BUF_SIZE
-#define MAX_PKT_BUFFERS (5)
+#define MAX_PKT_BUFFERS (1)
 //int pktBufList[MAX_PKT_BUFFERS];
 
 #define errExit(msg) do { perror(msg); exit(EXIT_FAILURE); } while (0)
@@ -666,9 +666,9 @@ int deinit_pre_io_wait_queue(void) {
 }
 int is_flow_pkt_in_pre_io_wait_queue(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         if(!flow_entry) return 0;
-        //return pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count;
         #ifndef USE_RTE_RING
         if(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].w_h ==  pre_io_wait_ring.flow_pkts[flow_entry->entry_index].r_h) return 0;
+        //return pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pkt_count;
         return 1;
         #else
         if (rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) return 0;
@@ -784,6 +784,10 @@ struct rte_mbuf* get_next_pkt_for_flow_entry_from_pre_io_wait_queue(struct onvm_
         else {
                 if(rte_ring_empty(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring)) {
                         pre_io_wait_ring.wait_list_count--;
+                        if(RING_BUF_NORMAL != pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status) {
+                                pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status = RING_BUF_NORMAL;
+                                clear_flow_for_backpressure(pkt,flow_entry);
+                        }
                 }
                 else if(rte_ring_count(pre_io_wait_ring.flow_pkts[flow_entry->entry_index].pktbuf_rte_ring) <= PERFLOW_QUEUE_LOW_WATERMARK) {
                         if(RING_BUF_NORMAL != pre_io_wait_ring.flow_pkts[flow_entry->entry_index].ring_status) {
