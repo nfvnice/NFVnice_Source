@@ -76,7 +76,8 @@
 
 //NF specific Feature Options
 #define ACT_AS_BRIDGE
-//#define USE_SYNC_IO
+#define TWO_PORT_BRIDGE
+#define USE_SYNC_IO
 #define CHECK_INCLUSIVE_MODE
 //#define ENABLE_DEBUG_LOGS
 
@@ -86,7 +87,7 @@
 #define ASYNC_MODE  (PURE_ASYNC_MODE)
 //#define ASYNC_MODE  (PSEUDO_ASYNC_MODE)
 #if (ASYNC_MODE == PURE_ASYNC_MODE)
-#define USE_RTE_RING
+//#define USE_RTE_RING
 #endif
 #else
 //#define USE_SYNC_PREAD
@@ -96,12 +97,14 @@
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC)
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
 //#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
-#define FD_OPEN_MODE (O_RDONLY) // (O_RDONLY|O_FSYNC)
+//#define FD_OPEN_MODE (O_RDONLY) // (O_RDONLY|O_FSYNC)
+#define FD_OPEN_MODE (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
 #else
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC) 
 //#define FD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
 //#define FD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
-#define FD_OPEN_MODE (O_RDONLY)
+//#define FD_OPEN_MODE (O_RDONLY)
+#define FD_OPEN_MODE (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
 #endif //USE_SYNC_IO
 
 
@@ -303,7 +306,7 @@ uint16_t flow_bypass_list[] = {0,1}; //{0,1, 2,3, 6,7, 10,11, 14,15}; //{0,1, 4,
 int check_in_flow_bypass_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 uint16_t flow_needio_list[] = {0,1}; //{0,1, 2,3, 6,7, 10,11, 14,15}; //{0,1, 4,5, 8,9, 12,13}; //{2,3, 6,7, 10,11, 14,15};
 int check_in_flow_needio_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
-
+int check_flow_needio_info(__attribute__((unused)) struct rte_mbuf* pkt, __attribute__((unused)) struct onvm_flow_entry *flow_entry);
 int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry);
 
 
@@ -973,6 +976,9 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
                 #endif
                 onvm_nflib_return_pkt(pbuf->pkt);
         }
+        #ifdef USE_SYNC_IO
+        pwrite(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset);
+        #endif
         
         int ret = refresh_aio_buffer(pbuf);
         
@@ -986,6 +992,7 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
                 notify_for_ecb();
         }
         #endif
+        #else
         #endif //#ifndef USE_SYNC_IO
         return ret;
 }
@@ -1029,7 +1036,13 @@ int check_in_flow_needio_list(__attribute__((unused)) struct rte_mbuf* pkt, stru
         }
         return 0;
 }
-
+int check_flow_needio_info(__attribute__((unused)) struct rte_mbuf* pkt, __attribute__((unused)) struct onvm_flow_entry *flow_entry) {
+        struct ipv4_hdr* ipv4 = onvm_pkt_ipv4_hdr(pkt);
+        if (ipv4->next_proto_id == IP_PROTOCOL_UDP) {
+                        return 1;
+        }
+        return 0;
+}
 
 int check_in_logged_flow_list(__attribute__((unused)) struct rte_mbuf* pkt, struct onvm_flow_entry *flow_entry) {
         
@@ -1063,6 +1076,8 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt,  __attribute__((unused)) str
         get_flow_entry(pkt, &flow_entry);
         
         if(NULL == flow_entry) return 0;
+        
+        if(!check_flow_needio_info(pkt, flow_entry)) return 0;
         
         //if (pkt->hash.rss%3 == 0) return 0;
         #ifdef CHECK_INCLUSIVE_MODE
@@ -1191,16 +1206,17 @@ do_stats_display(void) {
 }
 
 int nf_as_bridge(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta) {
-        #if 0
+        #ifdef TWO_PORT_BRIDGE
         if (pkt->port == 0) {
-                meta->destination = 0;
+                meta->destination = 1;
         }
         else {
                 meta->destination = 0;
         }
+        #else
+            meta->destination = pkt->port;
         #endif
         meta->action = ONVM_NF_ACTION_OUT;
-        meta->destination = pkt->port;
         return 0;
 }
 int set_packet_for_drop(struct rte_mbuf* pkt,  __attribute__((unused)) struct onvm_pkt_meta* meta) {
