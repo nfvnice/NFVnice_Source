@@ -66,7 +66,7 @@
 #include "onvm_sc_mgr.h"
 
 
-#define NF_TAG "pkt_logger"
+#define NF_TAG "aio_reader"
 
 #define MIN(a,b) ((a) < (b)? (a):(b))
 #define MAX(a,b) ((a) > (b)? (a):(b))
@@ -78,8 +78,11 @@
 #define ACT_AS_BRIDGE
 #define TWO_PORT_BRIDGE
 //#define USE_SYNC_IO
-#define CHECK_INCLUSIVE_MODE
+#define CHECK_INCLUSIVE_MODE    //(list defines flow_ids that will be included for I/O)
+#define DIFF_WITH_TCP_UDP_FLOWS //(TCP bypass I/O, UDP perform I/O)
+//#define DO_WRITE_BACK         //( do write to invalidate read buffer)
 //#define ENABLE_DEBUG_LOGS
+
 
 #ifndef USE_SYNC_IO
 #define PURE_ASYNC_MODE     (0)
@@ -111,8 +114,8 @@
 #define DISPLAY_AFTER_PACKETS   (1000000)
 #define MAX_PKT_BUF_SIZE (64*1024)
 #define BUF_SIZE MAX_PKT_BUF_SIZE
-#define MAX_PKT_BUFFERS (1)
-//int pktBufList[MAX_PKT_BUFFERS];
+#define MAX_AIO_BUFFERS     (1024)  //(5) (1)
+//int pktBufList[MAX_AIO_BUFFERS];
 
 #define errExit(msg) do { perror(msg); exit(EXIT_FAILURE); } while (0)
 #define errMsg(msg)  do { perror(msg); } while (0)
@@ -145,7 +148,7 @@ static globalArgs_t globals = {
         .pktlog_file = "logger_pkt.txt", // "/dev/null", // "pkt_logger.txt", //
         .read_file = "logger_pkt.txt",
         .base_ip_addr   = "10.0.0.1",
-        .max_bufs   = MAX_PKT_BUFFERS, //1,
+        .max_bufs   = MAX_AIO_BUFFERS, //1,
         .buf_size   = BUF_SIZE, //4096, //128
         .fd = -1,
         .file_offset = 0,
@@ -166,9 +169,6 @@ typedef struct flow_logged_data_t {
         uint16_t ft_list[MAX_FLOW_TABLE_ENTRIES];
 }flow_logged_data_t;
 static flow_logged_data_t flow_logged_info;
-
-
-
 
 typedef enum AIOBufState {
         BUF_FREE = 0,
@@ -255,8 +255,8 @@ get_rte_ring_queue_name(unsigned id) {
 }
 
 /** Functions to maintain/enqueue/dequue Per Flow Wait Queue for packets that are yet to initiate I/O */
-#define PERFLOW_QUEUE_RINGSIZE              (128)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
-#define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (100)
+#define PERFLOW_QUEUE_RINGSIZE              (2048)      // (32) (64) (128) (256) (512) (1024) (2048) (4096)
+#define PERFLOW_QUEUE_RING_THRESHOLD_HIGH   (80)
 #define PERFLOW_QUEUE_RING_THRESHOLD_LOW    (50)
 #define PERFLOW_QUEUE_LOW_WATERMARK         (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_LOW/100)
 #define PERFLOW_QUEUE_HIGH_WATERMARK        (PERFLOW_QUEUE_RINGSIZE*PERFLOW_QUEUE_RING_THRESHOLD_HIGH/100)
@@ -295,6 +295,7 @@ struct rte_mbuf* get_first_pkt_from_pre_io_wait_queue(struct onvm_flow_entry **f
 int deinit_pre_io_wait_queue(void);
 #define OFFSET_LIST_SIZE    (10)
 static int offset_desc[OFFSET_LIST_SIZE] = { 24576, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384, 32768 };
+#define OFFSET_MULTIPLIER   (1024)  //(1024*1024)   //(1)
 int get_read_file_offset(void);
 
 #include <rte_ether.h>
@@ -882,7 +883,7 @@ int get_read_file_offset(void) {
 int read_aio_buffer(aio_buf_t *pbuf) {
         int ret = 0;
         pbuf->aiocb->aio_nbytes = (size_t)pbuf->buf_len;
-        pbuf->aiocb->aio_offset = (__off_t)get_read_file_offset();
+        pbuf->aiocb->aio_offset = (__off_t)(get_read_file_offset()*OFFSET_MULTIPLIER);
         //globals.file_offset += 1; //pbuf->buf_len; //for now always read from offset 0; size 64 or 68 bytes based of pkt type.
 
 #ifdef USE_SYNC_IO
@@ -891,6 +892,9 @@ int read_aio_buffer(aio_buf_t *pbuf) {
         #else
         ret = lseek(globals.fd, pbuf->aiocb->aio_offset, SEEK_SET);
         ret = read(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes);
+        #endif
+        #ifdef DO_WRITE_BACK
+        if(pwrite(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset)) {};
         #endif
         //globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
         refresh_aio_buffer(pbuf);
@@ -980,8 +984,11 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
                 #endif
                 onvm_nflib_return_pkt(pbuf->pkt);
         }
-        #ifdef USE_SYNC_IO
+
+        #ifndef USE_SYNC_IO
+        #ifdef DO_WRITE_BACK
         if(pwrite(globals.fd, pbuf->buf, pbuf->aiocb->aio_nbytes, pbuf->aiocb->aio_offset)) {};
+        #endif
         #endif
         
         int ret = refresh_aio_buffer(pbuf);
@@ -1080,9 +1087,9 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt,  __attribute__((unused)) str
         get_flow_entry(pkt, &flow_entry);
         
         if(NULL == flow_entry) return 0;
-        
+#ifdef DIFF_WITH_TCP_UDP_FLOWS
         if(!check_flow_needio_info(pkt, flow_entry)) return 0;
-        
+#else
         //if (pkt->hash.rss%3 == 0) return 0;
         #ifdef CHECK_INCLUSIVE_MODE
         if(!check_in_flow_needio_list(pkt, flow_entry)) return 0;
@@ -1090,7 +1097,7 @@ int validate_packet_and_do_io(struct rte_mbuf* pkt,  __attribute__((unused)) str
         if(check_in_flow_bypass_list(pkt, flow_entry)) return 0;
         #endif
         //if(check_in_logged_flow_list(pkt, flow_entry)) return 0;
-        
+#endif
         //return 0;
         
         return packet_process_io(pkt, meta, flow_entry, PKT_LOG_WAIT_ENQUEUE_ENABLED);
@@ -1202,8 +1209,8 @@ do_stats_display(void) {
         ////printf("Total Packets Serviced: %d\n", pkt_process);
         //printf("Total Bytes Written : %d\n", globals.file_offset);
         ////printf("Total Blocks on Sem : %d\n", (uint32_t)globals.sem_block_count);
-        printf("Total Flows with pre_io_Wait: %d\n", pre_io_wait_ring.wait_list_count);
-        printf("Total pkts in wait_list: %d, %d\n", pre_io_wait_ring.flow_pkts[0].w_h, pre_io_wait_ring.flow_pkts[0].pkt_count);
+        //printf("Total Flows with pre_io_Wait: %d\n", pre_io_wait_ring.wait_list_count);
+        //printf("Total pkts in wait_list: %d, %d\n", pre_io_wait_ring.flow_pkts[0].w_h, pre_io_wait_ring.flow_pkts[0].pkt_count);
         //printf("N°   : %d\n", pkt_process);
         printf("\n\n");
 
@@ -1246,7 +1253,7 @@ packet_handler(struct rte_mbuf* __attribute__((unused)) pkt,  __attribute__((unu
 //For time being act as bridge:
         if (ret == 0) {
 #ifdef ACT_AS_BRIDGE
-            nf_as_bridge(pkt,meta);
+                nf_as_bridge(pkt,meta);
 #else
                 meta->action = ONVM_NF_ACTION_NEXT;
                 meta->destination = pkt->port;
