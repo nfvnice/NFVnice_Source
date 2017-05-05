@@ -87,6 +87,7 @@
 #ifndef USE_SYNC_IO
 #define PURE_ASYNC_MODE     (0)
 #define PSEUDO_ASYNC_MODE   (1)
+#define WIAT_ON_ASYNC_MODE  (2)
 #define ASYNC_MODE  (PURE_ASYNC_MODE)
 //#define ASYNC_MODE  (PSEUDO_ASYNC_MODE)
 #if (ASYNC_MODE == PURE_ASYNC_MODE)
@@ -908,6 +909,15 @@ int read_aio_buffer(aio_buf_t *pbuf) {
                 exit(1);
         }
         pbuf->state = BUF_SUBMITTED;
+        #if(WIAT_ON_ASYNC_MODE == ASYNC_MODE)
+        struct aiocb *aiocb_list[2] = {pbuf->aiocb,NULL};
+        int s_ret = aio_suspend(aiocb_list, 1, NULL);
+        if(0 == s_ret) {
+                return refresh_aio_buffer(pbuf);
+        } else if (EINTR == s_ret) {
+                //s_ret = 0; //already interrupt was delivered!!
+        }
+        #endif
 #endif  //USE_SYNC_IO
         //globals.cur_buf_index = (((globals.cur_buf_index+1) % (globals.max_bufs))? (globals.cur_buf_index+1):(0));
         return ret;
@@ -1341,3 +1351,8 @@ int main(int argc, char *argv[]) {
 
         //return aiotest_main(argc, argv);
 }
+
+/*
+Example 1:
+https://github.com/offlinehacker/AIO-server-example/blob/master/aio_client.c
+*/
