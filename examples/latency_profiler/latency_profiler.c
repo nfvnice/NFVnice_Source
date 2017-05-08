@@ -52,6 +52,42 @@
 #include <assert.h>
 #include <aio.h>
 
+#define _GNU_SOURCE     //for O_DIRECT
+#include <unistd.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <sys/queue.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <string.h>
+#include <assert.h>
+#include <aio.h>
+#include <signal.h>
+#include <semaphore.h>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
+#include <rte_common.h>
+#include <rte_mbuf.h>
+#include <rte_ip.h>
+#include <rte_malloc.h>
+#include <rte_memzone.h>
+#include <rte_memory.h>
+#include <rte_cycles.h>
+
+#include "onvm_nflib.h"
+#include "onvm_pkt_helper.h"
+#include "onvm_flow_table.h"
+#include "onvm_sc_common.h"
+#include "onvm_flow_dir.h"
+#include "onvm_sc_mgr.h"
+
 
 #define USE_THIS_CLOCK  CLOCK_THREAD_CPUTIME_ID //CLOCK_PROCESS_CPUTIME_ID //CLOCK_MONOTONIC
 
