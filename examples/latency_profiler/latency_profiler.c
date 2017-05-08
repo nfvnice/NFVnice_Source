@@ -602,7 +602,8 @@ typedef struct aio_buf_t {
         struct aiocb *aiocb;    // <allocated at initialization and updated for each read/write>
         int req_status;         // <allocated at initialization and updated for each read/write>
 }aio_buf_t;
-static aio_buf_t aio_buf_pool[MAX_AIO_BUFFERS];
+//static aio_buf_t aio_buf_pool[MAX_AIO_BUFFERS];
+static aio_buf_t *aio_buf_pool = NULL;
 static int aio_fd = 0;
 int initialize_aio_buffers (void);
 int deinitialize_aio_buffers(void);
@@ -675,6 +676,10 @@ int initialize_aio_buffers (void) {
         }
         uint8_t i = 0;
         uint32_t alloc_buf_size = IO_BUF_SIZE;
+        aio_buf_pool = rte_calloc("log_pktbuf_pool", MAX_AIO_BUFFERS, sizeof(*aio_buf_pool),0);
+        if(NULL == aio_buf_pool) {
+                rte_exit(EXIT_FAILURE, "Cannot allocate memory for log_pktbuf_pool\n");
+        }
         for(i=0; i< MAX_AIO_BUFFERS; i++) {
                 alloc_buf_size              = IO_BUF_SIZE;
                 aio_buf_pool[i].buf         = rte_calloc("log_pktbuf_buf", alloc_buf_size, sizeof(uint8_t),0);
@@ -696,7 +701,7 @@ int initialize_aio_buffers (void) {
                         printf("allocated buf [%d] of size [%d]\n ", (int)i, (int)alloc_buf_size);
                         #endif //ENABLE_DEBUG_LOGS
                 }
-                ret = initialize_aiocb(aio_buf_pool[i]);
+                ret = initialize_aiocb(&aio_buf_pool[i]);
         }
         return ret;
 }
