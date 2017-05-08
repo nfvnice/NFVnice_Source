@@ -32,6 +32,9 @@
 
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <getopt.h>
+#include <assert.h>
+#include <aio.h>
 
 
 #define USE_THIS_CLOCK  CLOCK_THREAD_CPUTIME_ID //CLOCK_PROCESS_CPUTIME_ID //CLOCK_MONOTONIC
@@ -466,6 +469,271 @@ void test_group_prio() {
         int my_user_prio= getpriority(PRIO_USER, 0);
         printf("GetPriority: PROCESS [%d], GROUP [%d], USER [%d]\n", my_proc_prio,my_grp_prio,my_user_prio);
 }
+
+#define OFFSET_LIST_SIZE 10
+static int offset_desc[OFFSET_LIST_SIZE] = { 24576, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384, 32768 };
+#define OFFSET_MULTIPLIER   (1024*1024)  //(1024*1024)   //(1)
+int get_read_file_offset(void);
+int get_read_file_offset(void) {
+    static int offset_index = 0;
+    offset_index +=1; 
+    if (offset_index >= OFFSET_LIST_SIZE) offset_index = 0;
+    return offset_desc[offset_index];
+}
+#define FD_RD_OPEN_MODE
+//#define FD_RD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC)
+//#define FD_RD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
+//#define FD_RD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
+//#define FD_RD_OPEN_MODE (O_RDONLY) // (O_RDONLY|O_FSYNC)
+#define FD_RD_OPEN_MODE (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
+#define IO_BUF_SIZE 4096
+
+#define USE_SYNC_PREAD
+//#define DO_WRITE_BACK
+
+void test_sync_io_read(void) {
+        int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
+        int count = 1000, i =0;
+        static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
+        
+        int fd = open("logger_pkt.txt", FD_RD_OPEN_MODE, 0666);
+        if (-1 == fd) {
+            return 0;
+        }
+        size_t aio_nbytes=IO_BUF_SIZE;
+        (__off_t) aio_offset = 0;
+        void* buf = rte_calloc("log_pktbuf_buf", IO_BUF_SIZE, sizeof(uint8_t),0);
+        for (i = 0; i < count; i++)
+        {
+                aio_offset = get_read_file_offset();
+                get_start_time();
+                #ifdef USE_SYNC_PREAD
+                ret = pread(fd, buf, aio_nbytes, aio_offset);
+                #else
+                ret = lseek(fd, aio_offset, SEEK_SET);
+                ret = read(fd, buf, aio_nbytes);
+                #endif
+                #ifdef DO_WRITE_BACK
+                if(pwrite(fd,buf, aio_nbytes, aio_offset)) {};
+                #endif
+                get_stop_time();
+                ttl_elapsed = get_elapsed_time();
+                min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                avg += ttl_elapsed;
+                //printf("Run latency: %li ns\n", delta);
+        }
+        printf("sync_io_read() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+        /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+}
+
+#define FD_WR_OPEN_MODE
+//#define FD_WR_OPEN_MODE (O_RDWR|O_DIRECT|O_FSYNC)
+//#define FD_WR_OPEN_MODE (O_RDWR|O_DIRECT) // (O_RDWR|O_FSYNC)
+//#define FD_WR_OPEN_MODE (O_RDWR|O_FSYNC) // (O_RDWR|O_FSYNC)
+//#define FD_WR_OPEN_MODE (O_RDWR) // (O_RDWR|O_FSYNC)
+#define FD_WR_OPEN_MODE (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
+#define IO_BUF_SIZE 4096
+void test_sync_io_write(void) {
+        int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
+        int count = 1000, i =0;
+        static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
+        
+        int fd = open("logger_pkt.txt", FD_WR_OPEN_MODE, 0666);
+        if (-1 == fd) {
+            return 0;
+        }
+        size_t aio_nbytes=IO_BUF_SIZE;
+        (__off_t) aio_offset = 0;
+        void* buf = rte_calloc("log_pktbuf_buf", IO_BUF_SIZE, sizeof(uint8_t),0);
+        for (i = 0; i < count; i++)
+        {
+                aio_offset = get_read_file_offset();
+                get_start_time();
+                #ifdef USE_SYNC_PREAD
+                ret = pwrite(fd, buf, aio_nbytes, aio_offset);
+                #else
+                ret = lseek(fd, aio_offset, SEEK_SET);
+                ret = write(fd, buf, aio_nbytes);
+                #endif
+                get_stop_time();
+                ttl_elapsed = get_elapsed_time();
+                min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                avg += ttl_elapsed;
+                //printf("Run latency: %li ns\n", delta);
+        }
+        printf("sync_io_read() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+        /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+}
+
+#define MAX_AIO_BUFFERS (5)
+typedef enum AIOBufState {
+        BUF_FREE = 0,
+        BUF_IN_USE =1,
+        BUF_SUBMITTED=2,
+}AIOBufState_e;
+typedef struct aio_buf_t {
+        volatile AIOBufState_e state;
+        void* buf;
+        uint32_t buf_index;     //const <index of buffer initialized at the time of allocation>
+        uint32_t max_size;      // const <max size of the buffer allocated at the time of initalization>
+        uint32_t buf_len;       // varaible updated for each read/write operation
+        //struct rte_mbuf *pkt;    // pkt associated with the aio_buf for the read case
+        struct aiocb *aiocb;    // <allocated at initialization and updated for each read/write>
+        int req_status;         // <allocated at initialization and updated for each read/write>
+}aio_buf_t;
+static aio_buf_t aio_buf_pool[MAX_AIO_BUFFERS];
+static int aio_fd = 0;
+int initialize_aio_buffers (void);
+int initialize_aiocb(aio_buf_t *pbuf);
+aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode);
+int notify_io_rw_done(aio_buf_t *pbuf);
+static void ioSigHandler(sigval_t sigval);
+int refresh_aio_buffer(aio_buf_t *pbuf);
+int refresh_aio_buffer(aio_buf_t *pbuf) {
+        int ret = 0;
+        pbuf->aiocb->aio_nbytes = (size_t)0;
+        pbuf->aiocb->aio_offset = (__off_t)0;
+        pbuf->buf_len=0;
+        //pbuf->pkt = NULL;
+        pbuf->state = BUF_FREE;
+        #ifdef ENABLE_DEBUG_LOGS
+        printf("\n Buffer [%p] state moved to FREE [%d]\n",pbuf, pbuf->state);
+        #endif //ENABLE_DEBUG_LOGS
+        return ret;
+}
+
+static void ioSigHandler(sigval_t sigval) {
+        aio_buf_t *pbuf = sigval.sival_ptr;
+        if(pbuf) {
+                notify_io_rw_done(pbuf);
+        }
+        else {
+                #ifdef ENABLE_DEBUG_LOGS
+                printf("Invalid Pbuf received with I/O signal [%p]", sigval.sival_ptr);
+                #endif
+        }
+        return;
+}
+
+int notify_io_rw_done(aio_buf_t *pbuf) {
+
+        #ifdef ENABLE_DEBUG_LOGS
+        int req_status = aio_error(pbuf->aiocb);       
+        if(0 != req_status) {
+                printf("\n Aio_read/write completed with error [ %d]\n", req_status);
+        }
+        else {
+                printf("Aio_read/write completed Successfully [%d]!!\n", req_status);
+        }
+        #endif //#ifdef ENABLE_DEBUG_LOGS
+        refresh_aio_buffer(pbuf);
+        return ret;
+}
+
+int
+initialize_aiocb(aio_buf_t *pbuf) {
+       pbuf->aiocb->aio_buf     = (volatile void*)pbuf->buf;
+       pbuf->aiocb->aio_fildes  = aio_fd;
+       pbuf->aiocb->aio_nbytes  = pbuf->buf_len;
+       pbuf->aiocb->aio_reqprio = AIO_REQUEST_PRIO;
+       pbuf->aiocb->aio_offset  = 0;
+       pbuf->aiocb->aio_sigevent.sigev_notify          = SIGEV_THREAD;
+       pbuf->aiocb->aio_sigevent.sigev_notify_function = ioSigHandler;
+       pbuf->aiocb->aio_sigevent.sigev_value.sival_ptr = pbuf;
+
+       return 0;
+}
+initialize_aio_buffers (void) {
+        int ret = 0;
+        if(aio_buf_pool) {
+                #ifdef ENABLE_DEBUG_LOGS
+                printf("Already Allocated!!\n");
+                #endif //ENABLE_DEBUG_LOGS
+                return -1;
+        }
+        uint8_t i = 0;
+        uint32_t alloc_buf_size = IO_BUF_SIZE;
+        for(i=0; i< MAX_AIO_BUFFERS; i++) {
+                alloc_buf_size              = IO_BUF_SIZE;
+                aio_buf_pool[i].buf         = rte_calloc("log_pktbuf_buf", alloc_buf_size, sizeof(uint8_t),0);
+                aio_buf_pool[i].aiocb       = rte_calloc("log_pktbuf_aio", 1, sizeof(struct aiocb),0);
+                aio_buf_pool[i].buf_index   = i;
+                //aio_buf_pool[i].pkt         = NULL;
+                aio_buf_pool[i].max_size    = alloc_buf_size;
+                aio_buf_pool[i].buf_len     = 0;
+                aio_buf_pool[i].req_status  = 0;
+                aio_buf_pool[i].state       = BUF_FREE;
+                if(NULL == aio_buf_pool[i].buf || NULL == aio_buf_pool[i].aiocb) {
+                        rte_exit(EXIT_FAILURE, "Cannot allocate memory for log_pktbuf_buf or log_pktbuf_aio \n");
+                }
+                else {
+                        memset(aio_buf_pool[i].buf, 18, sizeof(uint8_t)*alloc_buf_size);
+
+                        #ifdef ENABLE_DEBUG_LOGS
+                        //for(ret=0; ret < 10; ret++) printf("%d", aio_buf_pool[i].buf[ret]);
+                        printf("allocated buf [%d] of size [%d]\n ", (int)i, (int)alloc_buf_size);
+                        #endif //ENABLE_DEBUG_LOGS
+                }
+                ret = initialize_aiocb(&aio_buf_pool[i]);
+        }
+        return ret;
+}
+
+aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
+    if (0 == aio_operation_mode) {
+                uint32_t i = 0;
+                for (i=0; i < MAX_AIO_BUFFERS; i++) {
+                        if (BUF_FREE == aio_buf_pool[i].state) {
+                            //globals.cur_buf_index = i;
+                            aio_buf_pool[i].state = BUF_IN_USE;
+                            return &(aio_buf_pool[i]);
+                        }
+                }
+        }
+        return NULL;
+}
+
+void test_async_io_read(void) {
+        int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
+        int count = 1000, i =0;
+        static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
+        
+        aio_fd = open("logger_pkt.txt", FD_RD_OPEN_MODE, 0666);
+        if (-1 == fd) {
+            return 0;
+        }
+        size_t aio_nbytes=IO_BUF_SIZE;
+        if(initialize_aio_buffers()) {
+                return 0;
+        }
+        
+        (__off_t) aio_offset = 0;
+        void* buf = rte_calloc("log_pktbuf_buf", IO_BUF_SIZE, sizeof(uint8_t),0);
+        for (i = 0; i < count; i++)
+        {
+                aio_offset = get_read_file_offset();
+                get_start_time();
+                ret = aio_read(pbuf->aiocb);
+                if(-1 ==ret) {
+                        printf("Error at aio_read(): %s\n", strerror(errno));
+                        return refresh_aio_buffer(pbuf);
+                        exit(1);
+                }
+                while ((ret = aio_error (pbuf->aiocb)) == EINPROGRESS);
+                get_stop_time();
+                //refresh_aio_buffer(pbuf);
+                ttl_elapsed = get_elapsed_time();
+                min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                avg += ttl_elapsed;
+                //printf("Run latency: %li ns\n", delta);
+        }
+        printf("sync_io_read() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+        /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+}
+
 int main()
 {
         #if defined(_POSIX_TIMERS) && (_POSIX_TIMERS > 0) && defined(_POSIX_MONOTONIC_CLOCK)
