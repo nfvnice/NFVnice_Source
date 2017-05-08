@@ -81,12 +81,8 @@
 #include <rte_memory.h>
 #include <rte_cycles.h>
 
-#include "onvm_nflib.h"
-#include "onvm_pkt_helper.h"
-#include "onvm_flow_table.h"
-#include "onvm_sc_common.h"
-#include "onvm_flow_dir.h"
-#include "onvm_sc_mgr.h"
+#define rte_calloc(a,b,c,d) calloc(b,c)
+#define rte_free(a) free(a)
 
 
 #define USE_THIS_CLOCK  CLOCK_THREAD_CPUTIME_ID //CLOCK_PROCESS_CPUTIME_ID //CLOCK_MONOTONIC
