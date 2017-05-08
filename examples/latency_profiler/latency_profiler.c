@@ -724,7 +724,7 @@ void test_async_io_read(void) {
         }
         size_t aio_nbytes=IO_BUF_SIZE;
         if(initialize_aio_buffers()) {
-                return ;
+               // return ;
         }
         
         __off_t aio_offset = 0;
