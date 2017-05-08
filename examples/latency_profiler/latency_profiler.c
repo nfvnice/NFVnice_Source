@@ -817,5 +817,11 @@ int main()
         test_nanosleep();
         test_sched_yield();
         test_group_prio();
+        
+        test_sync_io_write();
+        test_sync_io_read();
+        test_async_io_write();
+        test_async_io_read();
+        
 }
 
