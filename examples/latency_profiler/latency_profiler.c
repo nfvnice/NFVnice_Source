@@ -540,6 +540,7 @@ void test_sync_io_read(void) {
                 avg += ttl_elapsed;
                 //printf("Run latency: %li ns\n", delta);
         }
+        close(fd);
         printf("sync_io_read() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
@@ -580,6 +581,7 @@ void test_sync_io_write(void) {
                 avg += ttl_elapsed;
                 //printf("Run latency: %li ns\n", delta);
         }
+        close(fd);
         printf("sync_io_write() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
@@ -752,6 +754,7 @@ void test_async_io_read(void) {
                 avg += ttl_elapsed;
                 //printf("Run latency: %li ns\n", delta);
         }
+        close(aio_fd);
         printf("Async_io_read() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
@@ -796,6 +799,7 @@ void test_async_io_write(void) {
                 avg += ttl_elapsed;
                 //printf("Run latency: %li ns\n", delta);
         }
+        close(aio_fd);
         printf("Async_io_write() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
@@ -807,6 +811,7 @@ int main()
         printf ("\n using Standard Time \n");
         #endif
 
+        #if 0
         test_clk_overhead();
         test_cgroup_update1();
         test_cgroup_update2();
@@ -817,6 +822,7 @@ int main()
         test_nanosleep();
         test_sched_yield();
         test_group_prio();
+        #endif
         
         test_sync_io_write();
         test_sync_io_read();
