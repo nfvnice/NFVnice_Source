@@ -632,7 +632,7 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
         }
         #endif //#ifdef ENABLE_DEBUG_LOGS
         refresh_aio_buffer(pbuf);
-        return ret;
+        return 0;
 }
 
 int
@@ -699,12 +699,13 @@ aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
 }
 
 void test_async_io_read(void) {
+        int ret = 0;
         int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
         int count = 1000, i =0;
         static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
         
         aio_fd = open("logger_pkt.txt", FD_RD_OPEN_MODE, 0666);
-        if (-1 == fd) {
+        if (-1 == aio_fd) {
             return;
         }
         size_t aio_nbytes=IO_BUF_SIZE;
@@ -720,7 +721,7 @@ void test_async_io_read(void) {
                 aio_offset = get_read_file_offset();
                 
                 pbuf->aiocb->aio_offset = aio_offset;
-                pbuf->aiocb->buf_len = aio_nbytes;
+                pbuf->aiocb->aio_nbytes = aio_nbytes;
                 get_start_time();
                 ret = aio_read(pbuf->aiocb);
                 if(-1 ==ret) {
@@ -742,12 +743,13 @@ void test_async_io_read(void) {
 }
 
 void test_async_io_write(void) {
+        int ret = 0;
         int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
         int count = 1000, i =0;
         static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
         
         aio_fd = open("logger_wpkt.txt", FD_WR_OPEN_MODE, 0666);
-        if (-1 == fd) {
+        if (-1 == aio_fd) {
             return;
         }
         size_t aio_nbytes=IO_BUF_SIZE;
@@ -760,7 +762,7 @@ void test_async_io_write(void) {
         {
                 aio_offset = get_read_file_offset();
                 pbuf->aiocb->aio_offset = aio_offset;
-                pbuf->aiocb->buf_len = aio_nbytes;
+                pbuf->aiocb->aio_nbytes = aio_nbytes;
                 
                 get_start_time();
                 ret = aio_write(pbuf->aiocb);
