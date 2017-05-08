@@ -5,6 +5,7 @@
  taskset 0x04 ./build/latency_profiler
 
 */
+#define _GNU_SOURCE //O_DIRECT
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,25 +31,7 @@
 #include <sys/stat.h>        /* For mode constants */
 #include <semaphore.h>
 
-#include <unistd.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <inttypes.h>
-#include <stdarg.h>
-#include <errno.h>
-#include <sys/queue.h>
-#include <stdlib.h>
-#include <getopt.h>
-#include <string.h>
-#include <assert.h>
-#include <aio.h>
-#include <signal.h>
-#include <semaphore.h>
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <getopt.h>
@@ -511,13 +494,14 @@ int get_read_file_offset(void) {
 //#define DO_WRITE_BACK
 
 void test_sync_io_read(void) {
+        int ret = 0;
         int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
         int count = 1000, i =0;
         static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
         
         int fd = open("logger_pkt.txt", FD_RD_OPEN_MODE, 0666);
         if (-1 == fd) {
-            return 0;
+            return ;
         }
         size_t aio_nbytes=IO_BUF_SIZE;
         (__off_t) aio_offset = 0;
@@ -553,13 +537,14 @@ void test_sync_io_read(void) {
 #define FD_WR_OPEN_MODE (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
 #define IO_BUF_SIZE 4096
 void test_sync_io_write(void) {
+        int ret = 0;
         int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
         int count = 1000, i =0;
         static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
         
         int fd = open("logger_pkt.txt", FD_WR_OPEN_MODE, 0666);
         if (-1 == fd) {
-            return 0;
+            return ;
         }
         size_t aio_nbytes=IO_BUF_SIZE;
         (__off_t) aio_offset = 0;
@@ -724,7 +709,7 @@ void test_async_io_read(void) {
         }
         size_t aio_nbytes=IO_BUF_SIZE;
         if(initialize_aio_buffers()) {
-                return 0;
+                return ;
         }
         
         (__off_t) aio_offset = 0;
@@ -767,7 +752,7 @@ void test_async_io_write(void) {
         }
         size_t aio_nbytes=IO_BUF_SIZE;
         if(initialize_aio_buffers()) {
-                return 0;
+                return;
         }
         
         (__off_t) aio_offset = 0;
