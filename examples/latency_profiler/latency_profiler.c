@@ -649,9 +649,9 @@ static void ioSigHandler(sigval_t sigval);
 int refresh_aio_buffer(aio_buf_t *pbuf);
 int refresh_aio_buffer(aio_buf_t *pbuf) {
         int ret = 0;
-        pbuf->aiocb->aio_nbytes = (size_t)0;
-        pbuf->aiocb->aio_offset = (__off_t)0;
-        pbuf->buf_len=0;
+        //pbuf->aiocb->aio_nbytes = (size_t)0;
+        //pbuf->aiocb->aio_offset = (__off_t)0;
+        //pbuf->buf_len=0;
         //pbuf->pkt = NULL;
         pbuf->state = BUF_FREE;
         #ifdef ENABLE_DEBUG_LOGS
