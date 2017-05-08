@@ -605,6 +605,7 @@ typedef struct aio_buf_t {
 static aio_buf_t aio_buf_pool[MAX_AIO_BUFFERS];
 static int aio_fd = 0;
 int initialize_aio_buffers (void);
+int deinitialize_aio_buffers(void);
 int initialize_aiocb(aio_buf_t *pbuf);
 aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode);
 int notify_io_rw_done(aio_buf_t *pbuf);
@@ -664,7 +665,7 @@ initialize_aiocb(aio_buf_t *pbuf) {
 
        return 0;
 }
-initialize_aio_buffers (void) {
+int initialize_aio_buffers (void) {
         int ret = 0;
         if(aio_buf_pool) {
                 #ifdef ENABLE_DEBUG_LOGS
@@ -695,11 +696,28 @@ initialize_aio_buffers (void) {
                         printf("allocated buf [%d] of size [%d]\n ", (int)i, (int)alloc_buf_size);
                         #endif //ENABLE_DEBUG_LOGS
                 }
-                ret = initialize_aiocb(&aio_buf_pool[i]);
+                ret = initialize_aiocb(aio_buf_pool[i]);
         }
         return ret;
 }
 
+int deinitialize_aio_buffers(void) {
+        uint8_t i = 0;
+        int ret = 0;
+        if(aio_buf_pool) {
+                for(i=0; i< MAX_AIO_BUFFERS; i++) {
+                        //Address aio_cancel for pending requests and then free
+                        //ret = deinitialize_aiocb(&aio_buf_pool[i]);
+                        rte_free(aio_buf_pool[i].aiocb);
+                        aio_buf_pool[i].aiocb = NULL;
+                        rte_free(aio_buf_pool[i].buf);
+                        aio_buf_pool[i].buf = NULL;
+                }
+                rte_free(aio_buf_pool);
+                aio_buf_pool = NULL;
+        }
+        return ret;
+}
 aio_buf_t* get_aio_buffer_from_aio_buf_pool(uint32_t aio_operation_mode) {
     if (0 == aio_operation_mode) {
                 uint32_t i = 0;
@@ -755,6 +773,7 @@ void test_async_io_read(void) {
                 //printf("Run latency: %li ns\n", delta);
         }
         close(aio_fd);
+        deinitialize_aio_buffers();
         printf("Async_io_read() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
@@ -800,6 +819,7 @@ void test_async_io_write(void) {
                 //printf("Run latency: %li ns\n", delta);
         }
         close(aio_fd);
+        deinitialize_aio_buffers();
         printf("Async_io_write() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
