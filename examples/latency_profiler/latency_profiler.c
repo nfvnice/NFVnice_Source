@@ -504,7 +504,7 @@ void test_sync_io_read(void) {
             return ;
         }
         size_t aio_nbytes=IO_BUF_SIZE;
-        (__off_t) aio_offset = 0;
+        __off_t aio_offset = 0;
         void* buf = rte_calloc("log_pktbuf_buf", IO_BUF_SIZE, sizeof(uint8_t),0);
         for (i = 0; i < count; i++)
         {
@@ -547,7 +547,7 @@ void test_sync_io_write(void) {
             return ;
         }
         size_t aio_nbytes=IO_BUF_SIZE;
-        (__off_t) aio_offset = 0;
+        __off_t aio_offset = 0;
         void* buf = rte_calloc("log_pktbuf_buf", IO_BUF_SIZE, sizeof(uint8_t),0);
         for (i = 0; i < count; i++)
         {
@@ -705,14 +705,14 @@ void test_async_io_read(void) {
         
         aio_fd = open("logger_pkt.txt", FD_RD_OPEN_MODE, 0666);
         if (-1 == fd) {
-            return 0;
+            return;
         }
         size_t aio_nbytes=IO_BUF_SIZE;
         if(initialize_aio_buffers()) {
                 return ;
         }
         
-        (__off_t) aio_offset = 0;
+        __off_t aio_offset = 0;
         aio_buf_t* pbuf = NULL;
         for (i = 0; i < count; i++)
         {
@@ -748,14 +748,14 @@ void test_async_io_write(void) {
         
         aio_fd = open("logger_wpkt.txt", FD_WR_OPEN_MODE, 0666);
         if (-1 == fd) {
-            return 0;
+            return;
         }
         size_t aio_nbytes=IO_BUF_SIZE;
         if(initialize_aio_buffers()) {
                 return;
         }
         
-        (__off_t) aio_offset = 0;
+        __off_t aio_offset = 0;
         for (i = 0; i < count; i++)
         {
                 aio_offset = get_read_file_offset();
