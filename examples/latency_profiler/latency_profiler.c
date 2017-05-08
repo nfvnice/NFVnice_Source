@@ -30,7 +30,21 @@
 #include <fcntl.h>           /* For O_* constants */
 #include <sys/stat.h>        /* For mode constants */
 #include <semaphore.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
+#include <aio.h>
+#include <signal.h>
 
+#include <rte_common.h>
+#include <rte_mbuf.h>
+#include <rte_ip.h>
+#include <rte_malloc.h>
+#include <rte_memzone.h>
+#include <rte_memory.h>
+#include <rte_cycles.h>
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -726,7 +740,7 @@ void test_async_io_read(void) {
                 ret = aio_read(pbuf->aiocb);
                 if(-1 ==ret) {
                         printf("Error at aio_read(): %s\n", strerror(errno));
-                        return refresh_aio_buffer(pbuf);
+                        refresh_aio_buffer(pbuf);
                         exit(1);
                 }
                 while ((ret = aio_error (pbuf->aiocb)) == EINPROGRESS);
@@ -758,17 +772,19 @@ void test_async_io_write(void) {
         }
         
         __off_t aio_offset = 0;
+        aio_buf_t* pbuf = NULL;
         for (i = 0; i < count; i++)
         {
+                pbuf = get_aio_buffer_from_aio_buf_pool(0);
                 aio_offset = get_read_file_offset();
+                
                 pbuf->aiocb->aio_offset = aio_offset;
                 pbuf->aiocb->aio_nbytes = aio_nbytes;
-                
                 get_start_time();
                 ret = aio_write(pbuf->aiocb);
                 if(-1 ==ret) {
                         printf("Error at aio_read(): %s\n", strerror(errno));
-                        return refresh_aio_buffer(pbuf);
+                        refresh_aio_buffer(pbuf);
                         exit(1);
                 }
                 while ((ret = aio_error (pbuf->aiocb)) == EINPROGRESS);
