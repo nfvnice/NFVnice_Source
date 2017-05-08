@@ -30,6 +30,25 @@
 #include <sys/stat.h>        /* For mode constants */
 #include <semaphore.h>
 
+#include <unistd.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <errno.h>
+#include <sys/queue.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <string.h>
+#include <assert.h>
+#include <aio.h>
+#include <signal.h>
+#include <semaphore.h>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <getopt.h>
@@ -470,6 +489,7 @@ void test_group_prio() {
         printf("GetPriority: PROCESS [%d], GROUP [%d], USER [%d]\n", my_proc_prio,my_grp_prio,my_user_prio);
 }
 
+#define AIO_REQUEST_PRIO (0)
 #define OFFSET_LIST_SIZE 10
 static int offset_desc[OFFSET_LIST_SIZE] = { 24576, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384, 32768 };
 #define OFFSET_MULTIPLIER   (1024*1024)  //(1024*1024)   //(1)
@@ -480,7 +500,6 @@ int get_read_file_offset(void) {
     if (offset_index >= OFFSET_LIST_SIZE) offset_index = 0;
     return offset_desc[offset_index];
 }
-#define FD_RD_OPEN_MODE
 //#define FD_RD_OPEN_MODE (O_RDONLY|O_DIRECT|O_FSYNC)
 //#define FD_RD_OPEN_MODE (O_RDONLY|O_DIRECT) // (O_RDONLY|O_FSYNC)
 //#define FD_RD_OPEN_MODE (O_RDONLY|O_FSYNC) // (O_RDONLY|O_FSYNC)
@@ -527,7 +546,6 @@ void test_sync_io_read(void) {
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
 
-#define FD_WR_OPEN_MODE
 //#define FD_WR_OPEN_MODE (O_RDWR|O_DIRECT|O_FSYNC)
 //#define FD_WR_OPEN_MODE (O_RDWR|O_DIRECT) // (O_RDWR|O_FSYNC)
 //#define FD_WR_OPEN_MODE (O_RDWR|O_FSYNC) // (O_RDWR|O_FSYNC)
@@ -710,10 +728,14 @@ void test_async_io_read(void) {
         }
         
         (__off_t) aio_offset = 0;
-        void* buf = rte_calloc("log_pktbuf_buf", IO_BUF_SIZE, sizeof(uint8_t),0);
+        aio_buf_t* pbuf = NULL;
         for (i = 0; i < count; i++)
         {
+                pbuf = get_aio_buffer_from_aio_buf_pool(0);
                 aio_offset = get_read_file_offset();
+                
+                pbuf->aiocb->aio_offset = aio_offset;
+                pbuf->aiocb->buf_len = aio_nbytes;
                 get_start_time();
                 ret = aio_read(pbuf->aiocb);
                 if(-1 ==ret) {
@@ -734,6 +756,46 @@ void test_async_io_read(void) {
         /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
 }
 
+void test_async_io_write(void) {
+        int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
+        int count = 1000, i =0;
+        static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
+        
+        aio_fd = open("logger_wpkt.txt", FD_WR_OPEN_MODE, 0666);
+        if (-1 == fd) {
+            return 0;
+        }
+        size_t aio_nbytes=IO_BUF_SIZE;
+        if(initialize_aio_buffers()) {
+                return 0;
+        }
+        
+        (__off_t) aio_offset = 0;
+        for (i = 0; i < count; i++)
+        {
+                aio_offset = get_read_file_offset();
+                pbuf->aiocb->aio_offset = aio_offset;
+                pbuf->aiocb->buf_len = aio_nbytes;
+                
+                get_start_time();
+                ret = aio_write(pbuf->aiocb);
+                if(-1 ==ret) {
+                        printf("Error at aio_read(): %s\n", strerror(errno));
+                        return refresh_aio_buffer(pbuf);
+                        exit(1);
+                }
+                while ((ret = aio_error (pbuf->aiocb)) == EINPROGRESS);
+                get_stop_time();
+                //refresh_aio_buffer(pbuf);
+                ttl_elapsed = get_elapsed_time();
+                min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                avg += ttl_elapsed;
+                //printf("Run latency: %li ns\n", delta);
+        }
+        printf("sync_io_read() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
+        /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+}
 int main()
 {
         #if defined(_POSIX_TIMERS) && (_POSIX_TIMERS > 0) && defined(_POSIX_MONOTONIC_CLOCK)
