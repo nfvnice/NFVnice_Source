@@ -539,42 +539,61 @@ int get_read_file_offset(void) {
 #define USE_SYNC_PREAD
 //#define DO_WRITE_BACK
 
+#define MAX_READ_FLAG_OPTIONS (5)
+int read_flag_options_list[MAX_READ_FLAG_OPTIONS] = {
+        O_RDWR,
+        (O_RDWR|O_FSYNC),
+        (O_RDWR|O_DIRECT),
+        (O_RDWR|O_DIRECT|O_FSYNC),
+        (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
+}
+void get_next_read_flag(int index);
+void get_next_read_flag(int index) {
+        index = (index % (MAX_READ_FLAG_OPTIONS));
+        return read_flag_options_list[index];
+}
+
 void test_sync_io_read(void) {
         int ret = 0;
         int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
         int count = 1000, i =0;
         static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
         
-        int fd = open("logger_pkt.txt", FD_RD_OPEN_MODE, 0666);
-        if (-1 == fd) {
-            return ;
-        }
-        size_t aio_nbytes=IO_BUF_SIZE;
-        __off_t aio_offset = 0;
-        void* buf = rte_calloc("log_pktbuf_buf", IO_BUF_SIZE, sizeof(uint8_t),0);
-        for (i = 0; i < count; i++)
-        {
-                aio_offset = get_read_file_offset();
-                get_start_time();
-                #ifdef USE_SYNC_PREAD
-                ret = pread(fd, buf, aio_nbytes, aio_offset);
-                #else
-                ret = lseek(fd, aio_offset, SEEK_SET);
-                ret = read(fd, buf, aio_nbytes);
-                #endif
-                #ifdef DO_WRITE_BACK
-                if(pwrite(fd,buf, aio_nbytes, aio_offset)) {};
-                #endif
-                get_stop_time();
-                ttl_elapsed = get_elapsed_time();
-                min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
-                max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
-                avg += ttl_elapsed;
-                //printf("Run latency: %li ns\n", delta);
-        }
-        close(fd);
-        printf("sync_io_read() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
-        /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+        int open_flag = FD_RD_OPEN_MODE;
+        int cur_open_options = 0;
+        do {
+                open_flag = get_next_read_flag(cur_open_options++);
+                int fd = open("logger_pkt.txt", open_flag, 0666);
+                if (-1 == fd) {
+                    return ;
+                }
+                size_t aio_nbytes=IO_BUF_SIZE;
+                __off_t aio_offset = 0;
+                void* buf = rte_calloc("log_pktbuf_buf", IO_BUF_SIZE, sizeof(uint8_t),0);
+                for (i = 0; i < count; i++)
+                {
+                        aio_offset = get_read_file_offset();
+                        get_start_time();
+                        #ifdef USE_SYNC_PREAD
+                        ret = pread(fd, buf, aio_nbytes, aio_offset);
+                        #else
+                        ret = lseek(fd, aio_offset, SEEK_SET);
+                        ret = read(fd, buf, aio_nbytes);
+                        #endif
+                        #ifdef DO_WRITE_BACK
+                        if(pwrite(fd,buf, aio_nbytes, aio_offset)) {};
+                        #endif
+                        get_stop_time();
+                        ttl_elapsed = get_elapsed_time();
+                        min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                        max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                        avg += ttl_elapsed;
+                        //printf("Run latency: %li ns\n", delta);
+                }
+                close(fd);
+                printf("sync_io_read(%d:%d) Min: %li, Max:%li and Avg latency: %li ns\n", cur_open_options, open_flag, min, max, avg/count);
+                /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+        } while( cur_open_options < MAX_READ_FLAG_OPTIONS);
 }
 
 //#define FD_WR_OPEN_MODE (O_RDWR|O_DIRECT|O_FSYNC)
@@ -582,6 +601,21 @@ void test_sync_io_read(void) {
 //#define FD_WR_OPEN_MODE (O_RDWR|O_FSYNC) // (O_RDWR|O_FSYNC)
 //#define FD_WR_OPEN_MODE (O_RDWR) // (O_RDWR|O_FSYNC)
 #define FD_WR_OPEN_MODE (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
+#define MAX_WRITE_FLAG_OPTIONS (5)
+int write_flag_options_list[MAX_WRITE_FLAG_OPTIONS] = {
+        O_RDWR,
+        (O_RDWR|O_FSYNC),
+        (O_RDWR|O_DIRECT),
+        (O_RDWR|O_DIRECT|O_FSYNC),
+        (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
+}
+void get_next_write_flag(int index);
+void get_next_write_flag(int index) {
+        index = (index % (MAX_WRITE_FLAG_OPTIONS));
+        return write_flag_options_list[index];
+}
+
+
 #define IO_BUF_SIZE 4096
 void test_sync_io_write(void) {
         int ret = 0;
@@ -589,33 +623,38 @@ void test_sync_io_write(void) {
         int count = 1000, i =0;
         static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
         
-        int fd = open("logger_pkt.txt", FD_WR_OPEN_MODE, 0666);
-        if (-1 == fd) {
-            return ;
-        }
-        size_t aio_nbytes=IO_BUF_SIZE;
-        __off_t aio_offset = 0;
-        void* buf = rte_calloc("log_pktbuf_buf", IO_BUF_SIZE, sizeof(uint8_t),0);
-        for (i = 0; i < count; i++)
-        {
-                aio_offset = get_read_file_offset();
-                get_start_time();
-                #ifdef USE_SYNC_PREAD
-                ret = pwrite(fd, buf, aio_nbytes, aio_offset);
-                #else
-                ret = lseek(fd, aio_offset, SEEK_SET);
-                ret = write(fd, buf, aio_nbytes);
-                #endif
-                get_stop_time();
-                ttl_elapsed = get_elapsed_time();
-                min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
-                max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
-                avg += ttl_elapsed;
-                //printf("Run latency: %li ns\n", delta);
-        }
-        close(fd);
-        printf("sync_io_write() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
-        /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+        int open_flag = FD_WR_OPEN_MODE;
+        int cur_open_options = 0;
+        do {
+                open_flag = get_next_write_flag(cur_open_options++);
+                int fd = open("logger_pkt.txt", open_flag, 0666);
+                if (-1 == fd) {
+                    return ;
+                }
+                size_t aio_nbytes=IO_BUF_SIZE;
+                __off_t aio_offset = 0;
+                void* buf = rte_calloc("log_pktbuf_buf", IO_BUF_SIZE, sizeof(uint8_t),0);
+                for (i = 0; i < count; i++)
+                {
+                        aio_offset = get_read_file_offset();
+                        get_start_time();
+                        #ifdef USE_SYNC_PREAD
+                        ret = pwrite(fd, buf, aio_nbytes, aio_offset);
+                        #else
+                        ret = lseek(fd, aio_offset, SEEK_SET);
+                        ret = write(fd, buf, aio_nbytes);
+                        #endif
+                        get_stop_time();
+                        ttl_elapsed = get_elapsed_time();
+                        min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                        max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                        avg += ttl_elapsed;
+                        //printf("Run latency: %li ns\n", delta);
+                }
+                close(fd);
+                printf("sync_io_write(%d:%d) Min: %li, Max:%li and Avg latency: %li ns\n", cur_open_options, open_flag, min, max, avg/count);
+                /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+        } while(cur_open_options < MAX_WRITE_FLAG_OPTIONS);
 }
 
 #define MAX_AIO_BUFFERS (5)
@@ -786,45 +825,49 @@ void test_async_io_read(void) {
         int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
         int count = 1000, i =0;
         static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
-        
-        aio_fd = open("logger_pkt.txt", FD_RD_OPEN_MODE, 0666);
-        if (-1 == aio_fd) {
-            return;
-        }
-        size_t aio_nbytes=IO_BUF_SIZE;
-        if(initialize_aio_buffers()) {
-               // return ;
-        }
-        
-        __off_t aio_offset = 0;
-        aio_buf_t* pbuf = NULL;
-        for (i = 0; i < count; i++)
-        {
-                pbuf = get_aio_buffer_from_aio_buf_pool(0);
-                aio_offset = get_read_file_offset();
-                
-                pbuf->aiocb->aio_offset = aio_offset;
-                pbuf->aiocb->aio_nbytes = aio_nbytes;
-                get_start_time();
-                ret = aio_read(pbuf->aiocb);
-                if(-1 ==ret) {
-                        printf("Error at aio_read(): %s\n", strerror(errno));
-                        refresh_aio_buffer(pbuf);
-                        exit(1);
+        int open_flag = FD_RD_OPEN_MODE;
+        int cur_open_options = 0;
+        do {
+                open_flag = get_next_read_flag(cur_open_options++);
+                aio_fd = open("logger_pkt.txt", open_flag, 0666);
+                if (-1 == aio_fd) {
+                    return;
                 }
-                while ((ret = aio_error (pbuf->aiocb)) == EINPROGRESS);
-                get_stop_time();
-                //refresh_aio_buffer(pbuf);
-                ttl_elapsed = get_elapsed_time();
-                min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
-                max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
-                avg += ttl_elapsed;
-                //printf("Run latency: %li ns\n", delta);
-        }
-        close(aio_fd);
-        deinitialize_aio_buffers();
-        printf("Async_io_read() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
-        /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+                size_t aio_nbytes=IO_BUF_SIZE;
+                if(initialize_aio_buffers()) {
+                       // return ;
+                }
+                
+                __off_t aio_offset = 0;
+                aio_buf_t* pbuf = NULL;
+                for (i = 0; i < count; i++)
+                {
+                        pbuf = get_aio_buffer_from_aio_buf_pool(0);
+                        aio_offset = get_read_file_offset();
+                        
+                        pbuf->aiocb->aio_offset = aio_offset;
+                        pbuf->aiocb->aio_nbytes = aio_nbytes;
+                        get_start_time();
+                        ret = aio_read(pbuf->aiocb);
+                        if(-1 ==ret) {
+                                printf("Error at aio_read(): %s\n", strerror(errno));
+                                refresh_aio_buffer(pbuf);
+                                exit(1);
+                        }
+                        while ((ret = aio_error (pbuf->aiocb)) == EINPROGRESS);
+                        get_stop_time();
+                        //refresh_aio_buffer(pbuf);
+                        ttl_elapsed = get_elapsed_time();
+                        min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                        max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                        avg += ttl_elapsed;
+                        //printf("Run latency: %li ns\n", delta);
+                }
+                close(aio_fd);
+                deinitialize_aio_buffers();
+                printf("Async_io_read(%d:%d) Min: %li, Max:%li and Avg latency: %li ns\n", cur_open_options, open_flag, min, max, avg/count);
+                /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+        } while(cur_open_options < MAX_READ_FLAG_OPTIONS);
 }
 
 void test_async_io_write(void) {
@@ -832,45 +875,49 @@ void test_async_io_write(void) {
         int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
         int count = 1000, i =0;
         static struct timespec dur = {.tv_sec=0, .tv_nsec=200*1000}, rem = {.tv_sec=0, .tv_nsec=0};
-        
-        aio_fd = open("logger_wpkt.txt", FD_WR_OPEN_MODE, 0666);
-        if (-1 == aio_fd) {
-            return;
-        }
-        size_t aio_nbytes=IO_BUF_SIZE;
-        if(initialize_aio_buffers()) {
-                return;
-        }
-        
-        __off_t aio_offset = 0;
-        aio_buf_t* pbuf = NULL;
-        for (i = 0; i < count; i++)
-        {
-                pbuf = get_aio_buffer_from_aio_buf_pool(0);
-                aio_offset = get_read_file_offset();
-                
-                pbuf->aiocb->aio_offset = aio_offset;
-                pbuf->aiocb->aio_nbytes = aio_nbytes;
-                get_start_time();
-                ret = aio_write(pbuf->aiocb);
-                if(-1 ==ret) {
-                        printf("Error at aio_read(): %s\n", strerror(errno));
-                        refresh_aio_buffer(pbuf);
-                        exit(1);
+        int open_flag = FD_WR_OPEN_MODE;
+        int cur_open_options = 0;
+        do {
+                open_flag = get_next_write_flag(cur_open_options++);
+                aio_fd = open("logger_wpkt.txt", open_flag, 0666);
+                if (-1 == aio_fd) {
+                    return;
                 }
-                while ((ret = aio_error (pbuf->aiocb)) == EINPROGRESS);
-                get_stop_time();
-                //refresh_aio_buffer(pbuf);
-                ttl_elapsed = get_elapsed_time();
-                min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
-                max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
-                avg += ttl_elapsed;
-                //printf("Run latency: %li ns\n", delta);
-        }
-        close(aio_fd);
-        deinitialize_aio_buffers();
-        printf("Async_io_write() Min: %li, Max:%li and Avg latency: %li ns\n", min, max, avg/count);
-        /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+                size_t aio_nbytes=IO_BUF_SIZE;
+                if(initialize_aio_buffers()) {
+                        return;
+                }
+                
+                __off_t aio_offset = 0;
+                aio_buf_t* pbuf = NULL;
+                for (i = 0; i < count; i++)
+                {
+                        pbuf = get_aio_buffer_from_aio_buf_pool(0);
+                        aio_offset = get_read_file_offset();
+                        
+                        pbuf->aiocb->aio_offset = aio_offset;
+                        pbuf->aiocb->aio_nbytes = aio_nbytes;
+                        get_start_time();
+                        ret = aio_write(pbuf->aiocb);
+                        if(-1 ==ret) {
+                                printf("Error at aio_read(): %s\n", strerror(errno));
+                                refresh_aio_buffer(pbuf);
+                                exit(1);
+                        }
+                        while ((ret = aio_error (pbuf->aiocb)) == EINPROGRESS);
+                        get_stop_time();
+                        //refresh_aio_buffer(pbuf);
+                        ttl_elapsed = get_elapsed_time();
+                        min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+                        max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+                        avg += ttl_elapsed;
+                        //printf("Run latency: %li ns\n", delta);
+                }
+                close(aio_fd);
+                deinitialize_aio_buffers();
+                printf("Async_io_write(%d:%d) Min: %li, Max:%li and Avg latency: %li ns\n", cur_open_options, open_flag, min, max, avg/count);
+                /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
+        } while(cur_open_options < MAX_WRITE_FLAG_OPTIONS);
 }
 int main()
 {
