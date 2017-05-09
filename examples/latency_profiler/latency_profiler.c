@@ -546,7 +546,7 @@ int read_flag_options_list[MAX_READ_FLAG_OPTIONS] = {
         (O_RDWR|O_DIRECT),
         (O_RDWR|O_DIRECT|O_FSYNC),
         (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
-}
+};
 void get_next_read_flag(int index);
 void get_next_read_flag(int index) {
         index = (index % (MAX_READ_FLAG_OPTIONS));
@@ -608,7 +608,7 @@ int write_flag_options_list[MAX_WRITE_FLAG_OPTIONS] = {
         (O_RDWR|O_DIRECT),
         (O_RDWR|O_DIRECT|O_FSYNC),
         (O_RDWR|O_FSYNC|O_RSYNC|O_DIRECT)
-}
+};
 void get_next_write_flag(int index);
 void get_next_write_flag(int index) {
         index = (index % (MAX_WRITE_FLAG_OPTIONS));
