@@ -560,7 +560,7 @@ void test_group_prio() {
 #define AIO_REQUEST_PRIO (0)
 #define OFFSET_LIST_SIZE 10
 static int offset_desc[OFFSET_LIST_SIZE] = { 24576, 4096, 8912, 12288, 16384, 20480, 24576, 28672, 16384, 32768 };
-#define OFFSET_MULTIPLIER   (1024*1024)  //(1024*1024)   //(1)
+#define OFFSET_MULTIPLIER   (1024*1024*5)  //(1024*1024)   //(1)
 int get_read_file_offset(void);
 int get_read_file_offset(void) {
     static int offset_index = 0;
@@ -1000,6 +1000,7 @@ int main()
         test_sync_io_read();
         test_async_io_write();
         test_async_io_read();
+        sleep(5);
         deinitialize_sync_variable();
 }
 
