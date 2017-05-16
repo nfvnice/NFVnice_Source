@@ -84,6 +84,45 @@
 #define rte_calloc(a,b,c,d) calloc(b,c)
 #define rte_free(a) free(a)
 
+#define SEM_NAME "AIO_SYNC_VAR"
+sem_t *wait_mutex = NULL;
+//#define WAIT_FOR_ASYNC_COMPLETION
+
+int initialize_sync_variable(void);
+int deinitialize_sync_variable(void);
+int wait_on_sync_variable(void);
+int post_on_sync_variable(void);
+int initialize_sync_variable(void) {
+        wait_mutex = sem_open(SEM_NAME, O_CREAT, 06666, 0);
+        if(wait_mutex == SEM_FAILED) {
+                fprintf(stderr, "can not create semaphore!!\n");
+                sem_unlink(SEM_NAME);
+                exit(1);
+        }
+        return 0;
+}
+int deinitialize_sync_variable(void) {
+        if(wait_mutex) {
+                sem_post(wait_mutex);
+                sem_close(wait_mutex);
+                sem_unlink(SEM_NAME);
+                wait_mutex = NULL;
+        }
+        return 0;
+}
+int wait_on_sync_variable(void) {
+    if(wait_mutex) {
+                sem_wait(wait_mutex);
+
+        }
+        return 0;
+}
+int post_on_sync_variable(void) {
+        if(wait_mutex) {
+                sem_post(wait_mutex);
+        }
+        return 0;
+}
 
 #define USE_THIS_CLOCK  CLOCK_THREAD_CPUTIME_ID //CLOCK_PROCESS_CPUTIME_ID //CLOCK_MONOTONIC
 
@@ -724,6 +763,7 @@ int notify_io_rw_done(aio_buf_t *pbuf) {
         }
         #endif //#ifdef ENABLE_DEBUG_LOGS
         refresh_aio_buffer(pbuf);
+        post_on_sync_variable();
         return 0;
 }
 
@@ -842,7 +882,12 @@ void test_async_io_read(void) {
                 aio_buf_t* pbuf = NULL;
                 for (i = 0; i < count; i++)
                 {
-                        pbuf = get_aio_buffer_from_aio_buf_pool(0);
+                        do { 
+                                pbuf = get_aio_buffer_from_aio_buf_pool(0);
+                                if(NULL == pbuf) {
+                                    wait_on_sync_variable();
+                                }
+                        }while(pbuf == NULL);
                         aio_offset = get_read_file_offset();
                         
                         pbuf->aiocb->aio_offset = aio_offset;
@@ -854,7 +899,9 @@ void test_async_io_read(void) {
                                 refresh_aio_buffer(pbuf);
                                 exit(1);
                         }
+                        #ifdef WAIT_FOR_ASYNC_COMPLETION
                         while ((ret = aio_error (pbuf->aiocb)) == EINPROGRESS);
+                        #endif
                         get_stop_time();
                         //refresh_aio_buffer(pbuf);
                         ttl_elapsed = get_elapsed_time();
@@ -892,7 +939,13 @@ void test_async_io_write(void) {
                 aio_buf_t* pbuf = NULL;
                 for (i = 0; i < count; i++)
                 {
-                        pbuf = get_aio_buffer_from_aio_buf_pool(0);
+                        do { 
+                                pbuf = get_aio_buffer_from_aio_buf_pool(0);
+                                if(NULL == pbuf) {
+                                    wait_on_sync_variable();
+                                }
+                        }while(pbuf == NULL);
+                        
                         aio_offset = get_read_file_offset();
                         
                         pbuf->aiocb->aio_offset = aio_offset;
@@ -904,7 +957,9 @@ void test_async_io_write(void) {
                                 refresh_aio_buffer(pbuf);
                                 exit(1);
                         }
+                        #ifdef WAIT_FOR_ASYNC_COMPLETION
                         while ((ret = aio_error (pbuf->aiocb)) == EINPROGRESS);
+                        #endif
                         get_stop_time();
                         //refresh_aio_buffer(pbuf);
                         ttl_elapsed = get_elapsed_time();
@@ -940,10 +995,11 @@ int main()
         test_group_prio();
         #endif
         
+        initialize_sync_variable();
         test_sync_io_write();
         test_sync_io_read();
         test_async_io_write();
         test_async_io_read();
-        
+        deinitialize_sync_variable();
 }
 

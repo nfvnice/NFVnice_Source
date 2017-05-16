@@ -115,7 +115,7 @@
 #define DISPLAY_AFTER_PACKETS   (1000000)
 #define MAX_PKT_BUF_SIZE (64*1024)
 #define BUF_SIZE MAX_PKT_BUF_SIZE
-#define MAX_AIO_BUFFERS     (1024)  //(5) (1)
+#define MAX_AIO_BUFFERS     (32) //(1024)  //(5) (1)
 //int pktBufList[MAX_AIO_BUFFERS];
 
 #define errExit(msg) do { perror(msg); exit(EXIT_FAILURE); } while (0)
