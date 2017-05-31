@@ -40,6 +40,7 @@
 
 #define NF_TAG "basic_nf"
 
+#define MAX_COST_VARIATIONS 3
 //#define FAKE_COMPUTE
 #define FACT_VALUE 30
 long factorial(int n);
@@ -279,15 +280,83 @@ do_compute_at_cost( void ) {
         }
         return 0;
 }
-
+static inline int 
+do_compute_at_var_cost(int cost_index);
+static inline int 
+do_compute_at_var_cost(int cost_index) {
+        int i=0,j=0,k=0;
+        uint64_t start_cycles = 0;
+        if (0 == comp_cost_cycles) {
+                start_cycles = rte_rdtsc_precise(); //rte_get_tsc_cycles();
+        }
+        switch(cost_index){
+        default:
+        break;
+        case 1:
+                j=FACT_VALUE;
+                k=1;
+        break;
+        case 2:
+                j=FACT_VALUE*2; //j=FACT_VALUE*3/2;
+                k=2;
+        break;
+        case 3:
+                j=FACT_VALUE*2;
+                k=3;
+        break;
+        case 4:
+                j=FACT_VALUE*2*10;
+                k=1;
+        break;
+        case 5:
+                j=FACT_VALUE*2*10;
+                k=2;
+        break;
+        case 6:
+                j=FACT_VALUE*2*10;
+                k=3;
+        break;
+        case 7:
+                j=FACT_VALUE*2*10;
+                k=10;
+        break;
+        case 8:
+                j=FACT_VALUE*2*10;
+                k=50;
+        break;
+        case 9:
+                j=FACT_VALUE*2*10;
+                k=100;
+        break;
+        }
+        /* (Basic NF_V2)
+         * Level=1                      Level=2                     Level=3                     Level=4                     Level=5                     Level=6
+         * J=FACT_VALUE(30);            J=FACT_VALUE*3/2;           J=FACT_VALUE*2;             J=FACT_VALUE*2*10;          J=FACT_VALUE*2*10;          J=FACT_VALUE*2*10;
+         * k=1                          k=2                         k=3                         k=1                         k=2                         k=3
+         * PktRate=14.6Mpps             PktRate=9.48Mpps            PktRate=4.80Mpps            PktRate=1.18Mpps            PktRate=0.60Mpps            PktRate=0.41Mpps
+         * BitRate=xxxxMbps             BitRate=4850Mbps            BitRate=2455Mbps            BitRate=0603Mbps            BitRate=0310Mbps            BitRate=0208Mbps
+         */
+        for (i = 0; i < k; i++) {
+                factorial(j);
+        }
+        if (0 == comp_cost_cycles) {
+                ////comp_cost_cycles = rte_get_tsc_cycles() - start_cycles;
+                comp_cost_cycles =  rte_rdtsc_precise() - start_cycles;
+                avg_comp_cost = (avg_comp_cost==0)?(comp_cost_cycles):((avg_comp_cost+comp_cost_cycles) >> 1);
+        }
+        return 0;
+}
 static int
 packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) {
         
         static uint32_t counter = 0;
 
-       // if (comp_cost_level) {
+       
+        if (comp_cost_level != 10) {
                 do_compute_at_cost();  
-       // }
+        } else {
+                do_compute_at_var_cost((counter%MAX_COST_VARIATIONS) +1);
+        }
 
         if (++counter == print_delay) {
                 do_stats_display(pkt);
