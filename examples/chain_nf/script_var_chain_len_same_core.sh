@@ -53,6 +53,12 @@ done
 cd ../basic_monitor
 echo "Starting Basic Monitor at: $nf"
 ./lsc_x.sh $nf
+sleep 5
+echo "pwd=$PWD"
+cd ../../onvm                                                                                                                       
+echo "pwd=$PWD"
+echo "settin BATCH Scheduler"                                                                                                       
+./set_sched_type.sh b 
 
 #./og.sh 8 2 3 1 $1 $2
 #./og.sh 8 3 4 2 $1 $2
