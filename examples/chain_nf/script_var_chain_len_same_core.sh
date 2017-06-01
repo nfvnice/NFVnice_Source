@@ -13,12 +13,14 @@ then
 fi
 echo "cost is set to $cost"
 
-inst_id_list=(1 2 5 9 13 3 6 10 14 4 7)
+#inst_id_list=(1 2 5 9 13 3 6 10 14 4 7)
+inst_id_list=(1 2 8 15 22 29 4 10 17 24 30)
 #cost_id_list=(0 1 2 3 1 1 1 1 1 1 1 1)
 #cost_id_list=(0 1 1 1 1 1 2 1 1 3 1 1)
 #cost_id_list=(0 1 1 1 2 2 2 3 3 3 1 1)
 #cost_id_list=(0 2 1 1 1 2 3 1 2 3 1)
-cost_id_list=(0 1 1 1 1 1 1 1 1 1 1)
+#cost_id_list=(0 1 1 1 1 1 1 1 1 1 1)
+cost_id_list=(0 1 1 1 1 2 3 1 1 1 1)
 core_id=8
 svc_id=2
 dst_id=3
