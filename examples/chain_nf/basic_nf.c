@@ -280,14 +280,18 @@ do_compute_at_cost( void ) {
         }
         return 0;
 }
+#define MAX_PACKETS_FOR_COST_SAMPLING 10
 static inline int 
 do_compute_at_var_cost(int cost_index);
 static inline int 
 do_compute_at_var_cost(int cost_index) {
         int i=0,j=0,k=0;
+        static int start_count = 0;
         uint64_t start_cycles = 0;
         if (0 == comp_cost_cycles) {
-                start_cycles = rte_rdtsc_precise(); //rte_get_tsc_cycles();
+                if (0 == start_count)
+                        start_cycles = rte_rdtsc_precise(); //rte_get_tsc_cycles();
+                start_count++;
         }
         switch(cost_index){
         default:
@@ -339,18 +343,17 @@ do_compute_at_var_cost(int cost_index) {
         for (i = 0; i < k; i++) {
                 factorial(j);
         }
-        if (0 == comp_cost_cycles) {
+        if (0 == comp_cost_cycles && start_count == MAX_PACKETS_FOR_COST_SAMPLING) {
                 ////comp_cost_cycles = rte_get_tsc_cycles() - start_cycles;
                 comp_cost_cycles =  rte_rdtsc_precise() - start_cycles;
                 avg_comp_cost = (avg_comp_cost==0)?(comp_cost_cycles):((avg_comp_cost+comp_cost_cycles) >> 1);
+                start_count = 0;
         }
         return 0;
 }
+static uint32_t counter = 0;
 static int
 packet_handler(struct rte_mbuf* pkt, struct onvm_pkt_meta* meta) {
-        
-        static uint32_t counter = 0;
-
        
         if (comp_cost_level != 10) {
                 do_compute_at_cost();  

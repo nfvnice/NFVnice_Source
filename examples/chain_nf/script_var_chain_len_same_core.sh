@@ -14,7 +14,11 @@ fi
 echo "cost is set to $cost"
 
 inst_id_list=(1 2 5 9 13 3 6 10 14 4 7)
-cost_id_list=(0 1 2 3 1 1 1 1 1 1 1 1)
+#cost_id_list=(0 1 2 3 1 1 1 1 1 1 1 1)
+#cost_id_list=(0 1 1 1 1 1 2 1 1 3 1 1)
+#cost_id_list=(0 1 1 1 2 2 2 3 3 3 1 1)
+#cost_id_list=(0 2 1 1 1 2 3 1 2 3 1)
+cost_id_list=(0 1 1 1 1 1 1 1 1 1 1)
 core_id=8
 svc_id=2
 dst_id=3
@@ -28,7 +32,7 @@ do
         cost=${cost_id_list[$nf]}
         echo "Starting ./og.sh $core_id $svc_id $dst_id $inst_id $cost"
         ./og.sh $core_id $svc_id $dst_id $inst_id $cost &        
-        sleep 2
+        sleep 4
         nf=$((nf+1))
         #inst_id=${inst_id_list[$nf]}
 	#inst_id=$((inst_id+1))
@@ -44,7 +48,9 @@ do
 #                inst_id=$((inst_id+1))
 #        fi
 done
-
+cd ../basic_monitor
+echo "Starting Basic Monitor at: $nf"
+./lsc_x.sh $nf
 
 #./og.sh 8 2 3 1 $1 $2
 #./og.sh 8 3 4 2 $1 $2
