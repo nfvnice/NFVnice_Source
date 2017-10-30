@@ -1,0 +1,28 @@
+# started on Tue Aug  8 02:57:40 2017
+
+
+ Performance counter stats for 'CPU(s) 8,10':
+
+S0-C9           1       26690.336195      task-clock (msec)         #    0.999 CPUs utilized            (100.00%)
+S0-C9           1             53,427      context-switches                                              (100.00%)
+S0-C9           1                  0      cpu-migrations                                                (100.00%)
+S0-C9           1                  0      page-faults                                                 
+S0-C9           1     82,707,621,410      cycles                     (100.00%)
+S0-C9           1    <not supported>      stalled-cycles-frontend  
+S0-C9           1    <not supported>      stalled-cycles-backend   
+S0-C9           1     98,926,652,571      instructions               (100.00%)
+S0-C9           1     23,062,558,239      branches                                                      (100.00%)
+S0-C9           1            259,859      branch-misses                                               
+S0-C11          1       26690.340748      task-clock (msec)         #    0.999 CPUs utilized            (100.00%)
+S0-C11          1             53,511      context-switches                                              (100.00%)
+S0-C11          1                  0      cpu-migrations                                                (100.00%)
+S0-C11          1                  0      page-faults                                                 
+S0-C11          1     82,707,610,014      cycles                     (100.00%)
+S0-C11          1    <not supported>      stalled-cycles-frontend  
+S0-C11          1    <not supported>      stalled-cycles-backend   
+S0-C11          1     45,724,015,317      instructions               (100.00%)
+S0-C11          1      6,817,045,325      branches                                                      (100.00%)
+S0-C11          1            286,796      branch-misses                                               
+
+      26.710455157 seconds time elapsed
+
