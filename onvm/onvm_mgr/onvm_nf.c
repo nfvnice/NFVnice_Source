@@ -698,7 +698,7 @@ onvm_clear_all_entries_for_bottleneck(uint16_t nf_id) {
                                                 //clear this sc with this index;;
                                                 if((TEST_BIT(sc_list[s_inx].sc->highest_downstream_nf_index_id, i))) {
                                                         CLEAR_BIT(sc_list[s_inx].sc->highest_downstream_nf_index_id, i);
-                                                        break;
+                                                        //break;
                                                 }
                                         }
                                 }

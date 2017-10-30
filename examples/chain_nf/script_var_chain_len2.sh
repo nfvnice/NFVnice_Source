@@ -17,22 +17,25 @@ inst_id_list=(1 2 8 15 22 29 4 10 17 24 30)
 #cost_id_list=(0 1 2 3 1 1 1 1 1 1 1 1)
 #cost_id_list=(0 1 1 1 1 1 2 1 1 3 1 1)
 #cost_id_list=(0 1 1 1 1 1 1 1 1 1 1)
-cost_id_list=(0 1 1 1 1 2 3 1 1 1 1)
 #cost_id_list=(0 2 1 1 1 2 3 1 2 3 1)
-
-core_id_list=(0 8 8 8 9 9 9 10 10 10 11 11)
+cost_id_list=(0 1 1 1 1 2 3 1 1 1 1)
+#cost_id_list=(0 2 1 3 2 1 3 2 1 3 2)
+#cost_id_list=(0 1 2 3 1 2 3 1 2 3 3)
+#core_id_list=(0 8 8 8 9 9 9 10 10 10 11 11)
+core_id_list=(0 8 9 10 8 9 10 8 9 10 11 11)
 core_id=8
 svc_id=2
 dst_id=3
 inst_id=1
 nfs_per_core=3
 nf=1
+bm_svc_id=$((chain_len+2))
 while [ $nf -le $chain_len ]
 do
         inst_id=${inst_id_list[$nf]}
         cost=${cost_id_list[$nf]}
         core_id=${core_id_list[$nf]}
-	echo "Starting ./og.sh $core_id $svc_id $dst_id $inst_id $cost"
+	echo "Starting ./og.sh core: $core_id svcid: $svc_id dstid: $dst_id InstId: $inst_id cost: $cost"
         ./og.sh $core_id $svc_id $dst_id $inst_id $cost &       
         sleep 4
         nf=$((nf+1))
@@ -50,40 +53,11 @@ do
         fi
 done
 cd ../basic_monitor
-echo "Starting Basic Monitor at: $nf"
-./lsc_x.sh $nf
-sleep 5
+echo "Starting Basic Monitor with service id: $bm_svc_id, $chain_len, $nf"
+./lsc_x.sh $bm_svc_id
+sleep 4
 cd ../../onvm
 echo "settin BATCH Scheduler"
 ./set_sched_type.sh b
 
-#./og.sh 8 2 3 1 $1 $2
-#./og.sh 8 3 4 2 $1 $2
-#./og.sh 8 4 5 3 $1 $2
-#./og.sh 8 5 6 5 $1 $2
-#./og.sh 8 6 7 6 $1 $2
-#./og.sh 8 7 8 7 $1 $2
-#./og.sh 8 8 9 9 $1 $2
-#./og.sh 8 9 10 10 $1 $2
-#./og.sh 8 10 11 11 $1 $2
 
-
-#ls -l a9* | awk '{ print "./"$9 "\ &"}'  > run_9schain.sh
-#./a9NF_1.sh 1 &
-#  sleep 2
-#./a9NF_2.sh 2 &
-#  sleep 2
-#./a9NF_3.sh 3 &
-#  sleep 2
-#./a9NF_4.sh 1 &
-#  sleep 2
-#./a9NF_5.sh 2 &
-#  sleep 2
-#./a9NF_6.sh 3 &
-#  sleep 2
-#./a9NF_7.sh 1 &
-#  sleep 2
-#./a9NF_8.sh 2 &
-#  sleep 2
-#./a9NF_9.sh 3 &
-#  sleep 2

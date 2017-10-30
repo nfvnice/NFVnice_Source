@@ -101,8 +101,8 @@
 
 #define RTE_MP_RX_DESC_DEFAULT 1024 //(1024) //512 //512 //1536 //2048 //1024 //512 (use U:1024, T:512)
 #define RTE_MP_TX_DESC_DEFAULT 1024 //(1024) //512 //512 //1536 //2048 //1024 //512 (use U:1024, T:512)
-#define CLIENT_QUEUE_RINGSIZE 4096 //(4096) //(512)  //128 //4096  //4096 //128   (use U:4096, T:512)
-
+//#define CLIENT_QUEUE_RINGSIZE  (512) //4096 //(4096) //(512)  //128 //4096  //4096 //128   (use U:4096, T:512) //256
+#define CLIENT_QUEUE_RINGSIZE  (4096) //4096 //(4096) //(512)  //128 //4096  //4096 //128   (use U:4096, T:512) //256
 //For TCP UDP use 70,40
 //For TCP TCP, IO use 80 20
 

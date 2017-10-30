@@ -974,6 +974,95 @@ void test_async_io_write(void) {
                 /* Remember the Mix, Max Avg include the overheads of time related calls: so substract the clock overheads as in test_clk_overhead() */
         } while(cur_open_options < MAX_WRITE_FLAG_OPTIONS);
 }
+
+#include <signal.h>
+#include <sys/types.h>  /* Type definitions used by many programs */
+#include <stdio.h>      /* Standard I/O functions */
+#include <stdlib.h>     /* Prototypes of commonly used library functions,
+                           plus EXIT_SUCCESS and EXIT_FAILURE constants */
+#include <unistd.h>     /* Prototypes for many system calls */
+#include <errno.h>      /* Declares errno and defines error constants */
+#include <string.h>     /* Commonly used string-handling functions */
+#define errExit(a) { printf(a); exit(1);}
+#define TESTSIG SIGUSR1
+
+static void
+handler(int sig)
+{
+        static int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0, count=0;
+        get_stop_time();
+        ttl_elapsed = get_elapsed_time();
+        min = ((min == 0)? (ttl_elapsed): (ttl_elapsed < min ? (ttl_elapsed): (min)));
+        max = ((ttl_elapsed > max) ? (ttl_elapsed):(max));
+        avg += ttl_elapsed;
+        count++;
+        if(count%10 == 0) {
+                printf("SIGNAL_HANDLER_RECV(%d): Min: %li, Max:%li and Avg latency: %li ns\n", getpid(), min, max, avg/count);
+        }
+}
+
+int test_signal_latency()
+{
+    int64_t min = 0, max = 0, avg = 0, ttl_elapsed=0;
+    int count = 1000, i =0;
+                
+    int numSigs, scnt;
+    pid_t childPid;
+    sigset_t blockedMask, emptyMask;
+    struct sigaction sa;
+    int sig_r;
+
+    /*if (argc != 2 || strcmp(argv[1], "--help") == 0)
+        usageErr("%s num-sigs\n", argv[0]);
+    */
+
+    numSigs = 10; //1000; //getInt(argv[1], GN_GT_0, "num-sigs");
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_handler = handler;
+    if (sigaction(TESTSIG, &sa, NULL) == -1)
+        errExit("sigaction");
+
+    /* Block the signal before fork(), so that the child doesn't manage
+       to send it to the parent before the parent is ready to catch it */
+
+    sigemptyset(&blockedMask);
+    sigaddset(&blockedMask, TESTSIG);
+    if (sigprocmask(SIG_SETMASK, &blockedMask, NULL) == -1)
+        errExit("sigprocmask");
+
+    sigemptyset(&emptyMask);
+
+    switch (childPid = fork()) {
+    case -1: errExit("fork");
+
+    case 0:     /* child */
+        for (scnt = 0; scnt < numSigs; scnt++) {
+             get_start_time();    
+
+            if (kill(getppid(), TESTSIG) == -1)
+                errExit("kill");
+            if (sigsuspend(&emptyMask) == -1 && errno != EINTR)
+            //if (sigwait(&blockedMask, &sig_r) == -1 && errno != EINTR)
+                    errExit("sigsuspend");
+        }
+        exit(EXIT_SUCCESS);
+
+    default: /* parent */
+        for (scnt = 0; scnt < numSigs; scnt++) {
+            //if (sigwait(&blockedMask, &sig_r) == -1 && errno != EINTR)
+            if (sigsuspend(&emptyMask) == -1 && errno != EINTR)
+                    errExit("sigsuspend");
+            
+            get_start_time();
+
+            if (kill(childPid, TESTSIG) == -1)
+                errExit("kill");
+        }
+        exit(EXIT_SUCCESS);
+    }
+}
 int main()
 {
         #if defined(_POSIX_TIMERS) && (_POSIX_TIMERS > 0) && defined(_POSIX_MONOTONIC_CLOCK)
@@ -982,8 +1071,9 @@ int main()
         printf ("\n using Standard Time \n");
         #endif
 
-        #if 0
+        #if 1
         test_clk_overhead();
+        //#if 0        
         test_cgroup_update1();
         test_cgroup_update2();
         test_mq();
@@ -993,8 +1083,11 @@ int main()
         test_nanosleep();
         test_sched_yield();
         test_group_prio();
+        //#endif
+        test_signal_latency();
         #endif
-        
+       
+#if 0
         initialize_sync_variable();
         test_sync_io_write();
         test_sync_io_read();
@@ -1002,5 +1095,6 @@ int main()
         test_async_io_read();
         sleep(5);
         deinitialize_sync_variable();
+#endif
 }
 

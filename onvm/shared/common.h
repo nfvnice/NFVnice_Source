@@ -70,8 +70,8 @@
 //#define DELAY_PER_PKT (5) //20micro seconds
 
 #define ONVM_MAX_CHAIN_LENGTH 12   // the maximum chain length
-#define MAX_CLIENTS 16            // total number of NFs allowed
-#define MAX_SERVICES 16           // total number of unique services allowed
+#define MAX_CLIENTS 32            // total number of NFs allowed
+#define MAX_SERVICES 32           // total number of unique services allowed
 #define MAX_CLIENTS_PER_SERVICE 8 // max number of NFs per service.
 
 #define ONVM_NF_ACTION_DROP 0   // drop packet

@@ -307,7 +307,8 @@ onvm_pkt_enqueue_port(struct thread_info *tx, uint16_t port, struct rte_mbuf *bu
                 return;
         if(unlikely(port>= RTE_MAX_ETHPORTS))
                 return;
-
+        if(unlikely(port >= ports->num_ports))
+                return;
         tx->port_tx_buf[port].buffer[tx->port_tx_buf[port].count++] = buf;
         if (tx->port_tx_buf[port].count == PACKET_READ_SIZE) {
                 onvm_pkt_flush_port_queue(tx, port);
